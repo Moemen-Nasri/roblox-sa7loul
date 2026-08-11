@@ -73,17 +73,18 @@ local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 
--- DESIGN COLORS — smoother palette
-local ACCENT = Color3.fromRGB(255, 140, 80)      -- soft orange
-local ACCENT_DARK = Color3.fromRGB(200, 100, 50)
-local BG_MAIN = Color3.fromRGB(18, 18, 24)
-local BG_PANEL = Color3.fromRGB(24, 24, 32)
-local BG_ELEMENT = Color3.fromRGB(32, 32, 42)
-local BG_HOVER = Color3.fromRGB(42, 42, 56)
-local TEXT_PRIMARY = Color3.fromRGB(245, 245, 250)
-local TEXT_SECONDARY = Color3.fromRGB(170, 170, 185)
-local TEXT_DIM = Color3.fromRGB(100, 100, 120)
-local BORDER_COLOR = Color3.fromRGB(45, 45, 60)
+-- DESIGN COLORS — soft rose & teal palette
+local ACCENT = Color3.fromRGB(255, 94, 148)      -- soft rose
+local ACCENT_DARK = Color3.fromRGB(196, 60, 106)
+local TEAL = Color3.fromRGB(61, 224, 200)
+local BG_MAIN = Color3.fromRGB(13, 14, 20)
+local BG_PANEL = Color3.fromRGB(19, 20, 30)
+local BG_ELEMENT = Color3.fromRGB(28, 30, 44)
+local BG_HOVER = Color3.fromRGB(40, 43, 62)
+local TEXT_PRIMARY = Color3.fromRGB(248, 248, 252)
+local TEXT_SECONDARY = Color3.fromRGB(165, 168, 190)
+local TEXT_DIM = Color3.fromRGB(95, 98, 125)
+local BORDER_COLOR = Color3.fromRGB(40, 42, 62)
 
 local function notif(str, dur)
     pcall(function()
@@ -133,6 +134,52 @@ local timerActive = false
 local panicTPCooldown = 0
 local playerListCache = {}
 local playerListContainer = nil
+local selectedPlayer = nil
+local selectedPlayerLabel = nil
+local bringOrigins = {}
+
+local function AddPressAnim(btn)
+    btn.MouseButton1Down:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.08), {Size = btn.Size - UDim2.new(0.01, 0, 0.01, 0)}):Play()
+    end)
+    btn.MouseButton1Up:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.12), {Size = btn.Size + UDim2.new(0.01, 0, 0.01, 0)}):Play()
+    end)
+end
+
+local function GetSelectedPlayer()
+    if selectedPlayer and selectedPlayer.Parent then return selectedPlayer end
+    return nil
+end
+
+local function SetSelectedPlayer(player)
+    selectedPlayer = player
+    if selectedPlayerLabel then
+        if GetSelectedPlayer() then
+            selectedPlayerLabel.Text = "👤 Player: " .. selectedPlayer.Name
+        else
+            selectedPlayerLabel.Text = "👤 Player: None"
+        end
+    end
+end
+
+local function CyclePlayer()
+    local players = game.Players:GetPlayers()
+    if #players == 0 then
+        SetSelectedPlayer(nil)
+        return
+    end
+    if not GetSelectedPlayer() then
+        SetSelectedPlayer(players[1])
+    else
+        for i, p in ipairs(players) do
+            if p == selectedPlayer then
+                SetSelectedPlayer(players[i % #players + 1])
+                break
+            end
+        end
+    end
+end
 
 local function GetPlayerByName(name)
     local found = nil
@@ -198,10 +245,26 @@ local function StartBring(targetName)
     coroutine.wrap(function()
         local bp = nil
         local hum = nil
+        local originSaved = false
+        
+        local function SaveOrigin()
+            if not bringOrigins[target] and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                local save = {root = target.Character.HumanoidRootPart.CFrame, parts = {}}
+                for _, part in ipairs(target.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then save.parts[part] = part.CFrame end
+                end
+                bringOrigins[target] = save
+            end
+        end
         
         while bringActive and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") do
             local targetRoot = target.Character.HumanoidRootPart
             local myRoot = lp.Character.HumanoidRootPart
+            
+            if not originSaved then
+                SaveOrigin()
+                originSaved = true
+            end
             
             if not bp or bp.Parent ~= targetRoot then
                 if bp and bp.Parent then bp:Destroy() end
@@ -219,7 +282,14 @@ local function StartBring(targetName)
             
             local targetPos = myRoot.Position + (myRoot.CFrame.LookVector * 4)
             targetPos = Vector3.new(targetPos.X, myRoot.Position.Y, targetPos.Z)
+            local delta = targetPos - targetRoot.Position
+            if delta.Magnitude > 4 then delta = delta.Unit * 4 end
             bp.Position = targetPos
+            for _, part in ipairs(target.Character:GetDescendants()) do
+                if part:IsA("BasePart") and part ~= targetRoot then
+                    part.CFrame = part.CFrame + delta
+                end
+            end
             targetRoot.CFrame = CFrame.new(targetPos)
             targetRoot.AssemblyLinearVelocity = Vector3.zero
             targetRoot.AssemblyAngularVelocity = Vector3.zero
@@ -831,6 +901,15 @@ local function StartBringAll()
             
             for i, player in ipairs(alive) do
                 local root = player.Character.HumanoidRootPart
+                
+                if not bringOrigins[player] then
+                    local save = {root = root.CFrame, parts = {}}
+                    for _, part in ipairs(player.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then save.parts[part] = part.CFrame end
+                    end
+                    bringOrigins[player] = save
+                end
+                
                 local bp = drags[player]
                 if not bp or not bp.Parent or bp.Parent ~= root then
                     if bp and bp.Parent then bp:Destroy() end
@@ -847,7 +926,14 @@ local function StartBringAll()
                 local angle = ((i - 1) / #alive) * math.pi * 2
                 local offset = Vector3.new(math.cos(angle) * 6, 0, math.sin(angle) * 6)
                 local targetPos = myRoot.Position + offset
+                local delta = targetPos - root.Position
+                if delta.Magnitude > 4 then delta = delta.Unit * 4 end
                 bp.Position = targetPos
+                for _, part in ipairs(player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") and part ~= root then
+                        part.CFrame = part.CFrame + delta
+                    end
+                end
                 root.CFrame = CFrame.new(targetPos)
                 root.AssemblyLinearVelocity = Vector3.zero
                 local hum = player.Character:FindFirstChildOfClass("Humanoid")
@@ -871,6 +957,44 @@ end
 
 local function StopBringAll()
     bringAllActive = false
+end
+
+local function UnbringPlayer(player)
+    local save = bringOrigins[player]
+    if save then
+        bringOrigins[player] = nil
+        local ok = pcall(function()
+            for part, cf in pairs(save.parts) do
+                if part and part.Parent then part.CFrame = cf end
+            end
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                player.Character.HumanoidRootPart.CFrame = save.root
+                if player.Character.HumanoidRootPart:FindFirstChild("BringHold") then
+                    player.Character.HumanoidRootPart.BringHold:Destroy()
+                end
+                if player.Character.HumanoidRootPart:FindFirstChild("BringAllHold") then
+                    player.Character.HumanoidRootPart.BringAllHold:Destroy()
+                end
+            end
+        end)
+        if ok then return true end
+    end
+    return false
+end
+
+local function UnbringSelected()
+    if bringActive then StopBring() end
+    if bringAllActive then StopBringAll() end
+    task.wait(0.15)
+    local restored = 0
+    for player, _ in pairs(bringOrigins) do
+        if UnbringPlayer(player) then restored = restored + 1 end
+    end
+    if restored > 0 then
+        notif("Unbrought " .. restored .. " player(s)", 2)
+    else
+        notif("Nothing to unbring", 2)
+    end
 end
 
 local function isKillerNearby(position, radius)
@@ -2006,6 +2130,17 @@ local function CreatePlayerEntry(parent, player)
     frame.BackgroundTransparency = 1
     frame.Size = UDim2.new(1, 0, 0, 36)
     frame.LayoutOrder = #parent:GetChildren()
+    frame.BorderSizePixel = 0
+    
+    local isSelected = (selectedPlayer == player)
+    
+    local function ApplySelectionStyle(selected)
+        frame.BorderSizePixel = selected and 2 or 0
+        frame.BorderColor3 = ACCENT
+        frame.BackgroundTransparency = selected and 0.85 or 1
+        frame.BackgroundColor3 = ACCENT_DARK
+    end
+    ApplySelectionStyle(isSelected)
     
     local label = Instance.new("TextLabel")
     label.Parent = frame
@@ -2073,7 +2208,17 @@ local function CreatePlayerEntry(parent, player)
         btn.MouseLeave:Connect(function() 
             TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
         end)
+        AddPressAnim(btn)
         return btn
+    end
+    
+    frame.MouseButton1Click:Connect(function()
+        SetSelectedPlayer(player)
+    end)
+    
+    if player == selectedPlayer and player ~= lp then
+        statusLabel.Text = (statusLabel.Text ~= "" and statusLabel.Text .. " · " or "") .. "✓"
+        statusLabel.TextColor3 = ACCENT
     end
     
     if player ~= lp then
@@ -2356,6 +2501,8 @@ function UpdateRightContent()
         
     elseif CurrentTab == "  Players" then
         playerListContainer = CreateSection(RightContent, "👥 Player list")
+        local selectHint = CreateLabel(playerListContainer, "Click a player to select", TEXT_DIM)
+        selectHint.TextSize = 10
         UpdatePlayerList()
         
         local refreshBtn = CreateButton(RightContent, "🔄 Refresh list", function()
@@ -2410,54 +2557,27 @@ function UpdateRightContent()
     elseif CurrentTab == "  Fun" then
         local funSection = CreateSection(RightContent, "🎮 Fun commands")
         
-        local selectedPlayer = nil
-        local pickerBtn = nil
-        local function GetSelectedPlayer()
-            if selectedPlayer and selectedPlayer.Parent then
-                return selectedPlayer
-            end
-            return nil
-        end
-        local function CyclePlayer()
-            local players = game.Players:GetPlayers()
-            if #players == 0 then
-                selectedPlayer = nil
-                if pickerBtn then pickerBtn.Text = "👤 Player: None" end
-                return
-            end
-            if not GetSelectedPlayer() then
-                selectedPlayer = players[1]
-            else
-                for i, p in ipairs(players) do
-                    if p == selectedPlayer then
-                        selectedPlayer = players[i % #players + 1]
-                        break
-                    end
-                end
-            end
-            if pickerBtn then pickerBtn.Text = "👤 Player: " .. selectedPlayer.Name end
-        end
-        
-        pickerBtn = Instance.new("TextButton")
-        pickerBtn.Parent = funSection
-        pickerBtn.BorderSizePixel = 0
-        pickerBtn.Size = UDim2.new(1, 0, 0, 30)
-        pickerBtn.Font = Enum.Font.GothamBold
-        pickerBtn.Text = "👤 Player: None"
-        pickerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        pickerBtn.TextSize = 12
-        pickerBtn.BackgroundColor3 = Color3.fromRGB(24, 150, 90)
-        pickerBtn.BackgroundTransparency = 0.3
-        local pickerCorner = Instance.new("UICorner", pickerBtn)
+        selectedPlayerLabel = Instance.new("TextButton")
+        selectedPlayerLabel.Parent = funSection
+        selectedPlayerLabel.BorderSizePixel = 0
+        selectedPlayerLabel.Size = UDim2.new(1, 0, 0, 30)
+        selectedPlayerLabel.Font = Enum.Font.GothamBold
+        selectedPlayerLabel.Text = "👤 Player: None"
+        selectedPlayerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        selectedPlayerLabel.TextSize = 12
+        selectedPlayerLabel.BackgroundColor3 = TEAL
+        selectedPlayerLabel.BackgroundTransparency = 0.3
+        local pickerCorner = Instance.new("UICorner", selectedPlayerLabel)
         pickerCorner.CornerRadius = UDim.new(0, 8)
-        pickerBtn.MouseButton1Click:Connect(CyclePlayer)
-        pickerBtn.MouseEnter:Connect(function() 
-            TweenService:Create(pickerBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
+        selectedPlayerLabel.MouseButton1Click:Connect(CyclePlayer)
+        selectedPlayerLabel.MouseEnter:Connect(function() 
+            TweenService:Create(selectedPlayerLabel, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
         end)
-        pickerBtn.MouseLeave:Connect(function() 
-            TweenService:Create(pickerBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
+        selectedPlayerLabel.MouseLeave:Connect(function() 
+            TweenService:Create(selectedPlayerLabel, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
         end)
-        CyclePlayer()
+        AddPressAnim(selectedPlayerLabel)
+        if not GetSelectedPlayer() then CyclePlayer() end
         
         local btnRow1 = Instance.new("Frame")
         btnRow1.Parent = funSection
@@ -2731,7 +2851,7 @@ function UpdateRightContent()
         local bringAllBtn = Instance.new("TextButton")
         bringAllBtn.Parent = btnRow5
         bringAllBtn.BorderSizePixel = 0
-        bringAllBtn.Size = UDim2.new(0.48, 0, 0, 32)
+        bringAllBtn.Size = UDim2.new(0.31, 0, 0, 32)
         bringAllBtn.Font = Enum.Font.GothamBold
         bringAllBtn.Text = "🔗 Bring All"
         bringAllBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -2747,11 +2867,33 @@ function UpdateRightContent()
         bringAllBtn.MouseLeave:Connect(function() 
             TweenService:Create(bringAllBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
         end)
+        AddPressAnim(bringAllBtn)
+        
+        local unbringBtn = Instance.new("TextButton")
+        unbringBtn.Parent = btnRow5
+        unbringBtn.BorderSizePixel = 0
+        unbringBtn.Size = UDim2.new(0.31, 0, 0, 32)
+        unbringBtn.Font = Enum.Font.GothamBold
+        unbringBtn.Text = "🔙 Unbring"
+        unbringBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        unbringBtn.TextSize = 12
+        unbringBtn.BackgroundColor3 = TEAL
+        unbringBtn.BackgroundTransparency = 0.3
+        local unbringCorner = Instance.new("UICorner", unbringBtn)
+        unbringCorner.CornerRadius = UDim.new(0, 8)
+        unbringBtn.MouseButton1Click:Connect(UnbringSelected)
+        unbringBtn.MouseEnter:Connect(function() 
+            TweenService:Create(unbringBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
+        end)
+        unbringBtn.MouseLeave:Connect(function() 
+            TweenService:Create(unbringBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
+        end)
+        AddPressAnim(unbringBtn)
         
         local stopBringAllBtn = Instance.new("TextButton")
         stopBringAllBtn.Parent = btnRow5
         stopBringAllBtn.BorderSizePixel = 0
-        stopBringAllBtn.Size = UDim2.new(0.48, 0, 0, 32)
+        stopBringAllBtn.Size = UDim2.new(0.31, 0, 0, 32)
         stopBringAllBtn.Font = Enum.Font.GothamBold
         stopBringAllBtn.Text = "⏹ Stop Bring All"
         stopBringAllBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -2767,6 +2909,7 @@ function UpdateRightContent()
         stopBringAllBtn.MouseLeave:Connect(function() 
             TweenService:Create(stopBringAllBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
         end)
+        AddPressAnim(stopBringAllBtn)
         
         CreateToggle(funSection, "🌀 Spin", spinActive, function(val)
             spinActive = val
