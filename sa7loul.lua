@@ -2127,25 +2127,28 @@ end
 local function CreatePlayerEntry(parent, player)
     local frame = Instance.new("Frame")
     frame.Parent = parent
-    frame.BackgroundTransparency = 1
+    frame.BackgroundColor3 = BG_ELEMENT
+    frame.BackgroundTransparency = 0.9
     frame.Size = UDim2.new(1, 0, 0, 36)
     frame.LayoutOrder = #parent:GetChildren()
     frame.BorderSizePixel = 0
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
     
     local isSelected = (selectedPlayer == player)
     
     local function ApplySelectionStyle(selected)
         frame.BorderSizePixel = selected and 2 or 0
         frame.BorderColor3 = ACCENT
-        frame.BackgroundTransparency = selected and 0.85 or 1
-        frame.BackgroundColor3 = ACCENT_DARK
+        frame.BackgroundTransparency = selected and 0.75 or 0.9
+        frame.BackgroundColor3 = selected and ACCENT_DARK or BG_ELEMENT
     end
     ApplySelectionStyle(isSelected)
     
     local label = Instance.new("TextLabel")
     label.Parent = frame
     label.BackgroundTransparency = 1
-    label.Size = UDim2.new(0.38, 0, 1, 0)
+    label.Size = UDim2.new(0.72, 0, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
     label.Font = Enum.Font.GothamBold
     label.Text = player.Name
     label.TextColor3 = TEXT_PRIMARY
@@ -2156,13 +2159,14 @@ local function CreatePlayerEntry(parent, player)
     local statusLabel = Instance.new("TextLabel")
     statusLabel.Parent = frame
     statusLabel.BackgroundTransparency = 1
-    statusLabel.Size = UDim2.new(0.2, 0, 1, 0)
-    statusLabel.Position = UDim2.new(0.4, 0, 0, 0)
+    statusLabel.Size = UDim2.new(0.26, 0, 1, 0)
+    statusLabel.Position = UDim2.new(0.74, 0, 0, 0)
     statusLabel.Font = Enum.Font.Gotham
     statusLabel.TextColor3 = TEXT_SECONDARY
-    statusLabel.TextSize = 10
-    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    statusLabel.TextSize = 11
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Right
     statusLabel.TextYAlignment = Enum.TextYAlignment.Center
+    Instance.new("UIPadding", statusLabel).PaddingRight = UDim.new(0, 10)
     
     if player == lp then
         statusLabel.Text = "✦ You"
@@ -2177,39 +2181,9 @@ local function CreatePlayerEntry(parent, player)
         statusLabel.Text = ""
     end
     
-    local btnRow = Instance.new("Frame")
-    btnRow.Parent = frame
-    btnRow.BackgroundTransparency = 1
-    btnRow.Size = UDim2.new(0.35, 0, 1, 0)
-    btnRow.Position = UDim2.new(0.65, 0, 0, 0)
-    
-    local rowLayout = Instance.new("UIListLayout", btnRow)
-    rowLayout.FillDirection = Enum.FillDirection.Horizontal
-    rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-    rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    rowLayout.Padding = UDim.new(0, 4)
-    
-    local function createActionBtn(text, color, callback)
-        local btn = Instance.new("TextButton")
-        btn.Parent = btnRow
-        btn.BorderSizePixel = 0
-        btn.Size = UDim2.new(0, 40, 0, 24)
-        btn.Font = Enum.Font.GothamBold
-        btn.Text = text
-        btn.TextColor3 = Color3.fromRGB(255,255,255)
-        btn.TextSize = 10
-        btn.BackgroundColor3 = color
-        btn.BackgroundTransparency = 0.3
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-        btn.MouseButton1Click:Connect(callback)
-        btn.MouseEnter:Connect(function() 
-            TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
-        end)
-        btn.MouseLeave:Connect(function() 
-            TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
-        end)
-        AddPressAnim(btn)
-        return btn
+    if player == selectedPlayer and player ~= lp then
+        statusLabel.Text = (statusLabel.Text ~= "" and statusLabel.Text .. " " or "") .. "✓"
+        statusLabel.TextColor3 = ACCENT
     end
     
     frame.InputBegan:Connect(function(input)
@@ -2218,27 +2192,16 @@ local function CreatePlayerEntry(parent, player)
         end
     end)
     
-    if player == selectedPlayer and player ~= lp then
-        statusLabel.Text = (statusLabel.Text ~= "" and statusLabel.Text .. " · " or "") .. "✓"
-        statusLabel.TextColor3 = ACCENT
-    end
-    
-    if player ~= lp then
-        createActionBtn("Bring", ACCENT, function()
-            StartBring(player.Name)
-        end)
-        createActionBtn("View", Color3.fromRGB(50, 160, 255), function()
-            StartView(player.Name)
-        end)
-        createActionBtn("Freeze", Color3.fromRGB(255, 170, 50), function()
-            FreezePlayer(player.Name)
-        end)
-        createActionBtn("Unfreeze", Color3.fromRGB(120, 220, 120), function()
-            ThawPlayer(player.Name)
-        end)
-    else
-        createActionBtn("You", Color3.fromRGB(80,80,90), function() end)
-    end
+    frame.MouseEnter:Connect(function()
+        if selectedPlayer ~= player then
+            TweenService:Create(frame, TweenInfo.new(0.1), {BackgroundTransparency = 0.8}):Play()
+        end
+    end)
+    frame.MouseLeave:Connect(function()
+        if selectedPlayer ~= player then
+            TweenService:Create(frame, TweenInfo.new(0.15), {BackgroundTransparency = 0.9}):Play()
+        end
+    end)
     
     return frame
 end
@@ -2503,7 +2466,7 @@ function UpdateRightContent()
         
     elseif CurrentTab == "  Players" then
         playerListContainer = CreateSection(RightContent, "👥 Player list")
-        local selectHint = CreateLabel(playerListContainer, "Click a player to select", TEXT_DIM)
+        local selectHint = CreateLabel(playerListContainer, "Click a row to select — actions are in Fun tab", TEXT_DIM)
         selectHint.TextSize = 10
         UpdatePlayerList()
         
