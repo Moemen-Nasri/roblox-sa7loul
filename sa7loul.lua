@@ -2314,7 +2314,7 @@ local function CreatePlayerEntry(parent, player)
             local btn = Instance.new("TextButton")
             btn.Parent = btnRow
             btn.BorderSizePixel = 0
-            btn.Size = UDim2.new(0, 38, 0, 26)
+            btn.Size = UDim2.new(0, 34, 0, 26)
             btn.Font = Enum.Font.GothamBold
             btn.Text = icon
             btn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -2339,6 +2339,24 @@ local function CreatePlayerEntry(parent, player)
             return btn
         end
         
+        createToggleBtn("🔗", ACCENT, ACCENT_DARK, function(on)
+            if on then StartBring(player.Name) else StopBring() end
+        end)
+        createToggleBtn("🌀", TEAL, Color3.fromRGB(30, 150, 130), function()
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                local root = player.Character.HumanoidRootPart
+                root.Anchored = true
+                root.CFrame = lp.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
+                task.wait(0.15)
+                root.Anchored = false
+                notif("Teleported: " .. player.Name, 2)
+            else
+                notif("Player not found", 2)
+            end
+        end)
+        createToggleBtn("🦅", Color3.fromRGB(120, 90, 255), Color3.fromRGB(80, 50, 220), function()
+            GiveFlyNoClip(player)
+        end)
         createToggleBtn("👁", Color3.fromRGB(50, 160, 255), Color3.fromRGB(30, 110, 200), function(on)
             if on then StartView(player.Name) else StopView() end
         end)
@@ -2624,7 +2642,7 @@ function UpdateRightContent()
         
     elseif CurrentTab == "  Players" then
         playerListContainer = CreateSection(RightContent, "👥 Player list")
-        local selectHint = CreateLabel(playerListContainer, "Click row to select · 👁 Spectate (click again = OFF)", TEXT_DIM)
+        local selectHint = CreateLabel(playerListContainer, "Click row to select · 🔗 Bring 🌀 TP 🦅 Fly+NoClip 👁 Spectate (click again = OFF)", TEXT_DIM)
         selectHint.TextSize = 10
         UpdatePlayerList()
         
