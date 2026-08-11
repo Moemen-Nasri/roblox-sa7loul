@@ -137,6 +137,9 @@ local playerListContainer = nil
 local selectedPlayer = nil
 local selectedPlayerLabel = nil
 local bringOrigins = {}
+local flyFx = {}
+local adminRemotesCache = nil
+local unpack2 = table.unpack or unpack
 
 local function AddPressAnim(btn)
     btn.MouseButton1Down:Connect(function()
@@ -994,6 +997,106 @@ local function UnbringSelected()
         notif("Unbrought " .. restored .. " player(s)", 2)
     else
         notif("Nothing to unbring", 2)
+    end
+end
+
+local function ScanAdminRemotes()
+    if adminRemotesCache then return adminRemotesCache end
+    adminRemotesCache = {}
+    local roots = {game:GetService("ReplicatedStorage"), workspace:FindFirstChild("ServerStorage"), game:GetService("ServerScriptService")}
+    for _, root in ipairs(roots) do
+        if root then
+            for _, obj in ipairs(root:GetDescendants()) do
+                if (obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction")) then
+                    local n = string.lower(obj.Name)
+                    if n:match("fly") or n:match("noclip") or n:match("admin") or n:match("command")
+                        or n:match("^cmd") or n:match("perm") or n:match("panel") or n:match("give") or n:match("staff") then
+                        table.insert(adminRemotesCache, obj)
+                    end
+                end
+            end
+        end
+    end
+    return adminRemotesCache
+end
+
+local function TryFireAdminRemote(target)
+    local remotes = ScanAdminRemotes()
+    if #remotes == 0 then return false end
+    local payloads = {
+        {"fly", true}, {"noclip", true},
+        {"fly", target.Name}, {"noclip", target.Name},
+        {"fly", target.Name, true}, {"noclip", target.Name, true},
+        {"fly", target}, {"noclip", target},
+        {"fly", target.UserId, true}, {"noclip", target.UserId, true},
+        {"Fly", target.Name}, {"Noclip", target.Name},
+        {"givefly", target.Name}, {"givenoclip", target.Name},
+        {"Fly", target}, {"Noclip", target}
+    }
+    for _, remote in ipairs(remotes) do
+        for _, args in ipairs(payloads) do
+            local fired = pcall(function()
+                if remote:IsA("RemoteFunction") then
+                    remote:InvokeServer(unpack2(args))
+                else
+                    remote:FireServer(unpack2(args))
+                end
+            end)
+            if fired then return true end
+        end
+        local firedRaw = pcall(function()
+            if remote:IsA("RemoteFunction") then
+                remote:InvokeServer(target)
+            else
+                remote:FireServer(target)
+            end
+        end)
+        if firedRaw then return true end
+    end
+    return false
+end
+
+local function GiveFlyNoClip(target)
+    if not target then return end
+    local fx = flyFx[target]
+    if fx then
+        if fx.connection then fx.connection:Disconnect() end
+        if fx.bv and fx.bv.Parent then fx.bv:Destroy() end
+        if target.Character then
+            for _, part in ipairs(target.Character:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = true end
+            end
+        end
+        flyFx[target] = nil
+        notif("Fly+NoClip OFF: " .. target.Name, 2)
+        return
+    end
+    
+    local adminHit = TryFireAdminRemote(target)
+    
+    if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local root = target.Character.HumanoidRootPart
+        local bv = Instance.new("BodyVelocity")
+        bv.Name = "Sa7loulFly"
+        bv.MaxForce = Vector3.new(0, 9e9, 0)
+        bv.Velocity = Vector3.new(0, 0, 0)
+        bv.P = 120000
+        bv.Parent = root
+        local conn = RunService.Stepped:Connect(function()
+            if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                local r = target.Character.HumanoidRootPart
+                local v = r.AssemblyLinearVelocity
+                if v.Y < 0 then r.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z) end
+                bv.Velocity = Vector3.new(0, 0, 0)
+                for _, part in ipairs(target.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
+            end
+        end)
+        flyFx[target] = {bv = bv, connection = conn}
+        notif((adminHit and "Admin give Fly+NoClip: " or "Fly+NoClip: ") .. target.Name, 2)
+    else
+        notif("Target has no character", 2)
     end
 end
 
@@ -2147,7 +2250,7 @@ local function CreatePlayerEntry(parent, player)
     local label = Instance.new("TextLabel")
     label.Parent = frame
     label.BackgroundTransparency = 1
-    label.Size = UDim2.new(0.72, 0, 1, 0)
+    label.Size = UDim2.new(0.36, 0, 1, 0)
     label.Position = UDim2.new(0, 10, 0, 0)
     label.Font = Enum.Font.GothamBold
     label.Text = player.Name
@@ -2159,14 +2262,13 @@ local function CreatePlayerEntry(parent, player)
     local statusLabel = Instance.new("TextLabel")
     statusLabel.Parent = frame
     statusLabel.BackgroundTransparency = 1
-    statusLabel.Size = UDim2.new(0.26, 0, 1, 0)
-    statusLabel.Position = UDim2.new(0.74, 0, 0, 0)
+    statusLabel.Size = UDim2.new(0.16, 0, 1, 0)
+    statusLabel.Position = UDim2.new(0.36, 0, 0, 0)
     statusLabel.Font = Enum.Font.Gotham
     statusLabel.TextColor3 = TEXT_SECONDARY
     statusLabel.TextSize = 11
-    statusLabel.TextXAlignment = Enum.TextXAlignment.Right
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.TextYAlignment = Enum.TextYAlignment.Center
-    Instance.new("UIPadding", statusLabel).PaddingRight = UDim.new(0, 10)
     
     if player == lp then
         statusLabel.Text = "✦ You"
@@ -2184,6 +2286,59 @@ local function CreatePlayerEntry(parent, player)
     if player == selectedPlayer and player ~= lp then
         statusLabel.Text = (statusLabel.Text ~= "" and statusLabel.Text .. " " or "") .. "✓"
         statusLabel.TextColor3 = ACCENT
+    end
+    
+    if player ~= lp then
+        local btnRow = Instance.new("Frame")
+        btnRow.Parent = frame
+        btnRow.BackgroundTransparency = 1
+        btnRow.Size = UDim2.new(0.42, 0, 1, 0)
+        btnRow.Position = UDim2.new(0.58, 0, 0, 0)
+        
+        local rowLayout = Instance.new("UIListLayout", btnRow)
+        rowLayout.FillDirection = Enum.FillDirection.Horizontal
+        rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        rowLayout.Padding = UDim.new(0, 4)
+        
+        local function createToggleBtn(icon, color, onColor, callback)
+            local btn = Instance.new("TextButton")
+            btn.Parent = btnRow
+            btn.BorderSizePixel = 0
+            btn.Size = UDim2.new(0, 38, 0, 26)
+            btn.Font = Enum.Font.GothamBold
+            btn.Text = icon
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.TextSize = 13
+            btn.BackgroundColor3 = color
+            btn.BackgroundTransparency = 0.3
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+            local state = false
+            btn.MouseButton1Click:Connect(function()
+                state = not state
+                btn.BackgroundColor3 = state and onColor or color
+                TweenService:Create(btn, TweenInfo.new(0.12), {BackgroundTransparency = state and 0 or 0.3}):Play()
+                callback(state)
+            end)
+            btn.MouseEnter:Connect(function()
+                TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundTransparency = 0}):Play()
+            end)
+            btn.MouseLeave:Connect(function()
+                TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = state and 0 or 0.3}):Play()
+            end)
+            AddPressAnim(btn)
+            return btn
+        end
+        
+        createToggleBtn("🔗", ACCENT, ACCENT_DARK, function(on)
+            if on then StartBring(player.Name) else StopBring() end
+        end)
+        createToggleBtn("👁", Color3.fromRGB(50, 160, 255), Color3.fromRGB(30, 110, 200), function(on)
+            if on then StartView(player.Name) else StopView() end
+        end)
+        createToggleBtn("🦅", Color3.fromRGB(120, 90, 255), Color3.fromRGB(80, 50, 220), function()
+            GiveFlyNoClip(player)
+        end)
     end
     
     frame.InputBegan:Connect(function(input)
@@ -2466,7 +2621,7 @@ function UpdateRightContent()
         
     elseif CurrentTab == "  Players" then
         playerListContainer = CreateSection(RightContent, "👥 Player list")
-        local selectHint = CreateLabel(playerListContainer, "Click a row to select — actions are in Fun tab", TEXT_DIM)
+        local selectHint = CreateLabel(playerListContainer, "Click row to select · 🔗 Bring 👁 Spectate 🦅 Fly+NoClip (click again = OFF)", TEXT_DIM)
         selectHint.TextSize = 10
         UpdatePlayerList()
         
