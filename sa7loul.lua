@@ -290,9 +290,11 @@ local function StartBring(targetName)
             bp.Position = targetPos
             for _, part in ipairs(target.Character:GetDescendants()) do
                 if part:IsA("BasePart") and part ~= targetRoot then
+                    part.Anchored = true
                     part.CFrame = part.CFrame + delta
                 end
             end
+            targetRoot.Anchored = true
             targetRoot.CFrame = CFrame.new(targetPos)
             targetRoot.AssemblyLinearVelocity = Vector3.zero
             targetRoot.AssemblyAngularVelocity = Vector3.zero
@@ -934,9 +936,11 @@ local function StartBringAll()
                 bp.Position = targetPos
                 for _, part in ipairs(player.Character:GetDescendants()) do
                     if part:IsA("BasePart") and part ~= root then
+                        part.Anchored = true
                         part.CFrame = part.CFrame + delta
                     end
                 end
+                root.Anchored = true
                 root.CFrame = CFrame.new(targetPos)
                 root.AssemblyLinearVelocity = Vector3.zero
                 local hum = player.Character:FindFirstChildOfClass("Humanoid")
@@ -968,15 +972,20 @@ local function UnbringPlayer(player)
         bringOrigins[player] = nil
         local ok = pcall(function()
             for part, cf in pairs(save.parts) do
-                if part and part.Parent then part.CFrame = cf end
+                if part and part.Parent then
+                    part.CFrame = cf
+                    part.Anchored = false
+                end
             end
             if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                player.Character.HumanoidRootPart.CFrame = save.root
-                if player.Character.HumanoidRootPart:FindFirstChild("BringHold") then
-                    player.Character.HumanoidRootPart.BringHold:Destroy()
+                local root = player.Character.HumanoidRootPart
+                root.CFrame = save.root
+                root.Anchored = false
+                if root:FindFirstChild("BringHold") then
+                    root.BringHold:Destroy()
                 end
-                if player.Character.HumanoidRootPart:FindFirstChild("BringAllHold") then
-                    player.Character.HumanoidRootPart.BringAllHold:Destroy()
+                if root:FindFirstChild("BringAllHold") then
+                    root.BringAllHold:Destroy()
                 end
             end
         end)
@@ -2330,14 +2339,8 @@ local function CreatePlayerEntry(parent, player)
             return btn
         end
         
-        createToggleBtn("🔗", ACCENT, ACCENT_DARK, function(on)
-            if on then StartBring(player.Name) else StopBring() end
-        end)
         createToggleBtn("👁", Color3.fromRGB(50, 160, 255), Color3.fromRGB(30, 110, 200), function(on)
             if on then StartView(player.Name) else StopView() end
-        end)
-        createToggleBtn("🦅", Color3.fromRGB(120, 90, 255), Color3.fromRGB(80, 50, 220), function()
-            GiveFlyNoClip(player)
         end)
     end
     
@@ -2621,7 +2624,7 @@ function UpdateRightContent()
         
     elseif CurrentTab == "  Players" then
         playerListContainer = CreateSection(RightContent, "👥 Player list")
-        local selectHint = CreateLabel(playerListContainer, "Click row to select · 🔗 Bring 👁 Spectate 🦅 Fly+NoClip (click again = OFF)", TEXT_DIM)
+        local selectHint = CreateLabel(playerListContainer, "Click row to select · 👁 Spectate (click again = OFF)", TEXT_DIM)
         selectHint.TextSize = 10
         UpdatePlayerList()
         
