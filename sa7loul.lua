@@ -1,4 +1,4 @@
--- VuaN | Survive the Killer V2
+-- sa7loul | Survive the Killer V2
 -- Support version v2.31.0
 
 local configs = {
@@ -39,7 +39,7 @@ local userScripts = {}
 
 local function LoadUserScripts()
     local success, data = pcall(function()
-        return game:GetService("HttpService"):JSONDecode(readfile("VuaN_Scripts.json"))
+        return game:GetService("HttpService"):JSONDecode(readfile("sa7loul_Scripts.json"))
     end)
     if success and data then
         userScripts = data
@@ -48,7 +48,7 @@ end
 
 local function SaveUserScripts()
     pcall(function()
-        writefile("VuaN_Scripts.json", game:GetService("HttpService"):JSONEncode(userScripts))
+        writefile("sa7loul_Scripts.json", game:GetService("HttpService"):JSONEncode(userScripts))
     end)
 end
 
@@ -88,7 +88,7 @@ local BORDER_COLOR = Color3.fromRGB(45, 45, 60)
 local function notif(str, dur)
     pcall(function()
         StarterGui:SetCore("SendNotification", {
-            Title = "⏤ VSTK V2",
+            Title = "⏤ sa7loul",
             Text = str,
             Duration = dur or 3
         })
@@ -103,6 +103,8 @@ end
 local spinActive = false
 local spinSpeed = 20
 local bringActive = false
+local bringLockActive = false
+local bringLockTarget = nil
 local FlingActive = false
 local viewing = nil
 local viewDied = nil
@@ -131,6 +133,7 @@ local lastEscapeTime = 0
 local timerActive = false
 local panicTPCooldown = 0
 local playerListContainer = nil
+local spectateStates = {} -- player name -> boolean
 
 local function GetPlayerByName(name)
     local found = nil
@@ -183,6 +186,7 @@ local function FindMap()
     return nil
 end
 
+-- ============= BRING (Normal) =============
 local function StartBring(targetName)
     local target = GetPlayerByName(targetName)
     if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
@@ -223,6 +227,166 @@ local function StopBring()
     notif("Bring stopped", 2)
 end
 
+-- ============= BRING LOCK (Sticky) =============
+local function StartBringLock(targetName)
+    local target = GetPlayerByName(targetName)
+    if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
+        notif("Player not found", 2)
+        return
+    end
+    
+    if bringLockActive and bringLockTarget == target then
+        -- toggle off
+        bringLockActive = false
+        bringLockTarget = nil
+        notif("Bring Lock stopped", 2)
+        return
+    end
+    
+    bringLockActive = true
+    bringLockTarget = target
+    notif("Bring Lock ON: " .. target.Name, 2)
+    
+    -- stop normal bring if running
+    bringActive = false
+    
+    coroutine.wrap(function()
+        while bringLockActive and bringLockTarget and bringLockTarget.Character and bringLockTarget.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") do
+            local targetRoot = bringLockTarget.Character.HumanoidRootPart
+            local myRoot = lp.Character.HumanoidRootPart
+            
+            targetRoot.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3)
+            
+            local hum = bringLockTarget.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.Velocity = Vector3.new(0, 0, 0)
+                hum.PlatformStand = true
+            end
+            
+            RunService.Heartbeat:Wait()
+        end
+        
+        if bringLockTarget and bringLockTarget.Character then
+            local hum = bringLockTarget.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.PlatformStand = false end
+        end
+        bringLockActive = false
+        bringLockTarget = nil
+        notif("Bring Lock stopped (target lost)", 2)
+    end)()
+end
+
+local function StopBringLock()
+    bringLockActive = false
+    bringLockTarget = nil
+    notif("Bring Lock stopped", 2)
+end
+
+-- ============= BRING ALL =============
+local function BringAllPlayers()
+    local brought = 0
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if player ~= lp and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local root = player.Character.HumanoidRootPart
+            local forward = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and lp.Character.HumanoidRootPart.CFrame.LookVector or Vector3.new(0,0,1)
+            root.CFrame = lp.Character.HumanoidRootPart.CFrame + (forward * 3)
+            brought = brought + 1
+            task.wait(0.05)
+        end
+    end
+    notif("Brought " .. brought .. " players", 2)
+end
+
+-- ============= BRING ALL LOCK =============
+local bringAllLockActive = false
+local bringAllLockTargets = {}
+
+local function BringAllLock()
+    if bringAllLockActive then
+        -- toggle off
+        bringAllLockActive = false
+        bringAllLockTargets = {}
+        notif("Bring All Lock stopped", 2)
+        return
+    end
+    
+    bringAllLockActive = true
+    bringAllLockTargets = {}
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if player ~= lp and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            table.insert(bringAllLockTargets, player)
+        end
+    end
+    
+    if #bringAllLockTargets == 0 then
+        bringAllLockActive = false
+        notif("No players to bring", 2)
+        return
+    end
+    
+    notif("Bring All Lock ON: " .. #bringAllLockTargets .. " players", 2)
+    
+    coroutine.wrap(function()
+        while bringAllLockActive and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") do
+            for _, player in ipairs(bringAllLockTargets) do
+                if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local targetRoot = player.Character.HumanoidRootPart
+                    local myRoot = lp.Character.HumanoidRootPart
+                    
+                    targetRoot.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3)
+                    
+                    local hum = player.Character:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        hum.Velocity = Vector3.new(0, 0, 0)
+                        hum.PlatformStand = true
+                    end
+                end
+            end
+            RunService.Heartbeat:Wait()
+        end
+        
+        for _, player in ipairs(bringAllLockTargets) do
+            if player and player.Character then
+                local hum = player.Character:FindFirstChildOfClass("Humanoid")
+                if hum then hum.PlatformStand = false end
+            end
+        end
+        bringAllLockActive = false
+        bringAllLockTargets = {}
+        notif("Bring All Lock stopped", 2)
+    end)()
+end
+
+-- ============= VIEW / SPECTATE (Toggle) =============
+local function ToggleSpectate(targetName)
+    local target = GetPlayerByName(targetName)
+    if not target then
+        notif("Player not found", 2)
+        return
+    end
+    
+    local currentState = spectateStates[targetName] or false
+    
+    if currentState then
+        -- turn off
+        spectateStates[targetName] = false
+        if viewing == target then
+            StopView()
+        end
+        notif("Spectate OFF: " .. target.Name, 2)
+    else
+        -- turn on
+        spectateStates[targetName] = true
+        StartView(target.Name)
+        notif("Spectate ON: " .. target.Name, 2)
+    end
+    
+    -- refresh the player list to update button colors
+    if CurrentTab == "  Players" then
+        UpdatePlayerList()
+    end
+end
+
 local function StartView(targetName)
     local target = GetPlayerByName(targetName)
     if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
@@ -250,6 +414,8 @@ end
 
 local function StopView()
     if viewing then
+        local name = viewing.Name
+        spectateStates[name] = false
         viewing = nil
         notif("View turned off", 2)
     end
@@ -257,6 +423,9 @@ local function StopView()
     if viewChanged then viewChanged:Disconnect(); viewChanged = nil end
     if lp.Character and lp.Character:FindFirstChild("Humanoid") then
         workspace.CurrentCamera.CameraSubject = lp.Character.Humanoid
+    end
+    if CurrentTab == "  Players" then
+        UpdatePlayerList()
     end
 end
 
@@ -1232,7 +1401,7 @@ local function SaveConfig(name)
     end
     configData.userScripts = userScripts
     
-    local configsFolder = "VuaN_Configs"
+    local configsFolder = "sa7loul_Configs"
     if not isfolder(configsFolder) then
         makefolder(configsFolder)
     end
@@ -1251,7 +1420,7 @@ local function SaveConfig(name)
 end
 
 local function LoadConfig(name)
-    local configsFolder = "VuaN_Configs"
+    local configsFolder = "sa7loul_Configs"
     if not isfolder(configsFolder) then
         notif("No configs folder", 2)
         return false
@@ -1284,7 +1453,7 @@ local function LoadConfig(name)
 end
 
 local function GetConfigList()
-    local configsFolder = "VuaN_Configs"
+    local configsFolder = "sa7loul_Configs"
     if not isfolder(configsFolder) then
         makefolder(configsFolder)
         return {}
@@ -1301,7 +1470,7 @@ local function GetConfigList()
 end
 
 local function DeleteConfig(name)
-    local configsFolder = "VuaN_Configs"
+    local configsFolder = "sa7loul_Configs"
     if isfolder(configsFolder) then
         pcall(function()
             delfile(configsFolder .. "/" .. name .. ".json")
@@ -1462,7 +1631,7 @@ end
 -- UI
 
 local h = Instance.new("ScreenGui")
-h.Name = "VuaN_STK"
+h.Name = "sa7loul_STK"
 h.Parent = game:GetService("CoreGui")
 h.ResetOnSpawn = false
 h.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -1511,7 +1680,7 @@ TitleLabel.BackgroundTransparency = 1
 TitleLabel.Position = UDim2.new(0, 20, 0, 0)
 TitleLabel.Size = UDim2.new(1, -60, 1, 0)
 TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.Text = "✦ VuaN | VSTK V2"
+TitleLabel.Text = "✦ sa7loul | V2"
 TitleLabel.TextColor3 = ACCENT
 TitleLabel.TextSize = 18
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -1928,17 +2097,18 @@ local function CreateSlider(parent, text, min, max, default, callback)
     return frame
 end
 
+-- ============= PLAYER LIST ENTRY =============
 local function CreatePlayerEntry(parent, player)
     local frame = Instance.new("Frame")
     frame.Parent = parent
     frame.BackgroundTransparency = 1
-    frame.Size = UDim2.new(1, 0, 0, 36)
+    frame.Size = UDim2.new(1, 0, 0, 46)
     frame.LayoutOrder = #parent:GetChildren()
     
     local label = Instance.new("TextLabel")
     label.Parent = frame
     label.BackgroundTransparency = 1
-    label.Size = UDim2.new(0.38, 0, 1, 0)
+    label.Size = UDim2.new(0.3, 0, 1, 0)
     label.Font = Enum.Font.GothamBold
     label.Text = player.Name
     label.TextColor3 = TEXT_PRIMARY
@@ -1949,8 +2119,8 @@ local function CreatePlayerEntry(parent, player)
     local statusLabel = Instance.new("TextLabel")
     statusLabel.Parent = frame
     statusLabel.BackgroundTransparency = 1
-    statusLabel.Size = UDim2.new(0.2, 0, 1, 0)
-    statusLabel.Position = UDim2.new(0.4, 0, 0, 0)
+    statusLabel.Size = UDim2.new(0.15, 0, 1, 0)
+    statusLabel.Position = UDim2.new(0.32, 0, 0, 0)
     statusLabel.Font = Enum.Font.Gotham
     statusLabel.TextColor3 = TEXT_SECONDARY
     statusLabel.TextSize = 10
@@ -1973,8 +2143,8 @@ local function CreatePlayerEntry(parent, player)
     local btnRow = Instance.new("Frame")
     btnRow.Parent = frame
     btnRow.BackgroundTransparency = 1
-    btnRow.Size = UDim2.new(0.35, 0, 1, 0)
-    btnRow.Position = UDim2.new(0.65, 0, 0, 0)
+    btnRow.Size = UDim2.new(0.5, 0, 1, 0)
+    btnRow.Position = UDim2.new(0.5, 0, 0, 0)
     
     local rowLayout = Instance.new("UIListLayout", btnRow)
     rowLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -1982,11 +2152,11 @@ local function CreatePlayerEntry(parent, player)
     rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     rowLayout.Padding = UDim.new(0, 4)
     
-    local function createActionBtn(text, color, callback)
+    local function createActionBtn(text, color, callback, width)
         local btn = Instance.new("TextButton")
         btn.Parent = btnRow
         btn.BorderSizePixel = 0
-        btn.Size = UDim2.new(0, 46, 0, 24)
+        btn.Size = UDim2.new(0, width or 46, 0, 26)
         btn.Font = Enum.Font.GothamBold
         btn.Text = text
         btn.TextColor3 = Color3.fromRGB(255,255,255)
@@ -2005,17 +2175,27 @@ local function CreatePlayerEntry(parent, player)
     end
     
     if player ~= lp then
+        -- Bring (normal)
         createActionBtn("Bring", ACCENT, function()
             StartBring(player.Name)
-        end)
-        createActionBtn("View", Color3.fromRGB(50, 160, 255), function()
-            StartView(player.Name)
-        end)
-        createActionBtn("Freeze", Color3.fromRGB(255, 170, 50), function()
-            FreezePlayer(player.Name)
-        end)
+        end, 44)
+        
+        -- Bring Lock (sticky)
+        local isLocked = (bringLockTarget == player and bringLockActive)
+        local lockColor = isLocked and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(80, 200, 80)
+        createActionBtn("Lock", lockColor, function()
+            StartBringLock(player.Name)
+            if CurrentTab == "  Players" then UpdatePlayerList() end
+        end, 40)
+        
+        -- Spectate (toggle: blue = ON, red = OFF)
+        local isSpectating = spectateStates[player.Name] or false
+        local specColor = isSpectating and Color3.fromRGB(50, 150, 255) or Color3.fromRGB(200, 60, 60)
+        createActionBtn("👁", specColor, function()
+            ToggleSpectate(player.Name)
+        end, 34)
     else
-        createActionBtn("You", Color3.fromRGB(80,80,90), function() end)
+        createActionBtn("You", Color3.fromRGB(80,80,90), function() end, 40)
     end
     
     return frame
@@ -2059,7 +2239,7 @@ function UpdateRightContent()
     
     if CurrentTab == "  About" then
         local aboutSection = CreateSection(RightContent, "ℹ️ About")
-        CreateLabel(aboutSection, "⏤ VuaN | Survive the Killer", ACCENT).TextSize = 18
+        CreateLabel(aboutSection, "⏤ sa7loul | Survive the Killer", ACCENT).TextSize = 18
         CreateLabel(aboutSection, "Version V2.31", TEXT_SECONDARY).TextSize = 11
         CreateLabel(aboutSection, "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯", TEXT_DIM).TextSize = 10
         
@@ -2289,17 +2469,65 @@ function UpdateRightContent()
         playerListContainer = CreateSection(RightContent, "👥 Player List")
         UpdatePlayerList()
         
-        local refreshBtn = CreateButton(RightContent, "🔄 Refresh List", function()
+        -- TOP BUTTONS ROW
+        local btnRowTop = Instance.new("Frame")
+        btnRowTop.Parent = RightContent
+        btnRowTop.BackgroundTransparency = 1
+        btnRowTop.Size = UDim2.new(1, 0, 0, 38)
+        btnRowTop.LayoutOrder = #RightContent:GetChildren()
+        
+        local rowLayoutTop = Instance.new("UIListLayout", btnRowTop)
+        rowLayoutTop.FillDirection = Enum.FillDirection.Horizontal
+        rowLayoutTop.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        rowLayoutTop.VerticalAlignment = Enum.VerticalAlignment.Center
+        rowLayoutTop.Padding = UDim.new(0, 8)
+        
+        local function createTopBtn(text, color, callback)
+            local btn = Instance.new("TextButton")
+            btn.Parent = btnRowTop
+            btn.BorderSizePixel = 0
+            btn.Size = UDim2.new(0.23, 0, 0, 32)
+            btn.Font = Enum.Font.GothamBold
+            btn.Text = text
+            btn.TextColor3 = Color3.fromRGB(255,255,255)
+            btn.TextSize = 11
+            btn.BackgroundColor3 = color
+            btn.BackgroundTransparency = 0.3
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+            btn.MouseButton1Click:Connect(callback)
+            btn.MouseEnter:Connect(function() 
+                TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
+            end)
+            btn.MouseLeave:Connect(function() 
+                TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
+            end)
+            return btn
+        end
+        
+        createTopBtn("🔄 Refresh", Color3.fromRGB(80, 160, 255), function()
             UpdatePlayerList()
         end)
-        refreshBtn.Size = UDim2.new(0.48, 0, 0, 30)
         
-        local stopAllBtn = CreateButton(RightContent, "⏹ Stop All", function()
+        createTopBtn("📦 Bring All", Color3.fromRGB(255, 170, 50), function()
+            BringAllPlayers()
+        end)
+        
+        local allLockActive = bringAllLockActive
+        local allLockColor = allLockActive and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(80, 200, 80)
+        createTopBtn(allLockActive and "🔒 Lock All ON" or "🔓 Lock All OFF", allLockColor, function()
+            BringAllLock()
+            if CurrentTab == "  Players" then UpdatePlayerList() end
+        end)
+        
+        createTopBtn("⏹ Stop All", Color3.fromRGB(200, 60, 60), function()
             StopView()
             StopBring()
+            StopBringLock()
+            bringAllLockActive = false
+            bringAllLockTargets = {}
+            if CurrentTab == "  Players" then UpdatePlayerList() end
             notif("Stopped all actions", 2)
         end)
-        stopAllBtn.Size = UDim2.new(0.48, 0, 0, 30)
         
     elseif CurrentTab == "  Revive" then
         local reviveSection = CreateSection(RightContent, "💉 Revive Modes")
@@ -2981,4 +3209,4 @@ UpdateKillerChance()
 UpdateRightContent()
 UpdateAllFeatures()
 
-notif("✨ VSTK V2 Loaded", 3)
+notif("✨ sa7loul Loaded", 3)
