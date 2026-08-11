@@ -2212,8 +2212,10 @@ local function CreatePlayerEntry(parent, player)
         return btn
     end
     
-    frame.MouseButton1Click:Connect(function()
-        SetSelectedPlayer(player)
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            SetSelectedPlayer(player)
+        end
     end)
     
     if player == selectedPlayer and player ~= lp then
@@ -2245,7 +2247,7 @@ local function UpdatePlayerList()
     if CurrentTab ~= "  Players" then return end
     if not playerListContainer then return end
     
-    for _, child in pairs(playerListContainer:GetChildren()) do
+    for _, child in ipairs(playerListContainer:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
     end
     
@@ -2267,7 +2269,7 @@ local function UpdatePlayerList()
 end
 
 local function ClearRightContent()
-    for _, child in pairs(RightContent:GetChildren()) do
+    for _, child in ipairs(RightContent:GetChildren()) do
         if child:IsA("Frame") or child:IsA("TextLabel") or child:IsA("ScrollingFrame") then 
             child:Destroy() 
         end
