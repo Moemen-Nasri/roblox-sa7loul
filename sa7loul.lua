@@ -1,4 +1,4 @@
--- VuaN | Survive the Killer V2
+-- sa7loul | Survive the Killer V2
 -- Support version v2.31.0
 
 local configs = {
@@ -39,7 +39,7 @@ local userScripts = {}
 
 local function LoadUserScripts()
     local success, data = pcall(function()
-        return game:GetService("HttpService"):JSONDecode(readfile("VuaN_Scripts.json"))
+        return game:GetService("HttpService"):JSONDecode(readfile("sa7loul_Scripts.json"))
     end)
     if success and data then
         userScripts = data
@@ -48,7 +48,7 @@ end
 
 local function SaveUserScripts()
     pcall(function()
-        writefile("VuaN_Scripts.json", game:GetService("HttpService"):JSONEncode(userScripts))
+        writefile("sa7loul_Scripts.json", game:GetService("HttpService"):JSONEncode(userScripts))
     end)
 end
 
@@ -56,7 +56,7 @@ LoadUserScripts()
 
 local more_scripts = {
     {
-        name = "VSTK V1.4",
+        name = "sa7loul V1.4",
         script = "loadstring(game:HttpGet('https://raw.githubusercontent.com/AuriXDev/VHubs/refs/heads/main/old/STK_V1_4.lua'))()"
     },
     {
@@ -74,7 +74,7 @@ local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 
 -- DESIGN COLORS — smoother palette
-local ACCENT = Color3.fromRGB(255, 140, 80)      -- برتقالي ناعم
+local ACCENT = Color3.fromRGB(255, 140, 80)      -- soft orange
 local ACCENT_DARK = Color3.fromRGB(200, 100, 50)
 local BG_MAIN = Color3.fromRGB(18, 18, 24)
 local BG_PANEL = Color3.fromRGB(24, 24, 32)
@@ -88,7 +88,7 @@ local BORDER_COLOR = Color3.fromRGB(45, 45, 60)
 local function notif(str, dur)
     pcall(function()
         StarterGui:SetCore("SendNotification", {
-            Title = "⏤ VSTK V2",
+            Title = "⏤ sa7loul V2",
             Text = str,
             Duration = dur or 3
         })
@@ -103,6 +103,7 @@ end
 local spinActive = false
 local spinSpeed = 20
 local bringActive = false
+local bringAllActive = false
 local FlingActive = false
 local viewing = nil
 local viewDied = nil
@@ -187,12 +188,12 @@ end
 local function StartBring(targetName)
     local target = GetPlayerByName(targetName)
     if not (target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")) then
-        notif("اللاعب غير موجود", 2)
+        notif("Player not found", 2)
         return
     end
     if bringActive then StopBring() end
     bringActive = true
-    notif("جاري جلب: " .. target.Name, 2)
+    notif("Bringing: " .. target.Name, 2)
     
     coroutine.wrap(function()
         local bp = nil
@@ -234,13 +235,13 @@ local function StartBring(targetName)
             end
         end
         bringActive = false
-        notif("تم إيقاف الجلب", 2)
+        notif("Bring stopped", 2)
     end)()
 end
 
 local function StopBring()
     bringActive = false
-    notif("تم إيقاف الجلب", 2)
+    notif("Bring stopped", 2)
 end
 
 local function StartView(targetName)
@@ -251,7 +252,7 @@ local function StartView(targetName)
         
         viewing = target
         workspace.CurrentCamera.CameraSubject = viewing.Character
-        notif("مشاهدة: " .. target.Name, 2)
+        notif("Watching: " .. target.Name, 2)
         
         viewDied = target.CharacterAdded:Connect(function()
             repeat task.wait() until target.Character and target.Character:FindFirstChild("HumanoidRootPart")
@@ -264,14 +265,14 @@ local function StartView(targetName)
             end
         end)
     else
-        notif("اللاعب غير موجود", 2)
+        notif("Player not found", 2)
     end
 end
 
 local function StopView()
     if viewing then
         viewing = nil
-        notif("تم إيقاف المشاهدة", 2)
+        notif("View stopped", 2)
     end
     if viewDied then viewDied:Disconnect(); viewDied = nil end
     if viewChanged then viewChanged:Disconnect(); viewChanged = nil end
@@ -298,9 +299,9 @@ local function FreezePlayer(name)
         for _, part in pairs(target.Character:GetDescendants()) do
             if part:IsA("BasePart") then part.Anchored = true end
         end
-        notif("تم تجميد: " .. target.Name, 2)
+        notif("Frozen: " .. target.Name, 2)
     else
-        notif("اللاعب غير موجود", 2)
+        notif("Player not found", 2)
     end
 end
 
@@ -317,9 +318,9 @@ local function ThawPlayer(name)
         for _, part in pairs(target.Character:GetDescendants()) do
             if part:IsA("BasePart") then part.Anchored = false end
         end
-        notif("تم إلغاء التجميد: " .. target.Name, 2)
+        notif("Unfrozen: " .. target.Name, 2)
     else
-        notif("اللاعب غير موجود", 2)
+        notif("Player not found", 2)
     end
 end
 
@@ -596,7 +597,7 @@ local function TeleportToExit()
         end
     end
     if not map then
-        notif("الخريطة غير موجودة!", 2)
+        notif("Map not found!", 2)
         return false
     end
     
@@ -639,16 +640,16 @@ local function TeleportToExit()
     end
     
     if not exitPosition then
-        notif("المخرج غير موجود!", 2)
+        notif("Exit not found!", 2)
         return false
     end
     
     if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
         lp.Character.HumanoidRootPart.CFrame = CFrame.new(exitPosition + Vector3.new(0, 3, 0))
-        notif("تم التليفورت إلى المخرج!", 2)
+        notif("Teleported to exit!", 2)
         return true
     else
-        notif("الشارع غير موجود!", 2)
+        notif("Character not found!", 2)
         return false
     end
 end
@@ -773,7 +774,7 @@ local function CheckPanicTP()
             if farthestLoot then
                 lp.Character.HumanoidRootPart.CFrame = CFrame.new(farthestLoot + Vector3.new(0, 3, 0))
                 panicTPCooldown = tick()
-                notif("Panic TP: تم التليفورت لأبعد لoot!", 2)
+                notif("Panic TP: Teleported to farthest loot!", 2)
             end
         end
     end
@@ -812,21 +813,64 @@ local function KillAuraLoop()
     end
 end
 
-local function BringPlayer(name)
-    local target = nil
-    for _, player in ipairs(game.Players:GetPlayers()) do
-        if player.Name:lower():find(name:lower()) or player.DisplayName:lower():find(name:lower()) then
-            target = player
-            break
+local function StartBringAll()
+    if bringAllActive then StopBringAll() end
+    bringAllActive = true
+    notif("Bring All: bringing everyone", 2)
+    
+    coroutine.wrap(function()
+        local drags = {}
+        while bringAllActive and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") do
+            local myRoot = lp.Character.HumanoidRootPart
+            local alive = {}
+            for _, player in ipairs(game.Players:GetPlayers()) do
+                if player ~= lp and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    table.insert(alive, player)
+                end
+            end
+            
+            for i, player in ipairs(alive) do
+                local root = player.Character.HumanoidRootPart
+                local bp = drags[player]
+                if not bp or not bp.Parent or bp.Parent ~= root then
+                    if bp and bp.Parent then bp:Destroy() end
+                    bp = Instance.new("BodyPosition")
+                    bp.Name = "BringAllHold"
+                    bp.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                    bp.P = 40000
+                    bp.D = 8000
+                    bp.Position = root.Position
+                    bp.Parent = root
+                    drags[player] = bp
+                end
+                
+                local angle = ((i - 1) / #alive) * math.pi * 2
+                local offset = Vector3.new(math.cos(angle) * 6, 0, math.sin(angle) * 6)
+                local targetPos = myRoot.Position + offset
+                bp.Position = targetPos
+                root.CFrame = CFrame.new(targetPos)
+                root.AssemblyLinearVelocity = Vector3.zero
+                local hum = player.Character:FindFirstChildOfClass("Humanoid")
+                if hum then hum.PlatformStand = true end
+            end
+            
+            RunService.RenderStepped:Wait()
         end
-    end
-    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-        local forward = lp.Character.HumanoidRootPart.CFrame.LookVector
-        target.Character.HumanoidRootPart.CFrame = lp.Character.HumanoidRootPart.CFrame + (forward * 3)
-        notif("تم جلب: " .. target.Name, 2)
-    else
-        notif("اللاعب غير موجود", 2)
-    end
+        
+        for player, bp in pairs(drags) do
+            if bp and bp.Parent then bp:Destroy() end
+            if player.Character then
+                local hum = player.Character:FindFirstChildOfClass("Humanoid")
+                if hum then hum.PlatformStand = false end
+            end
+        end
+        bringAllActive = false
+        notif("Bring All stopped", 2)
+    end)()
+end
+
+local function StopBringAll()
+    bringAllActive = false
 end
 
 local function isKillerNearby(position, radius)
@@ -896,7 +940,7 @@ local function AutoReviveLegitLoop()
         lp.Character.HumanoidRootPart.CFrame = closest.rootPart.CFrame + (forward * 2)
         task.wait(0.1)
         
-        notif("جاري الإنعاش: " .. closest.player.Name, 2)
+        notif("Reviving: " .. closest.player.Name, 2)
         
         local bleedOut = closest.bleedOut
         local startTime = tick()
@@ -905,14 +949,14 @@ local function AutoReviveLegitLoop()
         end
         
         if bleedOut and not bleedOut.Enabled then
-            notif(closest.player.Name .. " تم إنعاشه!", 2)
+            notif(closest.player.Name .. " revived!", 2)
         else
-            notif("انتهى وقت الإنعاش لـ " .. closest.player.Name, 2)
+            notif("Revive time ended for " .. closest.player.Name, 2)
         end
         
         if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
             lp.Character.HumanoidRootPart.CFrame = myHomePos
-            notif("تم العودة للمنزل", 2)
+            notif("Returned home", 2)
         end
         
         if wasFlying then settings.Fly = true; UpdateFly() end
@@ -934,21 +978,21 @@ end
 local function AutoReviveRiskyOneUse()
     if isReviving then return end
     if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then 
-        notif("تحتاج إلى شارع!", 2)
+        notif("You need a character!", 2)
         return 
     end
     
     local myRoot = lp.Character.HumanoidRootPart
     local myBleedOut = myRoot:FindFirstChild("BleedOutHealth")
     if myBleedOut and myBleedOut.Enabled then
-        notif("أنت ميت! لا يمكن إنعاش الآخرين.", 2)
+        notif("You are down! Can't revive others.", 2)
         return
     end
     
     if lp.Team then
         local teamName = lp.Team.Name:lower()
         if teamName == "lobby" or teamName == "spectator" or lp.Team.TeamColor == BrickColor.new("White") then
-            notif("أنت في اللوبي!", 2)
+            notif("You are in the lobby!", 2)
             return
         end
     end
@@ -975,7 +1019,7 @@ local function AutoReviveRiskyOneUse()
     end
     
     if not closest then
-        notif("لا يوجد لاعبين ميتين!", 2)
+        notif("No downed players!", 2)
         return
     end
     
@@ -994,7 +1038,7 @@ local function AutoReviveRiskyOneUse()
     end
     
     if killerNearby then
-        notif("القاتل قريب! تم إلغاء الإنعاش.", 2)
+        notif("Killer nearby! Revive cancelled.", 2)
         return
     end
     
@@ -1013,7 +1057,7 @@ local function AutoReviveRiskyOneUse()
     lp.Character.HumanoidRootPart.CFrame = closest.rootPart.CFrame + (forward * 2)
     task.wait(0.2)
     
-    notif("إنعاش خطير: جاري إنعاش " .. closest.player.Name, 2)
+    notif("Risky revive: reviving " .. closest.player.Name, 2)
     
     local vim = game:GetService("VirtualInputManager")
     vim:SendKeyEvent(true, Enum.KeyCode.F, false, game)
@@ -1033,11 +1077,11 @@ local function AutoReviveRiskyOneUse()
     vim:SendKeyEvent(false, Enum.KeyCode.F, false, game)
     task.wait(0.2)
     
-    notif("تم إنعاش " .. closest.player.Name .. " بنجاح!", 2)
+    notif("Revived " .. closest.player.Name .. " successfully!", 2)
     
     if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
         lp.Character.HumanoidRootPart.CFrame = myHomePos
-        notif("تم العودة للمنزل", 2)
+        notif("Returned home", 2)
     end
     
     if wasFlying then settings.Fly = true; UpdateFly() end
@@ -1099,13 +1143,13 @@ local function AutoReviveSelfLoop()
         if target then
             lp.Character.HumanoidRootPart.CFrame = target.CFrame + Vector3.new(0, 0, 5)
             lastSelfReviveTime = tick()
-            notif("تم التليفورت إلى ناجٍ", 2)
+            notif("Teleported to a survivor", 2)
         elseif savedHomePosition then
             lp.Character.HumanoidRootPart.CFrame = savedHomePosition
             lastSelfReviveTime = tick()
-            notif("تم التليفورت للمنزل", 2)
+            notif("Teleported home", 2)
         else
-            notif("لا يوجد هدف صالح", 2)
+            notif("No valid target", 2)
         end
     end
 end
@@ -1148,7 +1192,7 @@ local function AutoCollectLoot()
 
     if savedHomePosition == nil and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
         savedHomePosition = lp.Character.HumanoidRootPart.CFrame
-        notif("تم حفظ موقع المنزل", 2)
+        notif("Home position saved", 2)
     end
 
     for _, lootPart in ipairs(lootList) do
@@ -1180,36 +1224,36 @@ local function UpdateSpin(state)
             Spin.Parent = root
             Spin.MaxTorque = Vector3.new(0, math.huge, 0)
             Spin.AngularVelocity = Vector3.new(0, spinSpeed, 0)
-            notif("Spin: مفعل", 2)
+            notif("Spin: On", 2)
         else
-            notif("Spin: معطل", 2)
+            notif("Spin: Off", 2)
         end
     end
 end
 
 local function AddUserScript(name, script)
     if name == "" or script == "" then
-        notif("الاسم والسكريبت مطلوبان", 2)
+        notif("Name and script are required", 2)
         return false
     end
     
     for _, s in ipairs(userScripts) do
         if s.name:lower() == name:lower() then
-            notif("سكريبت بنفس الاسم موجود", 2)
+            notif("Script with the same name exists", 2)
             return false
         end
     end
     
     local valid, err = SafeLoadScript(script)
     if not valid then
-        notif("سكريبت غير صالح: " .. tostring(err), 3)
+        notif("Invalid script: " .. tostring(err), 3)
         return false
     end
     
     table.insert(userScripts, {name = name, script = script})
     SaveUserScripts()
     UpdateRightContent()
-    notif("تم إضافة: " .. name, 2)
+    notif("Added: " .. name, 2)
     return true
 end
 
@@ -1219,7 +1263,7 @@ local function RemoveUserScript(index)
         table.remove(userScripts, index)
         SaveUserScripts()
         UpdateRightContent()
-        notif("تم حذف: " .. name, 2)
+        notif("Deleted: " .. name, 2)
         return true
     end
     return false
@@ -1247,7 +1291,7 @@ local function SaveConfig(name)
     end
     configData.userScripts = userScripts
     
-    local configsFolder = "VuaN_Configs"
+    local configsFolder = "sa7loul_Configs"
     if not isfolder(configsFolder) then
         makefolder(configsFolder)
     end
@@ -1257,18 +1301,18 @@ local function SaveConfig(name)
     end)
     
     if success then
-        notif("تم حفظ التكوين: " .. name, 2)
+        notif("Config saved: " .. name, 2)
         return true
     else
-        notif("فشل حفظ التكوين: " .. tostring(err), 3)
+        notif("Failed to save config: " .. tostring(err), 3)
         return false
     end
 end
 
 local function LoadConfig(name)
-    local configsFolder = "VuaN_Configs"
+    local configsFolder = "sa7loul_Configs"
     if not isfolder(configsFolder) then
-        notif("لا يوجد مجلد تكوينات", 2)
+        notif("No configs folder", 2)
         return false
     end
     
@@ -1290,16 +1334,16 @@ local function LoadConfig(name)
         end
         
         UpdateAllFeatures()
-        notif("تم تحميل التكوين: " .. name, 2)
+        notif("Config loaded: " .. name, 2)
         return true
     else
-        notif("فشل تحميل التكوين", 3)
+        notif("Failed to load config", 3)
         return false
     end
 end
 
 local function GetConfigList()
-    local configsFolder = "VuaN_Configs"
+    local configsFolder = "sa7loul_Configs"
     if not isfolder(configsFolder) then
         makefolder(configsFolder)
         return {}
@@ -1316,11 +1360,11 @@ local function GetConfigList()
 end
 
 local function DeleteConfig(name)
-    local configsFolder = "VuaN_Configs"
+    local configsFolder = "sa7loul_Configs"
     if isfolder(configsFolder) then
         pcall(function()
             delfile(configsFolder .. "/" .. name .. ".json")
-            notif("تم حذف التكوين: " .. name, 2)
+            notif("Config deleted: " .. name, 2)
         end)
     end
 end
@@ -1475,11 +1519,11 @@ local function PeriodicESPUpdate()
 end
 
 -- ============================================================
--- REDESIGNED UI — بجودة عالية وأنيميشن
+-- REDESIGNED UI — high quality with animation
 -- ============================================================
 
 local h = Instance.new("ScreenGui")
-h.Name = "VuaN_STK"
+h.Name = "sa7loul_STK"
 h.Parent = game:GetService("CoreGui")
 h.ResetOnSpawn = false
 h.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -1496,7 +1540,7 @@ Main.Position = UDim2.new(0.5, -320, 0.3, 0)
 Main.Size = UDim2.new(0, 640, 0, 520)
 Main.BackgroundTransparency = 1
 
--- افتتاحية أنميشن
+-- opening animation
 TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
     BackgroundTransparency = 0
 }):Play()
@@ -1533,7 +1577,7 @@ TitleLabel.BackgroundTransparency = 1
 TitleLabel.Position = UDim2.new(0, 20, 0, 0)
 TitleLabel.Size = UDim2.new(1, -60, 1, 0)
 TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.Text = "✦ فيوان | VSTK V2"
+TitleLabel.Text = "✦ sa7loul | STK V2"
 TitleLabel.TextColor3 = ACCENT
 TitleLabel.TextSize = 18
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -1582,16 +1626,16 @@ menuPadding.PaddingLeft = UDim.new(0, 12)
 menuPadding.PaddingTop = UDim.new(0, 12)
 Instance.new("UIListLayout", LeftMenu).Padding = UDim.new(0, 4)
 
--- أسماء التبويبات بالعربي مع أيقونات
+-- tab names with icons
 local MenuItems = {
-    {key = "  About", label = "ℹ️ حول"},
-    {key = "  Player", label = "🧑 اللاعب"},
-    {key = "  World", label = "🌍 العالم"},
-    {key = "  Players", label = "👥 اللاعبين"},
-    {key = "  Revive", label = "💉 إنعاش"},
-    {key = "  Fun", label = "🎮 مرح"},
-    {key = "  More", label = "📦 إضافات"},
-    {key = "  Settings", label = "⚙️ إعدادات"}
+    {key = "  About", label = "ℹ️ About"},
+    {key = "  Player", label = "🧑 Player"},
+    {key = "  World", label = "🌍 World"},
+    {key = "  Players", label = "👥 Players"},
+    {key = "  Revive", label = "💉 Revive"},
+    {key = "  Fun", label = "🎮 Fun"},
+    {key = "  More", label = "📦 Extras"},
+    {key = "  Settings", label = "⚙️ Settings"}
 }
 local MenuButtons = {}
 
@@ -1637,7 +1681,7 @@ for i, item in ipairs(MenuItems) do
     table.insert(MenuButtons, btn)
 end
 
--- تفعيل أول تبويب
+-- activate first tab
 local firstBtn = MenuButtons[1]
 firstBtn.TextColor3 = TEXT_PRIMARY
 local firstInd = firstBtn:FindFirstChildWhichIsA("Frame")
@@ -1986,13 +2030,13 @@ local function CreatePlayerEntry(parent, player)
     statusLabel.TextYAlignment = Enum.TextYAlignment.Center
     
     if player == lp then
-        statusLabel.Text = "✦ أنت"
+        statusLabel.Text = "✦ You"
         statusLabel.TextColor3 = ACCENT
     elseif IsPlayerDowned(player) then
-        statusLabel.Text = "💀 ميت"
+        statusLabel.Text = "💀 Down"
         statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
     elseif IsPlayerInLobby(player) then
-        statusLabel.Text = "🟤 لوبي"
+        statusLabel.Text = "🟤 Lobby"
         statusLabel.TextColor3 = TEXT_DIM
     else
         statusLabel.Text = ""
@@ -2033,20 +2077,20 @@ local function CreatePlayerEntry(parent, player)
     end
     
     if player ~= lp then
-        createActionBtn("جلب", ACCENT, function()
+        createActionBtn("Bring", ACCENT, function()
             StartBring(player.Name)
         end)
-        createActionBtn("شاهد", Color3.fromRGB(50, 160, 255), function()
+        createActionBtn("View", Color3.fromRGB(50, 160, 255), function()
             StartView(player.Name)
         end)
-        createActionBtn("جمد", Color3.fromRGB(255, 170, 50), function()
+        createActionBtn("Freeze", Color3.fromRGB(255, 170, 50), function()
             FreezePlayer(player.Name)
         end)
-        createActionBtn("فك", Color3.fromRGB(120, 220, 120), function()
+        createActionBtn("Unfreeze", Color3.fromRGB(120, 220, 120), function()
             ThawPlayer(player.Name)
         end)
     else
-        createActionBtn("أنت", Color3.fromRGB(80,80,90), function() end)
+        createActionBtn("You", Color3.fromRGB(80,80,90), function() end)
     end
     
     return frame
@@ -2068,7 +2112,7 @@ local function UpdatePlayerList()
     end)
     
     if #players == 0 then
-        CreateLabel(playerListContainer, "لا يوجد لاعبين في السيرفر", TEXT_SECONDARY)
+        CreateLabel(playerListContainer, "No players in server", TEXT_SECONDARY)
         return
     end
     
@@ -2089,42 +2133,42 @@ function UpdateRightContent()
     ClearRightContent()
     
     if CurrentTab == "  About" then
-        local aboutSection = CreateSection(RightContent, "ℹ️ معلومات")
-        CreateLabel(aboutSection, "⏤ VuaN | Survive the Killer", ACCENT).TextSize = 18
-        CreateLabel(aboutSection, "الإصدار V2.31", TEXT_SECONDARY).TextSize = 11
+        local aboutSection = CreateSection(RightContent, "ℹ️ Info")
+        CreateLabel(aboutSection, "⏤ sa7loul | Survive the Killer", ACCENT).TextSize = 18
+        CreateLabel(aboutSection, "Version V2.31", TEXT_SECONDARY).TextSize = 11
         CreateLabel(aboutSection, "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯", TEXT_DIM).TextSize = 10
         
-        local changesHeader = CreateLabel(aboutSection, "📋 سجل التغييرات:", TEXT_PRIMARY)
+        local changesHeader = CreateLabel(aboutSection, "📋 Changelog:", TEXT_PRIMARY)
         changesHeader.TextSize = 13
         
         local changes = {
-            "✦ V2.31 — تصميم جديد بالكامل",
-            "✦ إضافة أنيميشنات لكل العناصر",
-            "✦ ألوان ناعمة وجذابة",
-            "✦ دعم اللغة العربية في الواجهة",
-            "✦ تحسين الأداء والاستجابة",
+            "✦ V2.31 — Full redesign",
+            "✦ Added animations to all elements",
+            "✦ Soft and attractive colors",
+            "✦ Full UI in English",
+            "✦ Performance and responsiveness improved",
             "",
-            "✦ V2 — تبويب الإعدادات",
-            "✦ تبويب المرح",
-            "✦ نظام الحماية من الفخاخ",
+            "✦ V2 — Settings tab",
+            "✦ Fun tab",
+            "✦ Anti-trap system",
             "✦ Panic TP",
-            "✦ حفظ وتحميل التكوينات",
-            "✦ مدير السكريبتات",
-            "✦ تحسينات UI",
+            "✦ Config save/load",
+            "✦ Script manager",
+            "✦ UI improvements",
             "",
             "✦ V1.4 — Auto Escape",
-            "✦ ESP للمخارج والفخاخ",
-            "✦ تعطيل السرعة عند السقوط",
-            "✦ تحسين Auto Revive",
+            "✦ ESP for exits and traps",
+            "✦ Disable speed on fall",
+            "✦ Auto Revive improved",
             "",
-            "✦ V1.3 — واجهة جديدة",
+            "✦ V1.3 — New UI",
             "✦ Killer Chance X3",
             "",
             "✦ V1.2 — Double Jump",
             "",
             "✦ V1.1 — Auto Revive",
             "",
-            "✦ V1 — الإطلاق"
+            "✦ V1 — Launch"
         }
         for _, line in ipairs(changes) do
             local l = CreateLabel(aboutSection, "  " .. line, Color3.fromRGB(190, 190, 210))
@@ -2132,34 +2176,34 @@ function UpdateRightContent()
         end
         
         CreateLabel(aboutSection, "", Color3.fromRGB(50,50,50))
-        CreateLabel(aboutSection, "👤 المطور: VuaN", TEXT_SECONDARY).TextSize = 11
-        CreateLabel(aboutSection, "🧪 الاختبار: Probka & Lysyy", TEXT_SECONDARY).TextSize = 11
+        CreateLabel(aboutSection, "👤 Developer: sa7loul", TEXT_SECONDARY).TextSize = 11
+        CreateLabel(aboutSection, "🧪 Testers: Probka & Lysyy", TEXT_SECONDARY).TextSize = 11
 
     elseif CurrentTab == "  Player" then
-        local movementSection = CreateSection(RightContent, "🏃 الحركة")
-        CreateToggle(movementSection, "تسريع", settings.speedEnabled, function(val)
+        local movementSection = CreateSection(RightContent, "🏃 Movement")
+        CreateToggle(movementSection, "Speed Boost", settings.speedEnabled, function(val)
             settings.speedEnabled = val
             if lp.Character and lp.Character:FindFirstChild("Humanoid") then
                 lp.Character.Humanoid.WalkSpeed = val and settings.Speed or 16
             end
         end)
-        CreateSlider(movementSection, "السرعة", 16, 50, settings.Speed, function(val)
+        CreateSlider(movementSection, "Speed", 16, 50, settings.Speed, function(val)
             settings.Speed = val
             if settings.speedEnabled and lp.Character and lp.Character:FindFirstChild("Humanoid") then
                 lp.Character.Humanoid.WalkSpeed = val
             end
         end)
-        CreateToggle(movementSection, "تعطيل التسريع عند السقوط", settings.speedDisableOnDown, function(val)
+        CreateToggle(movementSection, "Disable speed when down", settings.speedDisableOnDown, function(val)
             settings.speedDisableOnDown = val
         end)
-        CreateToggle(movementSection, "طيران", settings.Fly, function(val)
+        CreateToggle(movementSection, "Flight", settings.Fly, function(val)
             settings.Fly = val
             UpdateFly()
         end)
-        CreateSlider(movementSection, "سرعة الطيران", 20, 200, settings.flySpeed, function(val)
+        CreateSlider(movementSection, "Flight speed", 20, 200, settings.flySpeed, function(val)
             settings.flySpeed = val
         end)
-        CreateToggle(movementSection, "اختراق الجدران", settings.Noclip, function(val)
+        CreateToggle(movementSection, "Noclip", settings.Noclip, function(val)
             settings.Noclip = val
             if val then
                 if noclipConnection then noclipConnection:Disconnect() end
@@ -2174,7 +2218,7 @@ function UpdateRightContent()
                 if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
             end
         end)
-        CreateToggle(movementSection, "الهروب التلقائي", settings.AutoEscape, function(val)
+        CreateToggle(movementSection, "Auto Escape", settings.AutoEscape, function(val)
             settings.AutoEscape = val
             if val then
                 if autoEscapeConnection then autoEscapeConnection:Disconnect() end
@@ -2198,17 +2242,17 @@ function UpdateRightContent()
             end
         end)
         
-        local bypassSection = CreateSection(RightContent, "🎫 تجاوز الباس")
-        CreateToggle(bypassSection, "القفز المزدوج", settings.DoubleJump, function(val)
+        local bypassSection = CreateSection(RightContent, "🎫 Bypass")
+        CreateToggle(bypassSection, "Double Jump", settings.DoubleJump, function(val)
             settings.DoubleJump = val
             UpdateDoubleJump()
         end)
-        CreateToggle(bypassSection, "فرصة القاتل ×3", settings.KillerChanceX3, function(val)
+        CreateToggle(bypassSection, "Killer Chance X3", settings.KillerChanceX3, function(val)
             settings.KillerChanceX3 = val
             UpdateKillerChance()
         end)
         
-        local combatSection = CreateSection(RightContent, "⚔️ القتال")
+        local combatSection = CreateSection(RightContent, "⚔️ Combat")
         CreateToggle(combatSection, "Kill Aura", settings.KillAura, function(val)
             settings.KillAura = val
             if val then
@@ -2222,35 +2266,30 @@ function UpdateRightContent()
                 if killAuraConnection then killAuraConnection:Disconnect(); killAuraConnection = nil end
             end
         end)
-        CreateSlider(combatSection, "نصف قطر Kill Aura", 8, 80, settings.killAuraRadius, function(val)
+        CreateSlider(combatSection, "Kill Aura radius", 8, 80, settings.killAuraRadius, function(val)
             settings.killAuraRadius = val
         end)
         
-        local bringBox = CreateTextBox(combatSection, "👤 اسم اللاعب...")
-        CreateButton(combatSection, "جلب اللاعب", function()
-            if bringBox.Text ~= "" then BringPlayer(bringBox.Text) else notif("أدخل اسم اللاعب", 2) end
-        end)
-        
     elseif CurrentTab == "  World" then
-        local visualSection = CreateSection(RightContent, "👁️ بصرية")
-        CreateToggle(visualSection, "ESP للاعبين", settings.ESP, function(val)
+        local visualSection = CreateSection(RightContent, "👁️ Visuals")
+        CreateToggle(visualSection, "Player ESP", settings.ESP, function(val)
             settings.ESP = val
             espCache = {}
             UpdateESP()
         end)
-        CreateToggle(visualSection, "ESP للمخارج", settings.ESPExits, function(val)
+        CreateToggle(visualSection, "Exit ESP", settings.ESPExits, function(val)
             settings.ESPExits = val
             UpdateESPExits()
         end)
-        CreateToggle(visualSection, "ESP للفخاخ", settings.ESPTraps, function(val)
+        CreateToggle(visualSection, "Trap ESP", settings.ESPTraps, function(val)
             settings.ESPTraps = val
             UpdateESPTraps()
         end)
-        CreateToggle(visualSection, "إزالة الضباب", settings.NoFog, function(val)
+        CreateToggle(visualSection, "Remove fog", settings.NoFog, function(val)
             settings.NoFog = val
             UpdateNoFog()
         end)
-        CreateToggle(visualSection, "إضاءة كاملة", settings.Fullbright, function(val)
+        CreateToggle(visualSection, "Fullbright", settings.Fullbright, function(val)
             settings.Fullbright = val
             if val then
                 if brightLoop then brightLoop:Disconnect() end
@@ -2265,7 +2304,7 @@ function UpdateRightContent()
             end
         end)
         
-        CreateToggle(visualSection, "حماية من الفخاخ", settings.AntiTrap, function(val)
+        CreateToggle(visualSection, "Anti-Trap", settings.AntiTrap, function(val)
             settings.AntiTrap = val
             if val then
                 if antiTrapConnection then antiTrapConnection:Disconnect() end
@@ -2279,8 +2318,8 @@ function UpdateRightContent()
             end
         end)
         
-        local lootSection = CreateSection(RightContent, "📦 جمع تلقائي")
-        CreateToggle(lootSection, "جمع الـLoot تلقائياً", settings.AutoLoot, function(val)
+        local lootSection = CreateSection(RightContent, "📦 Auto Loot")
+        CreateToggle(lootSection, "Auto collect loot", settings.AutoLoot, function(val)
             settings.AutoLoot = val
             if val then
                 savedHomePosition = nil
@@ -2295,13 +2334,13 @@ function UpdateRightContent()
                 if settings.returnHomeAfterLoot then ReturnToHome() else savedHomePosition = nil end
             end
         end)
-        CreateToggle(lootSection, "العودة للمنزل بعد الجمع", settings.returnHomeAfterLoot, function(val)
+        CreateToggle(lootSection, "Return home after looting", settings.returnHomeAfterLoot, function(val)
             settings.returnHomeAfterLoot = val
         end)
         
-        local teleportSection = CreateSection(RightContent, "🌀 تليفورت")
-        CreateButton(teleportSection, "تليفورت إلى المخرج", TeleportToExit)
-        CreateButton(teleportSection, "تليفورت إلى اللوبي", function()
+        local teleportSection = CreateSection(RightContent, "🌀 Teleport")
+        CreateButton(teleportSection, "Teleport to exit", TeleportToExit)
+        CreateButton(teleportSection, "Teleport to lobby", function()
             local lobby = workspace:FindFirstChild("_Lobby")
             if lobby then
                 local decor = lobby:FindFirstChild("Decor")
@@ -2309,31 +2348,32 @@ function UpdateRightContent()
                     local knifeStatue = decor:FindFirstChild("KnifeStatue")
                     if knifeStatue and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
                         lp.Character.HumanoidRootPart.CFrame = CFrame.new(knifeStatue.Position + Vector3.new(0, 30, 0))
-                        notif("تم التليفورت إلى اللوبي!", 2)
+                        notif("Teleported to lobby!", 2)
                     end
                 end
             end
         end)
         
     elseif CurrentTab == "  Players" then
-        playerListContainer = CreateSection(RightContent, "👥 قائمة اللاعبين")
+        playerListContainer = CreateSection(RightContent, "👥 Player list")
         UpdatePlayerList()
         
-        local refreshBtn = CreateButton(RightContent, "🔄 تحديث القائمة", function()
+        local refreshBtn = CreateButton(RightContent, "🔄 Refresh list", function()
             UpdatePlayerList()
         end)
         refreshBtn.Size = UDim2.new(0.48, 0, 0, 30)
         
-        local stopAllBtn = CreateButton(RightContent, "⏹ إيقاف الكل", function()
+        local stopAllBtn = CreateButton(RightContent, "⏹ Stop all", function()
             StopView()
             StopBring()
-            notif("تم إيقاف جميع العمليات", 2)
+            StopBringAll()
+            notif("All operations stopped", 2)
         end)
         stopAllBtn.Size = UDim2.new(0.48, 0, 0, 30)
         
     elseif CurrentTab == "  Revive" then
-        local reviveSection = CreateSection(RightContent, "💉 أوضاع الإنعاش")
-        CreateToggle(reviveSection, "إنعاش تلقائي (آمن)", settings.AutoReviveLegit, function(val)
+        local reviveSection = CreateSection(RightContent, "💉 Revive modes")
+        CreateToggle(reviveSection, "Auto revive (Safe)", settings.AutoReviveLegit, function(val)
             settings.AutoReviveLegit = val
             if val then
                 if reviveLegitConnection then reviveLegitConnection:Disconnect() end
@@ -2342,12 +2382,12 @@ function UpdateRightContent()
                 if reviveLegitConnection then reviveLegitConnection:Disconnect(); reviveLegitConnection = nil end
             end
         end)
-        CreateButton(reviveSection, "⚡ إنعاش خطير (مرة واحدة)", function()
+        CreateButton(reviveSection, "⚡ Risky revive (one-time)", function()
             AutoReviveRiskyOneUse()
         end)
         
-        local selfReviveSection = CreateSection(RightContent, "🔄 إنعاش النفس")
-        CreateToggle(selfReviveSection, "إنعاش النفس تلقائي", settings.AutoReviveSelf, function(val)
+        local selfReviveSection = CreateSection(RightContent, "🔄 Self revive")
+        CreateToggle(selfReviveSection, "Auto self revive", settings.AutoReviveSelf, function(val)
             settings.AutoReviveSelf = val
             if val then
                 if selfReviveConnection then selfReviveConnection:Disconnect() end
@@ -2356,21 +2396,68 @@ function UpdateRightContent()
                 if selfReviveConnection then selfReviveConnection:Disconnect(); selfReviveConnection = nil end
             end
         end)
-        CreateSlider(selfReviveSection, "مدة التهدئة", 1, 10, settings.selfReviveCooldown, function(val)
+        CreateSlider(selfReviveSection, "Cooldown", 1, 10, settings.selfReviveCooldown, function(val)
             settings.selfReviveCooldown = val
         end)
         
         local function setSelfReviveMode(mode)
             settings.selfReviveMode = mode
-            notif("وضع الإنعاش: " .. mode, 2)
+            notif("Revive mode: " .. mode, 2)
         end
-        CreateButton(selfReviveSection, "🔄 عشوائي", function() setSelfReviveMode("Random") end)
-        CreateButton(selfReviveSection, "📏 أبعد مسافة", function() setSelfReviveMode("Farthest") end)
+        CreateButton(selfReviveSection, "🔄 Random", function() setSelfReviveMode("Random") end)
+        CreateButton(selfReviveSection, "📏 Farthest", function() setSelfReviveMode("Farthest") end)
         
     elseif CurrentTab == "  Fun" then
-        local funSection = CreateSection(RightContent, "🎮 أوامر مرح")
+        local funSection = CreateSection(RightContent, "🎮 Fun commands")
         
-        local targetBox = CreateTextBox(funSection, "👤 اسم اللاعب...")
+        local selectedPlayer = nil
+        local pickerBtn = nil
+        local function GetSelectedPlayer()
+            if selectedPlayer and selectedPlayer.Parent then
+                return selectedPlayer
+            end
+            return nil
+        end
+        local function CyclePlayer()
+            local players = game.Players:GetPlayers()
+            if #players == 0 then
+                selectedPlayer = nil
+                if pickerBtn then pickerBtn.Text = "👤 Player: None" end
+                return
+            end
+            if not GetSelectedPlayer() then
+                selectedPlayer = players[1]
+            else
+                for i, p in ipairs(players) do
+                    if p == selectedPlayer then
+                        selectedPlayer = players[i % #players + 1]
+                        break
+                    end
+                end
+            end
+            if pickerBtn then pickerBtn.Text = "👤 Player: " .. selectedPlayer.Name end
+        end
+        
+        pickerBtn = Instance.new("TextButton")
+        pickerBtn.Parent = funSection
+        pickerBtn.BorderSizePixel = 0
+        pickerBtn.Size = UDim2.new(1, 0, 0, 30)
+        pickerBtn.Font = Enum.Font.GothamBold
+        pickerBtn.Text = "👤 Player: None"
+        pickerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        pickerBtn.TextSize = 12
+        pickerBtn.BackgroundColor3 = Color3.fromRGB(24, 150, 90)
+        pickerBtn.BackgroundTransparency = 0.3
+        local pickerCorner = Instance.new("UICorner", pickerBtn)
+        pickerCorner.CornerRadius = UDim.new(0, 8)
+        pickerBtn.MouseButton1Click:Connect(CyclePlayer)
+        pickerBtn.MouseEnter:Connect(function() 
+            TweenService:Create(pickerBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
+        end)
+        pickerBtn.MouseLeave:Connect(function() 
+            TweenService:Create(pickerBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
+        end)
+        CyclePlayer()
         
         local btnRow1 = Instance.new("Frame")
         btnRow1.Parent = funSection
@@ -2389,7 +2476,7 @@ function UpdateRightContent()
         flingBtn.BorderSizePixel = 0
         flingBtn.Size = UDim2.new(0.48, 0, 0, 32)
         flingBtn.Font = Enum.Font.GothamBold
-        flingBtn.Text = "🚀 قذف"
+        flingBtn.Text = "🚀 Fling"
         flingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         flingBtn.TextSize = 12
         flingBtn.BackgroundColor3 = ACCENT
@@ -2397,38 +2484,34 @@ function UpdateRightContent()
         local flingCorner = Instance.new("UICorner", flingBtn)
         flingCorner.CornerRadius = UDim.new(0, 8)
         flingBtn.MouseButton1Click:Connect(function()
-            if targetBox.Text ~= "" then 
-                local target = GetPlayerByName(targetBox.Text)
-                if target then
-                    local function startFling()
-                        if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                            if FlingActive then return end
-                            FlingActive = true
-                            notif("قذف: " .. target.Name, 2)
-                            local thrust = Instance.new('BodyThrust', lp.Character.HumanoidRootPart)
-                            thrust.Force = Vector3.new(9999, 9999, 9999)
-                            thrust.Name = "YeetForce"
-                            
-                            coroutine.wrap(function()
-                                while FlingActive and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") do
-                                    lp.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
-                                    thrust.Location = target.Character.HumanoidRootPart.Position
-                                    RunService.Heartbeat:Wait()
-                                end
-                                thrust:Destroy()
-                                if FlingActive then notif("تم إيقاف القذف", 2) end
-                                FlingActive = false
-                            end)()
-                        else
-                            notif("اللاعب غير موجود", 2)
-                        end
+            local target = GetSelectedPlayer()
+            if target then
+                local function startFling()
+                    if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                        if FlingActive then return end
+                        FlingActive = true
+                        notif("Fling: " .. target.Name, 2)
+                        local thrust = Instance.new('BodyThrust', lp.Character.HumanoidRootPart)
+                        thrust.Force = Vector3.new(9999, 9999, 9999)
+                        thrust.Name = "YeetForce"
+                        
+                        coroutine.wrap(function()
+                            while FlingActive and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") do
+                                lp.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+                                thrust.Location = target.Character.HumanoidRootPart.Position
+                                RunService.Heartbeat:Wait()
+                            end
+                            thrust:Destroy()
+                            if FlingActive then notif("Fling stopped", 2) end
+                            FlingActive = false
+                        end)()
+                    else
+                        notif("Player not found", 2)
                     end
-                    startFling()
-                else
-                    notif("اللاعب غير موجود", 2)
                 end
+                startFling()
             else
-                notif("أدخل اسم اللاعب", 2)
+                notif("Select a player first", 2)
             end
         end)
         flingBtn.MouseEnter:Connect(function() 
@@ -2443,7 +2526,7 @@ function UpdateRightContent()
         stopFlingBtn.BorderSizePixel = 0
         stopFlingBtn.Size = UDim2.new(0.48, 0, 0, 32)
         stopFlingBtn.Font = Enum.Font.GothamBold
-        stopFlingBtn.Text = "⏹ إيقاف القذف"
+        stopFlingBtn.Text = "⏹ Stop fling"
         stopFlingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         stopFlingBtn.TextSize = 12
         stopFlingBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
@@ -2456,7 +2539,7 @@ function UpdateRightContent()
                 local thrust = lp.Character.HumanoidRootPart:FindFirstChild("YeetForce")
                 if thrust then thrust:Destroy() end
             end
-            notif("تم إيقاف القذف", 2)
+            notif("Fling stopped", 2)
         end)
         stopFlingBtn.MouseEnter:Connect(function() 
             TweenService:Create(stopFlingBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
@@ -2482,7 +2565,7 @@ function UpdateRightContent()
         freezeBtn.BorderSizePixel = 0
         freezeBtn.Size = UDim2.new(0.48, 0, 0, 32)
         freezeBtn.Font = Enum.Font.GothamBold
-        freezeBtn.Text = "❄️ تجميد"
+        freezeBtn.Text = "❄️ Freeze"
         freezeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         freezeBtn.TextSize = 12
         freezeBtn.BackgroundColor3 = Color3.fromRGB(50, 170, 255)
@@ -2490,7 +2573,8 @@ function UpdateRightContent()
         local freezeCorner = Instance.new("UICorner", freezeBtn)
         freezeCorner.CornerRadius = UDim.new(0, 8)
         freezeBtn.MouseButton1Click:Connect(function()
-            FreezePlayer(targetBox.Text)
+            local target = GetSelectedPlayer()
+            if target then FreezePlayer(target.Name) else notif("Select a player first", 2) end
         end)
         freezeBtn.MouseEnter:Connect(function() 
             TweenService:Create(freezeBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
@@ -2504,7 +2588,7 @@ function UpdateRightContent()
         thawBtn.BorderSizePixel = 0
         thawBtn.Size = UDim2.new(0.48, 0, 0, 32)
         thawBtn.Font = Enum.Font.GothamBold
-        thawBtn.Text = "🔥 إلغاء التجميد"
+        thawBtn.Text = "🔥 Unfreeze"
         thawBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         thawBtn.TextSize = 12
         thawBtn.BackgroundColor3 = Color3.fromRGB(255, 170, 50)
@@ -2512,7 +2596,8 @@ function UpdateRightContent()
         local thawCorner = Instance.new("UICorner", thawBtn)
         thawCorner.CornerRadius = UDim.new(0, 8)
         thawBtn.MouseButton1Click:Connect(function()
-            ThawPlayer(targetBox.Text)
+            local target = GetSelectedPlayer()
+            if target then ThawPlayer(target.Name) else notif("Select a player first", 2) end
         end)
         thawBtn.MouseEnter:Connect(function() 
             TweenService:Create(thawBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
@@ -2538,7 +2623,7 @@ function UpdateRightContent()
         viewBtn.BorderSizePixel = 0
         viewBtn.Size = UDim2.new(0.48, 0, 0, 32)
         viewBtn.Font = Enum.Font.GothamBold
-        viewBtn.Text = "👁️ مشاهدة"
+        viewBtn.Text = "👁️ View"
         viewBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         viewBtn.TextSize = 12
         viewBtn.BackgroundColor3 = Color3.fromRGB(50, 160, 255)
@@ -2546,7 +2631,8 @@ function UpdateRightContent()
         local viewCorner = Instance.new("UICorner", viewBtn)
         viewCorner.CornerRadius = UDim.new(0, 8)
         viewBtn.MouseButton1Click:Connect(function()
-            if targetBox.Text ~= "" then StartView(targetBox.Text) else notif("أدخل اسم اللاعب", 2) end
+            local target = GetSelectedPlayer()
+            if target then StartView(target.Name) else notif("Select a player first", 2) end
         end)
         viewBtn.MouseEnter:Connect(function() 
             TweenService:Create(viewBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
@@ -2560,7 +2646,7 @@ function UpdateRightContent()
         unviewBtn.BorderSizePixel = 0
         unviewBtn.Size = UDim2.new(0.48, 0, 0, 32)
         unviewBtn.Font = Enum.Font.GothamBold
-        unviewBtn.Text = "⏹ إيقاف المشاهدة"
+        unviewBtn.Text = "⏹ Stop view"
         unviewBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         unviewBtn.TextSize = 12
         unviewBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
@@ -2592,7 +2678,7 @@ function UpdateRightContent()
         bringBtn.BorderSizePixel = 0
         bringBtn.Size = UDim2.new(0.48, 0, 0, 32)
         bringBtn.Font = Enum.Font.GothamBold
-        bringBtn.Text = "🔗 جلب"
+        bringBtn.Text = "🔗 Bring"
         bringBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         bringBtn.TextSize = 12
         bringBtn.BackgroundColor3 = ACCENT
@@ -2600,7 +2686,8 @@ function UpdateRightContent()
         local bringCorner = Instance.new("UICorner", bringBtn)
         bringCorner.CornerRadius = UDim.new(0, 8)
         bringBtn.MouseButton1Click:Connect(function()
-            if targetBox.Text ~= "" then StartBring(targetBox.Text) else notif("أدخل اسم اللاعب", 2) end
+            local target = GetSelectedPlayer()
+            if target then StartBring(target.Name) else notif("Select a player first", 2) end
         end)
         bringBtn.MouseEnter:Connect(function() 
             TweenService:Create(bringBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
@@ -2614,7 +2701,7 @@ function UpdateRightContent()
         stopBringBtn.BorderSizePixel = 0
         stopBringBtn.Size = UDim2.new(0.48, 0, 0, 32)
         stopBringBtn.Font = Enum.Font.GothamBold
-        stopBringBtn.Text = "⏹ إيقاف الجلب"
+        stopBringBtn.Text = "⏹ Stop bring"
         stopBringBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         stopBringBtn.TextSize = 12
         stopBringBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
@@ -2629,12 +2716,64 @@ function UpdateRightContent()
             TweenService:Create(stopBringBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
         end)
         
-        CreateToggle(funSection, "🌀 دوران", spinActive, function(val)
+        local btnRow5 = Instance.new("Frame")
+        btnRow5.Parent = funSection
+        btnRow5.BackgroundTransparency = 1
+        btnRow5.Size = UDim2.new(1, 0, 0, 38)
+        btnRow5.LayoutOrder = #funSection:GetChildren()
+        
+        local rowLayout5 = Instance.new("UIListLayout", btnRow5)
+        rowLayout5.FillDirection = Enum.FillDirection.Horizontal
+        rowLayout5.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        rowLayout5.VerticalAlignment = Enum.VerticalAlignment.Center
+        rowLayout5.Padding = UDim.new(0, 8)
+        
+        local bringAllBtn = Instance.new("TextButton")
+        bringAllBtn.Parent = btnRow5
+        bringAllBtn.BorderSizePixel = 0
+        bringAllBtn.Size = UDim2.new(0.48, 0, 0, 32)
+        bringAllBtn.Font = Enum.Font.GothamBold
+        bringAllBtn.Text = "🔗 Bring All"
+        bringAllBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        bringAllBtn.TextSize = 12
+        bringAllBtn.BackgroundColor3 = ACCENT
+        bringAllBtn.BackgroundTransparency = 0.3
+        local bringAllCorner = Instance.new("UICorner", bringAllBtn)
+        bringAllCorner.CornerRadius = UDim.new(0, 8)
+        bringAllBtn.MouseButton1Click:Connect(StartBringAll)
+        bringAllBtn.MouseEnter:Connect(function() 
+            TweenService:Create(bringAllBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
+        end)
+        bringAllBtn.MouseLeave:Connect(function() 
+            TweenService:Create(bringAllBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
+        end)
+        
+        local stopBringAllBtn = Instance.new("TextButton")
+        stopBringAllBtn.Parent = btnRow5
+        stopBringAllBtn.BorderSizePixel = 0
+        stopBringAllBtn.Size = UDim2.new(0.48, 0, 0, 32)
+        stopBringAllBtn.Font = Enum.Font.GothamBold
+        stopBringAllBtn.Text = "⏹ Stop Bring All"
+        stopBringAllBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        stopBringAllBtn.TextSize = 12
+        stopBringAllBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+        stopBringAllBtn.BackgroundTransparency = 0.3
+        local stopBringAllCorner = Instance.new("UICorner", stopBringAllBtn)
+        stopBringAllCorner.CornerRadius = UDim.new(0, 8)
+        stopBringAllBtn.MouseButton1Click:Connect(StopBringAll)
+        stopBringAllBtn.MouseEnter:Connect(function() 
+            TweenService:Create(stopBringAllBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
+        end)
+        stopBringAllBtn.MouseLeave:Connect(function() 
+            TweenService:Create(stopBringAllBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
+        end)
+        
+        CreateToggle(funSection, "🌀 Spin", spinActive, function(val)
             spinActive = val
             UpdateSpin(val)
         end)
         
-        CreateSlider(funSection, "سرعة الدوران", 1, 300, spinSpeed, function(val)
+        CreateSlider(funSection, "Spin speed", 1, 300, spinSpeed, function(val)
             spinSpeed = val
             if spinActive and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
                 local root = lp.Character.HumanoidRootPart
@@ -2646,7 +2785,7 @@ function UpdateRightContent()
         end)
         
     elseif CurrentTab == "  More" then
-        local scriptsSection = CreateSection(RightContent, "📦 سكريبتات خارجية")
+        local scriptsSection = CreateSection(RightContent, "📦 External scripts")
         
         local addRow = Instance.new("Frame")
         addRow.Parent = scriptsSection
@@ -2662,7 +2801,7 @@ function UpdateRightContent()
         nameBox.BackgroundColor3 = BG_ELEMENT
         nameBox.BackgroundTransparency = 0.6
         nameBox.Font = Enum.Font.Gotham
-        nameBox.PlaceholderText = "الاسم"
+        nameBox.PlaceholderText = "Name"
         nameBox.PlaceholderColor3 = TEXT_DIM
         nameBox.Text = ""
         nameBox.TextColor3 = TEXT_PRIMARY
@@ -2678,7 +2817,7 @@ function UpdateRightContent()
         urlBox.BackgroundColor3 = BG_ELEMENT
         urlBox.BackgroundTransparency = 0.6
         urlBox.Font = Enum.Font.Gotham
-        urlBox.PlaceholderText = "رابط أو كود"
+        urlBox.PlaceholderText = "URL or code"
         urlBox.PlaceholderColor3 = TEXT_DIM
         urlBox.Text = ""
         urlBox.TextColor3 = TEXT_PRIMARY
@@ -2710,7 +2849,7 @@ function UpdateRightContent()
                 nameBox.Text = ""
                 urlBox.Text = ""
             else
-                notif("املأ الحقول", 2)
+                notif("Fill the fields", 2)
             end
         end)
         addBtn.MouseEnter:Connect(function() 
@@ -2735,17 +2874,17 @@ function UpdateRightContent()
             btn.TextXAlignment = Enum.TextXAlignment.Center
             Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
             btn.MouseButton1Click:Connect(function()
-                notif("جاري تحميل: " .. scriptData.name, 2)
+                notif("Loading: " .. scriptData.name, 2)
                 local success, err = pcall(function()
                     local func = loadstring(scriptData.script)
                     if func then
                         func()
                     else
-                        notif("فشل التحميل", 3)
+                        notif("Load failed", 3)
                     end
                 end)
                 if not success and err then
-                    notif("خطأ: " .. tostring(err), 3)
+                    notif("Error: " .. tostring(err), 3)
                 end
             end)
             btn.MouseEnter:Connect(function() 
@@ -2757,7 +2896,7 @@ function UpdateRightContent()
         end
         
         if #userScripts > 0 then
-            local userSection = CreateSection(RightContent, "📁 سكريبتاتك")
+            local userSection = CreateSection(RightContent, "📁 Your scripts")
             for i, scriptData in ipairs(userScripts) do
                 local frame = Instance.new("Frame")
                 frame.Parent = userSection
@@ -2778,17 +2917,17 @@ function UpdateRightContent()
                 btn.TextXAlignment = Enum.TextXAlignment.Center
                 Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
                 btn.MouseButton1Click:Connect(function()
-                    notif("جاري تحميل: " .. scriptData.name, 2)
+                    notif("Loading: " .. scriptData.name, 2)
                     local success, err = pcall(function()
                         local func = loadstring(scriptData.script)
                         if func then
                             func()
                         else
-                            notif("فشل التحميل", 3)
+                            notif("Load failed", 3)
                         end
                     end)
                     if not success and err then
-                        notif("خطأ: " .. tostring(err), 3)
+                        notif("Error: " .. tostring(err), 3)
                     end
                 end)
                 btn.MouseEnter:Connect(function() 
@@ -2825,7 +2964,7 @@ function UpdateRightContent()
         end
         
     elseif CurrentTab == "  Settings" then
-        local configSection = CreateSection(RightContent, "⚙️ التكوينات")
+        local configSection = CreateSection(RightContent, "⚙️ Configs")
         
         local nameFrame = Instance.new("Frame")
         nameFrame.Parent = configSection
@@ -2840,7 +2979,7 @@ function UpdateRightContent()
         configNameBox.BackgroundColor3 = BG_ELEMENT
         configNameBox.BackgroundTransparency = 0.6
         configNameBox.Font = Enum.Font.Gotham
-        configNameBox.PlaceholderText = "اسم التكوين"
+        configNameBox.PlaceholderText = "Config name"
         configNameBox.PlaceholderColor3 = TEXT_DIM
         configNameBox.Text = "Default"
         configNameBox.TextColor3 = TEXT_PRIMARY
@@ -2868,26 +3007,26 @@ function UpdateRightContent()
         
         local btnWidth = UDim2.new(0.32, -4, 1, 0)
         
-        CreateButton(btnRow, "💾 حفظ", function()
+        CreateButton(btnRow, "💾 Save", function()
             local configName = configNameBox.Text
             if configName == "" then configName = "Default" end
             SaveConfig(configName)
         end, btnWidth)
         
-        CreateButton(btnRow, "📂 تحميل", function()
+        CreateButton(btnRow, "📂 Load", function()
             local configName = configNameBox.Text
             if configName == "" then configName = "Default" end
             LoadConfig(configName)
             UpdateRightContent()
         end, btnWidth)
         
-        CreateButton(btnRow, "🗑️ حذف", function()
+        CreateButton(btnRow, "🗑️ Delete", function()
             local configName = configNameBox.Text
             if configName == "" then configName = "Default" end
             DeleteConfig(configName)
         end, btnWidth)
         
-        local configListSection = CreateSection(RightContent, "📋 التكوينات المحفوظة")
+        local configListSection = CreateSection(RightContent, "📋 Saved configs")
         local configsList = GetConfigList()
         if #configsList > 0 then
             for _, name in ipairs(configsList) do
@@ -2898,11 +3037,11 @@ function UpdateRightContent()
                 end)
             end
         else
-            CreateLabel(configListSection, "لا توجد تكوينات محفوظة", TEXT_SECONDARY)
+            CreateLabel(configListSection, "No saved configs", TEXT_SECONDARY)
         end
         
-        local miscSection = CreateSection(RightContent, "🔧 أخرى")
-        CreateToggle(miscSection, "مكافحة AFK", settings.AntiAFK, function(val)
+        local miscSection = CreateSection(RightContent, "🔧 Other")
+        CreateToggle(miscSection, "Anti-AFK", settings.AntiAFK, function(val)
             settings.AntiAFK = val
             if val then
                 if antiAFKConnection then antiAFKConnection:Disconnect() end
@@ -2932,7 +3071,7 @@ function UpdateRightContent()
         footerLabel1.Size = UDim2.new(1, 0, 0, 22)
         footerLabel1.Position = UDim2.new(0, 0, 0, 8)
         footerLabel1.Font = Enum.Font.GothamBold
-        footerLabel1.Text = "دعم إصدار STK V2.31.0"
+        footerLabel1.Text = "Supports STK v2.31.0"
         footerLabel1.TextColor3 = TEXT_SECONDARY
         footerLabel1.TextSize = 11
         footerLabel1.TextXAlignment = Enum.TextXAlignment.Center
@@ -2943,7 +3082,7 @@ function UpdateRightContent()
         footerLabel2.Size = UDim2.new(1, 0, 0, 22)
         footerLabel2.Position = UDim2.new(0, 0, 0, 32)
         footerLabel2.Font = Enum.Font.GothamBold
-        footerLabel2.Text = "❤️ شكراً لك"
+        footerLabel2.Text = "❤️ Thank you"
         footerLabel2.TextColor3 = ACCENT
         footerLabel2.TextSize = 12
         footerLabel2.TextXAlignment = Enum.TextXAlignment.Center
@@ -3011,4 +3150,4 @@ UpdateKillerChance()
 UpdateRightContent()
 UpdateAllFeatures()
 
-notif("✨ VSTK V2 — تم التحميل", 3)
+notif("✨ sa7loul V2 — loaded", 3)
