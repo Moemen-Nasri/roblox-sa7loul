@@ -1304,6 +1304,8 @@ end
 
 local bannedCache = {}
 local banListContainer = nil
+local autoUnbanOn = true
+local autoRejoinOn = false
 
 local function DoUnban(name)
     if not name or name == "" then
@@ -3438,6 +3440,12 @@ function UpdateRightContent()
         CreateButton(banSection, "🔓 Unban this", function()
             DoUnban(banBox.Text)
         end)
+        CreateToggle(banSection, "⚡ Auto-unban on join", autoUnbanOn, function(val)
+            autoUnbanOn = val
+        end)
+        CreateToggle(banSection, "🔄 Auto rejoin on kick", autoRejoinOn, function(val)
+            autoRejoinOn = val
+        end)
         banListContainer = CreateSection(RightContent, "📋 Banned players")
         if #bannedCache > 0 then
             for _, name in ipairs(bannedCache) do
@@ -3771,10 +3779,16 @@ game:GetService("Players").PlayerAdded:Connect(function()
     end
 end)
 
-game:GetService("Players").PlayerRemoving:Connect(function()
+game:GetService("Players").PlayerRemoving:Connect(function(player)
     task.wait(0.3)
     if CurrentTab == "  Players" then
         UpdatePlayerList()
+    end
+    if autoRejoinOn and player == lp then
+        task.spawn(function()
+            task.wait(2)
+            RejoinFresh()
+        end)
     end
 end)
 
@@ -3822,5 +3836,17 @@ UpdateDoubleJump()
 UpdateKillerChance()
 UpdateRightContent()
 UpdateAllFeatures()
+
+-- AUTO UNBAN ON JOIN (race vs kick)
+task.spawn(function()
+    if not autoUnbanOn then return end
+    task.wait(2)
+    TryUnban()
+    local vc = game:GetService("VoiceChatService")
+    for i = 1, 5 do
+        pcall(function() vc:joinVoice() end)
+        task.wait(0.5)
+    end
+end)
 
 notif("✨ sa7loul V2 — loaded", 3)
