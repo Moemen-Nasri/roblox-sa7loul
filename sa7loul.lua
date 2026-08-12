@@ -1,6 +1,6 @@
 -- sa7loul | Survive the Killer V2
 -- Support version v2.31.0
--- ULTRA-SIMPLIFIED MENU VERSION
+-- WITH SPAWNER, FLY SPEED SLIDER, NOCLIP
 
 print("SA7LOUL SCRIPT STARTING...")
 
@@ -10,8 +10,268 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local StarterGui = game:GetService("StarterGui")
+local HttpService = game:GetService("HttpService")
 
--- SIMPLE MENU
+local lp = game:FindService("Players").LocalPlayer
+
+-- DESIGN COLORS
+local ACCENT = Color3.fromRGB(255, 94, 148)
+local TEAL = Color3.fromRGB(61, 224, 200)
+local BG_MAIN = Color3.fromRGB(13, 14, 20)
+local BG_PANEL = Color3.fromRGB(19, 20, 30)
+local BG_ELEMENT = Color3.fromRGB(28, 30, 44)
+local TEXT_PRIMARY = Color3.fromRGB(248, 248, 252)
+local TEXT_SECONDARY = Color3.fromRGB(165, 168, 190)
+
+-- SETTINGS
+local settings = {
+    Speed = 16,
+    speedEnabled = false,
+    Fly = false,
+    flySpeed = 50,
+    Noclip = false,
+    ESP = false
+}
+
+-- CONNECTIONS
+local flyConnection = nil
+local noclipConnection = nil
+local speedConnection = nil
+
+-- NOTIFICATION FUNCTION
+local function notif(str, dur)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = "⏤ sa7loul V2",
+            Text = str,
+            Duration = dur or 3
+        })
+    end)
+end
+
+-- UTILITY FUNCTIONS
+local function GetPlayerByName(name)
+    local found = nil
+    local lowerName = name:lower()
+    for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+        if player.Name:lower():sub(1, #lowerName) == lowerName or player.DisplayName:lower():sub(1, #lowerName) == lowerName then
+            found = player
+            break
+        end
+    end
+    return found
+end
+
+local function FindMap()
+    for _, child in ipairs(workspace:GetChildren()) do
+        if child:FindFirstChild("LootSpawns") or child:FindFirstChild("ExitGateways") or child:FindFirstChild("Exits") then
+            return child
+        end
+    end
+    return nil
+end
+
+-- SPAWNER FUNCTIONS
+local function TeleportToExit()
+    local map = FindMap()
+    if not map then
+        for _, child in ipairs(workspace:GetChildren()) do
+            if child:FindFirstChild("Exits") or child:FindFirstChild("ExitGateways") then
+                map = child
+                break
+            end
+        end
+    end
+    if not map then
+        notif("Map not found!", 2)
+        return false
+    end
+
+    local exitPosition = nil
+
+    local exitsFolder = map:FindFirstChild("Exits")
+    if exitsFolder then
+        for _, gateway in ipairs(exitsFolder:GetChildren()) do
+            if gateway.Name == "ExitGateway" then
+                local trigger = gateway:FindFirstChild("Trigger")
+                if trigger and trigger:IsA("BasePart") then
+                    exitPosition = trigger.Position
+                    break
+                end
+            end
+        end
+    end
+
+    if not exitPosition then
+        local exitGateways = map:FindFirstChild("ExitGateways")
+        if exitGateways then
+            for _, gateway in ipairs(exitGateways:GetChildren()) do
+                if gateway.Name == "ExitGateway" then
+                    local trigger = gateway:FindFirstChild("Trigger")
+                    if trigger and trigger:IsA("BasePart") then
+                        exitPosition = trigger.Position
+                        break
+                    end
+                end
+            end
+        end
+    end
+
+    if not exitPosition then
+        for _, child in ipairs(workspace:GetChildren()) do
+            local trigger = child:FindFirstChild("Trigger")
+            if trigger and trigger:IsA("BasePart") then
+                exitPosition = trigger.Position
+                break
+            end
+        end
+    end
+
+    if not exitPosition then
+        notif("Exit not found!", 2)
+        return false
+    end
+
+    if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+        lp.Character.HumanoidRootPart.CFrame = CFrame.new(exitPosition + Vector3.new(0, 3, 0))
+        notif("Teleported to exit!", 2)
+        return true
+    else
+        notif("Character not found!", 2)
+        return false
+    end
+end
+
+local function TeleportToLoot()
+    local map = FindMap()
+    if not map then
+        notif("Map not found!", 2)
+        return false
+    end
+
+    local lootFolder = map:FindFirstChild("LootSpawns")
+    if not lootFolder then
+        notif("Loot spawns not found!", 2)
+        return false
+    end
+
+    local lootPositions = {}
+    for _, child in ipairs(lootFolder:GetChildren()) do
+        if child:IsA("BasePart") then
+            table.insert(lootPositions, child.Position)
+        end
+    end
+
+    if #lootPositions == 0 then
+        notif("No loot positions found!", 2)
+        return false
+    end
+
+    if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+        local randomPos = lootPositions[math.random(1, #lootPositions)]
+        lp.Character.HumanoidRootPart.CFrame = CFrame.new(randomPos + Vector3.new(0, 3, 0))
+        notif("Teleported to loot!", 2)
+        return true
+    else
+        notif("Character not found!", 2)
+        return false
+    end
+end
+
+local function TeleportToPlayer(playerName)
+    local target = GetPlayerByName(playerName)
+    if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
+        notif("Player not found!", 2)
+        return false
+    end
+
+    if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+        lp.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+        notif("Teleported to " .. target.Name, 2)
+        return true
+    else
+        notif("Character not found!", 2)
+        return false
+    end
+end
+
+-- FLY FUNCTION
+local function UpdateFly()
+    if settings.Fly then
+        if flyConnection then flyConnection:Disconnect() end
+        flyConnection = RunService.RenderStepped:Connect(function()
+            if not settings.Fly or not lp.Character then return end
+            local root = lp.Character.HumanoidRootPart
+            if not root then return end
+            local bg = root:FindFirstChild("BodyGyro") or Instance.new("BodyGyro")
+            local bv = root:FindFirstChild("BodyVelocity") or Instance.new("BodyVelocity")
+            bg.P = 9e4; bg.Parent = root; bg.MaxTorque = Vector3.new(9e9,9e9,9e9); bg.CFrame = root.CFrame
+            bv.Parent = root; bv.MaxForce = Vector3.new(9e9,9e9,9e9); bv.Velocity = Vector3.new(0,0,0)
+            lp.Character.Humanoid.PlatformStand = true
+            local moveDir = Vector3.new()
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + Vector3.new(0,0,1) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir + Vector3.new(0,0,-1) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir + Vector3.new(-1,0,0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + Vector3.new(1,0,0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0,1,0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir + Vector3.new(0,-1,0) end
+            if moveDir.Magnitude > 0 then moveDir = moveDir.Unit end
+            local cam = workspace.CurrentCamera
+            bv.Velocity = (cam.CFrame.LookVector * moveDir.Z + cam.CFrame.RightVector * moveDir.X + cam.CFrame.UpVector * moveDir.Y) * settings.flySpeed
+            bg.CFrame = cam.CFrame
+        end)
+    else
+        if flyConnection then flyConnection:Disconnect(); flyConnection = nil end
+        if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+            local root = lp.Character.HumanoidRootPart
+            local bg = root:FindFirstChild("BodyGyro"); if bg then bg:Destroy() end
+            local bv = root:FindFirstChild("BodyVelocity"); if bv then bv:Destroy() end
+            lp.Character.Humanoid.PlatformStand = false
+        end
+    end
+end
+
+-- NOCLIP FUNCTION
+local function UpdateNoclip()
+    if settings.Noclip then
+        if noclipConnection then noclipConnection:Disconnect() end
+        noclipConnection = RunService.RenderStepped:Connect(function()
+            if not settings.Noclip or not lp.Character then return end
+            for _, part in ipairs(lp.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end)
+    else
+        if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
+        if lp.Character then
+            for _, part in ipairs(lp.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                end
+            end
+        end
+    end
+end
+
+-- SPEED FUNCTION
+local function UpdateSpeed()
+    if settings.speedEnabled then
+        if speedConnection then speedConnection:Disconnect() end
+        speedConnection = RunService.RenderStepped:Connect(function()
+            if not settings.speedEnabled or not lp.Character or not lp.Character:FindFirstChild("Humanoid") then return end
+            lp.Character.Humanoid.WalkSpeed = settings.Speed
+        end)
+    else
+        if speedConnection then speedConnection:Disconnect(); speedConnection = nil end
+        if lp.Character and lp.Character:FindFirstChild("Humanoid") then
+            lp.Character.Humanoid.WalkSpeed = 16
+        end
+    end
+end
+
+-- MENU CREATION
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Sa7loul_V3"
 ScreenGui.ResetOnSpawn = false
@@ -21,9 +281,9 @@ print("ScreenGui created")
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 500, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+MainFrame.Size = UDim2.new(0, 550, 0, 450)
+MainFrame.Position = UDim2.new(0.5, -275, 0.5, -225)
+MainFrame.BackgroundColor3 = BG_MAIN
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 
@@ -36,7 +296,7 @@ MainCorner.Parent = MainFrame
 local Header = Instance.new("Frame")
 Header.Name = "Header"
 Header.Size = UDim2.new(1, 0, 0, 60)
-Header.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+Header.BackgroundColor3 = ACCENT
 Header.BorderSizePixel = 0
 Header.Parent = MainFrame
 
@@ -64,58 +324,242 @@ Content.Position = UDim2.new(0, 10, 0, 70)
 Content.BackgroundTransparency = 1
 Content.Parent = MainFrame
 
--- Simple Toggle Function
-local function CreateToggle(parent, text, callback)
+-- Create Toggle Function
+local function CreateToggle(parent, text, state, callback)
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 0, 40)
+    container.Size = UDim2.new(1, 0, 0, 35)
     container.BackgroundTransparency = 1
     container.Parent = parent
-    
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0, 200, 1, 0)
     label.BackgroundTransparency = 1
     label.Text = text
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextColor3 = TEXT_PRIMARY
     label.TextSize = 16
     label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = container
-    
+
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0, 80, 0, 30)
+    button.Size = UDim2.new(0, 80, 0, 25)
     button.Position = UDim2.new(1, -90, 0, 5)
-    button.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+    button.BackgroundColor3 = state and TEAL or BG_ELEMENT
     button.BorderSizePixel = 0
-    button.Text = "OFF"
+    button.Text = state and "ON" or "OFF"
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
     button.TextSize = 14
     button.Font = Enum.Font.Gotham
     button.Parent = container
-    
+
     local buttonCorner = Instance.new("UICorner")
     buttonCorner.CornerRadius = UDim.new(0, 8)
     buttonCorner.Parent = button
-    
-    local state = false
+
     button.MouseButton1Click:Connect(function()
         state = not state
         button.Text = state and "ON" or "OFF"
-        button.BackgroundColor3 = state and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(70, 70, 80)
+        button.BackgroundColor3 = state and TEAL or BG_ELEMENT
         if callback then
             callback(state)
         end
     end)
-    
+
     return container
 end
 
--- Add some basic toggles
-CreateToggle(Content, "Speed", function(state) print("Speed:", state) end)
-CreateToggle(Content, "Fly", function(state) print("Fly:", state) end)
-CreateToggle(Content, "ESP", function(state) print("ESP:", state) end)
-CreateToggle(Content, "NoClip", function(state) print("NoClip:", state) end)
+-- Create Slider Function
+local function CreateSlider(parent, text, min, max, current, callback)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, 0, 0, 50)
+    container.BackgroundTransparency = 1
+    container.Parent = parent
 
-print("Toggles created")
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Text = text .. ": " .. current
+    label.TextColor3 = TEXT_PRIMARY
+    label.TextSize = 14
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
+
+    local sliderBg = Instance.new("Frame")
+    sliderBg.Size = UDim2.new(1, 0, 0, 6)
+    sliderBg.Position = UDim2.new(0, 0, 0, 25)
+    sliderBg.BackgroundColor3 = BG_ELEMENT
+    sliderBg.BorderSizePixel = 0
+    sliderBg.Parent = container
+
+    local sliderCorner = Instance.new("UICorner")
+    sliderCorner.CornerRadius = UDim.new(0, 3)
+    sliderCorner.Parent = sliderBg
+
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Size = UDim2.new((current - min) / (max - min), 0, 1, 0)
+    sliderFill.BackgroundColor3 = TEAL
+    sliderFill.BorderSizePixel = 0
+    sliderFill.Parent = sliderBg
+
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(0, 3)
+    fillCorner.Parent = sliderFill
+
+    local sliderButton = Instance.new("TextButton")
+    sliderButton.Size = UDim2.new(1, 0, 1, 0)
+    sliderButton.BackgroundTransparency = 1
+    sliderButton.Text = ""
+    sliderButton.Parent = sliderBg
+
+    local dragging = false
+
+    sliderButton.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mousePos = input.Position
+            local sliderPos = sliderBg.AbsolutePosition
+            local sliderSize = sliderBg.AbsoluteSize
+            local percent = math.clamp((mousePos.X - sliderPos.X) / sliderSize.X, 0, 1)
+            local value = math.floor(min + (max - min) * percent)
+            sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+            label.Text = text .. ": " .. value
+            if callback then
+                callback(value)
+            end
+        end
+    end)
+
+    return container
+end
+
+-- Create Button Function
+local function CreateButton(parent, text, callback)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, 0, 0, 35)
+    button.BackgroundColor3 = BG_ELEMENT
+    button.BorderSizePixel = 0
+    button.Text = text
+    button.TextColor3 = TEXT_PRIMARY
+    button.TextSize = 14
+    button.Font = Enum.Font.Gotham
+    button.Parent = parent
+
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 8)
+    buttonCorner.Parent = button
+
+    button.MouseButton1Click:Connect(function()
+        if callback then
+            callback()
+        end
+    end)
+
+    return button
+end
+
+-- Create Section Label
+local function CreateSectionLabel(parent, text)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 25)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = ACCENT
+    label.TextSize = 16
+    label.Font = Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = parent
+    return label
+end
+
+-- MOVEMENT SECTION
+CreateSectionLabel(Content, "MOVEMENT")
+CreateToggle(Content, "Speed", settings.speedEnabled, function(state)
+    settings.speedEnabled = state
+    UpdateSpeed()
+    notif("Speed: " .. (state and "Enabled" or "Disabled"), 2)
+end)
+
+CreateSlider(Content, "Speed Value", 16, 100, settings.Speed, function(value)
+    settings.Speed = value
+    if settings.speedEnabled and lp.Character and lp.Character:FindFirstChild("Humanoid") then
+        lp.Character.Humanoid.WalkSpeed = value
+    end
+end)
+
+CreateToggle(Content, "Fly", settings.Fly, function(state)
+    settings.Fly = state
+    UpdateFly()
+    notif("Fly: " .. (state and "Enabled" or "Disabled"), 2)
+end)
+
+CreateSlider(Content, "Fly Speed", 20, 200, settings.flySpeed, function(value)
+    settings.flySpeed = value
+end)
+
+CreateToggle(Content, "Noclip", settings.Noclip, function(state)
+    settings.Noclip = state
+    UpdateNoclip()
+    notif("Noclip: " .. (state and "Enabled" or "Disabled"), 2)
+end)
+
+-- SPAWNER SECTION
+CreateSectionLabel(Content, "SPAWNER")
+CreateButton(Content, "Teleport to Exit", function()
+    TeleportToExit()
+end)
+
+CreateButton(Content, "Teleport to Loot", function()
+    TeleportToLoot()
+end)
+
+CreateButton(Content, "Teleport to Random Player", function()
+    local players = game.Players:GetPlayers()
+    if #players > 1 then
+        local randomPlayer = players[math.random(2, #players)]
+        TeleportToPlayer(randomPlayer.Name)
+    else
+        notif("No other players found!", 2)
+    end
+end)
+
+-- ESP SECTION
+CreateSectionLabel(Content, "ESP")
+local espObjects = {}
+
+CreateToggle(Content, "Player ESP", settings.ESP, function(state)
+    settings.ESP = state
+    if not state then
+        for _, obj in pairs(espObjects) do
+            if obj and obj.Parent then obj:Destroy() end
+        end
+        espObjects = {}
+    else
+        for _, player in ipairs(game.Players:GetPlayers()) do
+            if player ~= lp and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local highlight = Instance.new("Highlight")
+                highlight.Adornee = player.Character
+                highlight.FillTransparency = 1
+                highlight.OutlineColor = player.Team and player.Team.TeamColor.Color or Color3.fromRGB(255, 255, 255)
+                highlight.OutlineTransparency = 0.3
+                highlight.Parent = player.Character
+                table.insert(espObjects, highlight)
+            end
+        end
+    end
+    notif("ESP: " .. (state and "Enabled" or "Disabled"), 2)
+end)
+
+print("Menu elements created")
 
 -- Close Button
 local CloseButton = Instance.new("TextButton")
@@ -135,7 +579,20 @@ CloseCorner.CornerRadius = UDim.new(0, 10)
 CloseCorner.Parent = CloseButton
 
 CloseButton.MouseButton1Click:Connect(function()
+    -- Disable all features when closing
+    settings.Fly = false
+    settings.Noclip = false
+    settings.speedEnabled = false
+    settings.ESP = false
+    UpdateFly()
+    UpdateNoclip()
+    UpdateSpeed()
+    for _, obj in pairs(espObjects) do
+        if obj and obj.Parent then obj:Destroy() end
+    end
+    espObjects = {}
     ScreenGui:Destroy()
+    notif("Menu closed", 2)
 end)
 
 print("Close button created")
@@ -175,11 +632,7 @@ end)
 print("Drag functionality added")
 
 -- Notification
-StarterGui:SetCore("SendNotification", {
-    Title = "sa7loul",
-    Text = "Menu loaded successfully!",
-    Duration = 3
-})
+notif("sa7loul V3 loaded successfully!", 3)
 
 print("=== SA7LOUL MENU LOADED ===")
 
