@@ -3545,6 +3545,18 @@ minimizeBtn.Position = UDim2.new(1, -104, 0.5, -13)
 local closeBtn = headerIconButton("✕", UITheme.RED)
 closeBtn.Position = UDim2.new(1, -72, 0.5, -13)
 
+local minimizedHint = Instance.new("TextLabel")
+minimizedHint.Parent = Header
+minimizedHint.BackgroundTransparency = 1
+minimizedHint.Font = Enum.Font.Gotham
+minimizedHint.Text = "minimized ·  click ✚ to restore full menu"
+minimizedHint.TextColor3 = UITheme.SUBTEXT
+minimizedHint.TextSize = 10
+minimizedHint.Size = UDim2.new(0, 220, 0, 16)
+minimizedHint.Position = UDim2.new(0, 36, 0, 32)
+minimizedHint.TextXAlignment = Enum.TextXAlignment.Left
+minimizedHint.Visible = false
+
 -- ────────────────────────── DRAG ──────────────────────────
 local dragging = false
 local dragOffset = Vector2.zero
@@ -3572,11 +3584,16 @@ function ApplyMinimized(state)
     if state then
         minimized = true
         minimizeBtn.Text = "✚"
-        TweenService:Create(Window, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 300, 0, 54),
-            AnchorPoint = Vector2.new(0, 0),
-            Position = UDim2.fromOffset(14, 14)
-        }):Play()
+        headerSub.Visible = false
+        menuKeyChip.Visible = false
+        minimizedHint.Visible = true
+        pcall(function()
+            TweenService:Create(Window, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                Size = UDim2.new(0, 300, 0, 54),
+                AnchorPoint = Vector2.new(0, 0),
+                Position = UDim2.fromOffset(14, 14)
+            }):Play()
+        end)
         task.wait(0.22)
         Sidebar.Visible = false
         ContentScroll.Visible = false
@@ -3585,15 +3602,26 @@ function ApplyMinimized(state)
     else
         minimized = false
         minimizeBtn.Text = "–"
+        headerSub.Visible = true
+        menuKeyChip.Visible = true
+        minimizedHint.Visible = false
         Sidebar.Visible = true
         ContentScroll.Visible = true
         SearchBar.Visible = true
         statusBar.Visible = true
-        TweenService:Create(Window, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 720, 0, 540),
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.fromScale(0.5, 0.5)
-        }):Play()
+        pcall(function()
+            TweenService:Create(Window, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 720, 0, 540),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Position = UDim2.fromScale(0.5, 0.5)
+            }):Play()
+        end)
+        task.spawn(function()
+            task.wait(0.3)
+            if not minimized then
+                pcall(UpdateRightContent)
+            end
+        end)
     end
 end
 minimizeBtn.MouseButton1Click:Connect(function()
@@ -6250,6 +6278,26 @@ function UpdateRightContent()
             end
         end })
 
+        local row7 = Instance.new("Frame")
+        row7.Parent = actions
+        row7.BackgroundTransparency = 1
+        row7.Size = UDim2.new(1, 0, 0, 34)
+        local lay7 = Instance.new("UIListLayout", row7)
+        lay7.FillDirection = Enum.FillDirection.Horizontal
+        lay7.Padding = UDim.new(0, 6)
+        Button(row7, { text = "🦅 Admin fly/no-clip (remotes)", size = UDim2.new(1, 0, 0, 32), accent = true, callback = function()
+            local target = GetSelectedPlayer()
+            if not target then
+                notif("Select a player first", 2)
+                return
+            end
+            if TryFireAdminRemote(target) then
+                notif("Admin remotes fired → " .. target.Name, 2)
+            else
+                notif("No admin remotes found", 3)
+            end
+        end })
+
         local spinSection = Section(ContentScroll, "Party", "🌀")
         local spinHandle = ToggleRow(spinSection, {
             text = "Spin", id = "spin", state = spinActive,
@@ -6579,6 +6627,20 @@ function UpdateRightContent()
         end)
         Note(chatSection, "Messages are client-side (only you see them)")
 
+        local adminRemoteSection = Section(ContentScroll, "Fake Admin (remotes)", "🖥")
+        local adminCmdBox = TextBox(adminRemoteSection, { placeholder = "Command: fly / noclip / ban ... (empty = raw fire)" })
+        Button(adminRemoteSection, "📡 Fire to troll target", function()
+            local t = TrollGetTarget()
+            if not t then
+                notif("Set a troll target first", 2)
+                return
+            end
+            local cmd = adminCmdBox.Text ~= "" and adminCmdBox.Text or nil
+            local fired = FakeAdminCommand(cmd, t.Name)
+            notif(cmd and ("Fired '" .. cmd .. "' → " .. t.Name .. " (" .. fired .. " ok)") or ("Raw fire → " .. t.Name .. " (" .. fired .. " ok)"), 3)
+        end)
+        Note(adminRemoteSection, "Sends the command through every admin-looking remote it finds")
+
         local ghostSection = Section(ContentScroll, "Ghost & Tools", "👻")
         ToggleRow(ghostSection, {
             text = "Ghost Mode", id = "ghost", state = TrollCfg.invis,
@@ -6727,6 +6789,75 @@ function UpdateRightContent()
         Note(popcornMain, "3D table builds in-world — walk to it and press E to sit")
         Note(popcornMain, "Click kernels when the ring meets the target: Perfect +100 | Great +50 | Good +20")
         Note(popcornMain, "1v1 vs Brainrot Bot · +10 win / +2 lose / +5 tie Tokens")
+
+        local legacySection = Section(ContentScroll, "Legacy auto-helpers", "🛠")
+        local tsStatusLabel = Label(legacySection, "All OFF", UITheme.SUBTEXT, 11)
+        tsunamiStatusLabel = tsStatusLabel
+        local function TsSet(field, val)
+            tsunamiCfg[field] = val
+            pcall(RebuildTsunami)
+        end
+        ToggleRow(legacySection, {
+            text = "Auto Collect", id = "tscollect", state = tsunamiCfg.on,
+            desc = "TPs to the nearest coin/cash/loot part",
+            keybind = false,
+            onToggle = function(val) TsSet("on", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Auto Clicker", id = "tsclicker", state = tsunamiCfg.clicker,
+            desc = "Clicks non-stop at the mouse position",
+            keybind = false,
+            onToggle = function(val) TsSet("clicker", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Popcorn auto-click (GUI)", id = "tspopcorn", state = tsunamiCfg.popcorn,
+            desc = "Spam-clicks green circle/ring UI elements",
+            keybind = false,
+            onToggle = function(val) TsSet("popcorn", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "God Mode", id = "tsgod", state = tsunamiCfg.god,
+            desc = "Keeps your health & stamina full",
+            keybind = false,
+            onToggle = function(val) TsSet("god", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Auto Jump", id = "tsjump", state = tsunamiCfg.autojump,
+            desc = "Jumps every 0.6s",
+            keybind = false,
+            onToggle = function(val) TsSet("autojump", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Safe TP", id = "tssafe", state = tsunamiCfg.safe,
+            desc = "Teleports you to a safe spot every 2s",
+            keybind = false,
+            onToggle = function(val) TsSet("safe", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Minigame Bot", id = "tsmg", state = tsunamiCfg.mgBot,
+            desc = "Clicks fish/cast/reel/play buttons automatically",
+            keybind = false,
+            onToggle = function(val) TsSet("mgBot", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "C4 Clicker", id = "tsc4", state = tsunamiCfg.c4,
+            desc = "Actives col/cell/slot/connect buttons",
+            keybind = false,
+            onToggle = function(val) TsSet("c4", val) end
+        })
+        Button(legacySection, "⏹ Stop all helpers", function()
+            tsunamiCfg.on = false
+            tsunamiCfg.clicker = false
+            tsunamiCfg.popcorn = false
+            tsunamiCfg.god = false
+            tsunamiCfg.autojump = false
+            tsunamiCfg.safe = false
+            tsunamiCfg.mgBot = false
+            tsunamiCfg.c4 = false
+            pcall(RebuildTsunami)
+            notif("Tsunami helpers stopped", 2)
+        end)
+        Note(legacySection, "Generic auto-clickers — work in any game with GUI buttons. Status refreshes every second.")
 
     -- ═══════════ EXTRAS ═══════════
     elseif CurrentTab == "  Extras" then
