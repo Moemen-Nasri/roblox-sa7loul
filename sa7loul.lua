@@ -1,10 +1,583 @@
 -- sa7loul | Survive the Killer V2
 -- Support version v2.31.0
+-- Integrated with Sahloul Auth & Stream Proof
 
 local configs = {
     savedConfigs = {},
     currentConfigName = "Default"
 }
+
+-- ============================================
+-- SAHLOUL AUTH SYSTEM
+-- ============================================
+
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+
+local SaveFileName = "sahloul_auth_data.json"
+
+local function SaveCredentials(data)
+    local success = pcall(function()
+        writefile(SaveFileName, HttpService:JSONEncode(data))
+    end)
+    return success
+end
+
+local function LoadCredentials()
+    local success, data = pcall(function()
+        if isfile(SaveFileName) then
+            return HttpService:JSONDecode(readfile(SaveFileName))
+        end
+        return nil
+    end)
+    if success and data then
+        return data
+    end
+    return nil
+end
+
+local function ClearCredentials()
+    pcall(function()
+        if isfile(SaveFileName) then
+            delfile(SaveFileName)
+        end
+    end)
+end
+
+-- ============================================
+-- STREAM PROOF SYSTEM
+-- ============================================
+
+local StreamProof = {
+    active = false,
+    originalGuiEnabled = true,
+    detectionMethods = {
+        obs = false,
+        nvidia = false,
+        discord = false,
+        generic = false
+    },
+    running = false
+}
+
+local function DetectOBS()
+    -- Try to detect OBS by checking for common processes and patterns
+    local success = pcall(function()
+        -- Check for OBS-like behavior patterns
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        
+        -- OBS often changes window focus behavior
+        local initialFocused = game:GetService("UserInputService"):IsFocused()
+        wait(0.1)
+        local stillFocused = game:GetService("UserInputService"):IsFocused()
+        
+        -- If focus behavior is unusual, might indicate OBS
+        if initialFocused ~= stillFocused then
+            return true
+        end
+        
+        -- Check for FPS patterns that might indicate recording
+        local fps = game:GetService("Stats").PerformanceStats.FPS
+        if fps and fps.Value < 25 then
+            return true
+        end
+        
+        return false
+    end)
+    return success and false or false
+end
+
+local function DetectNvidiaOverlay()
+    -- Try to detect NVIDIA overlay by checking for specific behaviors
+    local success = pcall(function()
+        -- NVIDIA overlay often causes specific rendering patterns
+        local camera = workspace.CurrentCamera
+        if not camera then return false end
+        
+        -- Check for unusual camera behavior
+        local originalFieldOfView = camera.FieldOfView
+        wait(0.05)
+        local currentFieldOfView = camera.FieldOfView
+        
+        -- NVIDIA overlay might affect FOV
+        if originalFieldOfView ~= currentFieldOfView then
+            return true
+        end
+        
+        -- Check for rendering anomalies
+        local lighting = game:GetService("Lighting")
+        local originalBrightness = lighting.Brightness
+        wait(0.05)
+        local currentBrightness = lighting.Brightness
+        
+        if originalBrightness ~= currentBrightness then
+            return true
+        end
+        
+        return false
+    end)
+    return success and false or false
+end
+
+local function DetectDiscordStreaming()
+    -- Try to detect Discord streaming by checking for audio/video patterns
+    local success = pcall(function()
+        -- Discord streaming often affects audio patterns
+        local VoiceChatService = game:GetService("VoiceChatService")
+        
+        -- Check for unusual voice chat behavior
+        if VoiceChatService then
+            local success = pcall(function()
+                -- Try to access voice chat properties that might be affected
+                local participants = VoiceChatService:GetParticipants()
+                if participants and #participants > 0 then
+                    -- Discord streaming might affect participant count
+                    return true
+                end
+            end)
+        end
+        
+        -- Check for network patterns
+        local NetworkService = game:GetService("NetworkService")
+        if NetworkService then
+            local ping = NetworkService:GetPing()
+            if ping and ping > 200 then
+                -- High ping might indicate streaming
+                return true
+            end
+        end
+        
+        return false
+    end)
+    return success and false or false
+end
+
+local function DetectGenericRecording()
+    -- Generic detection for screen recording
+    local success = pcall(function()
+        -- Check for performance indicators that might suggest recording
+        local stats = game:GetService("Stats")
+        local fps = stats and stats.PerformanceStats and stats.PerformanceStats.FPS
+        
+        if fps and fps.Value < 25 then
+            return true -- Low FPS might indicate recording
+        end
+        
+        -- Check for memory usage patterns
+        local memory = stats and stats.PerformanceStats and stats.PerformanceStats.DataReceiveKbps
+        if memory and memory.Value > 1000 then
+            return true -- High data transfer might indicate recording
+        end
+        
+        -- Check for GPU performance patterns
+        local gpu = stats and stats.PerformanceStats and stats.PerformanceStats.GpuInstanceCount
+        if gpu and gpu.Value > 50 then
+            return true -- High GPU usage might indicate recording
+        end
+        
+        return false
+    end)
+    return success and false or false
+end
+
+local function UpdateStreamDetection()
+    StreamProof.detectionMethods.obs = DetectOBS()
+    StreamProof.detectionMethods.nvidia = DetectNvidiaOverlay()
+    StreamProof.detectionMethods.discord = DetectDiscordStreaming()
+    StreamProof.detectionMethods.generic = DetectGenericRecording()
+    
+    local anyDetected = StreamProof.detectionMethods.obs or 
+                        StreamProof.detectionMethods.nvidia or 
+                        StreamProof.detectionMethods.discord or 
+                        StreamProof.detectionMethods.generic
+    
+    return anyDetected
+end
+
+local function SetGuiVisibility(visible)
+    -- This will be called on the main GUI when it's created
+    if StreamProof.originalGuiEnabled ~= visible then
+        StreamProof.originalGuiEnabled = visible
+        
+        -- Find and toggle the main GUI visibility
+        local success = pcall(function()
+            local coreGui = game:GetService("CoreGui")
+            local mainGui = coreGui:FindFirstChild("sa7loul_V3")
+            if mainGui then
+                mainGui.Enabled = visible
+            end
+        end)
+    end
+end
+
+local function StartStreamProofDetection()
+    if StreamProof.running then return end
+    StreamProof.running = true
+    
+    spawn(function()
+        while StreamProof.running do
+            local detected = UpdateStreamDetection()
+            
+            if detected and StreamProof.originalGuiEnabled then
+                -- Hide GUI when streaming is detected
+                SetGuiVisibility(false)
+                notif("Stream Proof: GUI Hidden", 2)
+            elseif not detected and not StreamProof.originalGuiEnabled then
+                -- Show GUI when streaming stops
+                SetGuiVisibility(true)
+                notif("Stream Proof: GUI Visible", 2)
+            end
+            
+            wait(2) -- Check every 2 seconds
+        end
+    end)
+end
+
+local function StopStreamProofDetection()
+    StreamProof.running = false
+end
+
+local function ToggleStreamProof()
+    StreamProof.active = not StreamProof.active
+    settings.StreamProof = StreamProof.active -- Update settings
+    
+    if StreamProof.active then
+        StartStreamProofDetection()
+        notif("Stream Proof: Enabled", 2)
+    else
+        StopStreamProofDetection()
+        SetGuiVisibility(true)
+        notif("Stream Proof: Disabled", 2)
+    end
+    return StreamProof.active
+end
+
+-- ============================================
+-- LOGIN GUI SYSTEM
+-- ============================================
+
+local LoginGui = {
+    screenGui = nil,
+    mainFrame = nil,
+    authenticated = false,
+    session = nil
+}
+
+local function CreateLoginGui()
+    local TweenService = game:GetService("TweenService")
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "SahloulAuthGUI"
+    screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.Parent = game:GetService("CoreGui")
+    
+    -- Main Container
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 400, 0, 350)
+    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -175)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 15)
+    corner.Parent = mainFrame
+    
+    -- Header
+    local header = Instance.new("Frame")
+    header.Name = "Header"
+    header.Size = UDim2.new(1, 0, 0, 60)
+    header.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+    header.BorderSizePixel = 0
+    header.Parent = mainFrame
+    
+    local headerCorner = Instance.new("UICorner")
+    headerCorner.CornerRadius = UDim.new(0, 15)
+    headerCorner.Parent = header
+    
+    local title = Instance.new("TextLabel")
+    title.Name = "Title"
+    title.Size = UDim2.new(1, 0, 1, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "sa7loul Auth"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.TextSize = 24
+    title.Font = Enum.Font.GothamBold
+    title.Parent = header
+    
+    -- License Input
+    local licenseLabel = Instance.new("TextLabel")
+    licenseLabel.Name = "LicenseLabel"
+    licenseLabel.Size = UDim2.new(1, -40, 0, 25)
+    licenseLabel.Position = UDim2.new(0, 20, 0, 80)
+    licenseLabel.BackgroundTransparency = 1
+    licenseLabel.Text = "License Key"
+    licenseLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+    licenseLabel.TextSize = 14
+    licenseLabel.Font = Enum.Font.Gotham
+    licenseLabel.TextXAlignment = Enum.TextXAlignment.Left
+    licenseLabel.Parent = mainFrame
+    
+    local licenseBox = Instance.new("TextBox")
+    licenseBox.Name = "LicenseBox"
+    licenseBox.Size = UDim2.new(1, -40, 0, 40)
+    licenseBox.Position = UDim2.new(0, 20, 0, 105)
+    licenseBox.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+    licenseBox.BorderSizePixel = 0
+    licenseBox.Text = ""
+    licenseBox.PlaceholderText = "XXXX-XXXX-XXXX-XXXX"
+    licenseBox.PlaceholderColor3 = Color3.fromRGB(95, 98, 125)
+    licenseBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    licenseBox.TextSize = 16
+    licenseBox.Font = Enum.Font.Gotham
+    licenseBox.Parent = mainFrame
+    
+    local licenseCorner = Instance.new("UICorner")
+    licenseCorner.CornerRadius = UDim.new(0, 8)
+    licenseCorner.Parent = licenseBox
+    
+    local licensePadding = Instance.new("UIPadding")
+    licensePadding.PaddingLeft = UDim.new(0, 15)
+    licensePadding.PaddingRight = UDim.new(0, 15)
+    licensePadding.Parent = licenseBox
+    
+    -- Remember Me
+    local rememberContainer = Instance.new("Frame")
+    rememberContainer.Name = "RememberContainer"
+    rememberContainer.Size = UDim2.new(1, -40, 0, 25)
+    rememberContainer.Position = UDim2.new(0, 20, 0, 155)
+    rememberContainer.BackgroundTransparency = 1
+    rememberContainer.Parent = mainFrame
+    
+    local rememberButton = Instance.new("TextButton")
+    rememberButton.Name = "RememberButton"
+    rememberButton.Size = UDim2.new(0, 20, 0, 20)
+    rememberButton.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+    rememberButton.BorderSizePixel = 0
+    rememberButton.Text = ""
+    rememberButton.Parent = rememberContainer
+    
+    local rememberCorner = Instance.new("UICorner")
+    rememberCorner.CornerRadius = UDim.new(0, 4)
+    rememberCorner.Parent = rememberButton
+    
+    local rememberCheck = Instance.new("Frame")
+    rememberCheck.Name = "RememberCheck"
+    rememberCheck.Size = UDim2.new(0, 12, 0, 12)
+    rememberCheck.Position = UDim2.new(0, 4, 0, 4)
+    rememberCheck.BackgroundColor3 = Color3.fromRGB(61, 224, 200)
+    rememberCheck.BorderSizePixel = 0
+    rememberCheck.Visible = false
+    rememberCheck.Parent = rememberButton
+    
+    local rememberCheckCorner = Instance.new("UICorner")
+    rememberCheckCorner.CornerRadius = UDim.new(0, 2)
+    rememberCheckCorner.Parent = rememberCheck
+    
+    local rememberLabel = Instance.new("TextLabel")
+    rememberLabel.Name = "RememberLabel"
+    rememberLabel.Size = UDim2.new(1, -30, 1, 0)
+    rememberLabel.Position = UDim2.new(0, 30, 0, 0)
+    rememberLabel.BackgroundTransparency = 1
+    rememberLabel.Text = "Remember me"
+    rememberLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+    rememberLabel.TextSize = 14
+    rememberLabel.Font = Enum.Font.Gotham
+    rememberLabel.TextXAlignment = Enum.TextXAlignment.Left
+    rememberLabel.Parent = rememberContainer
+    
+    -- Login Button
+    local loginButton = Instance.new("TextButton")
+    loginButton.Name = "LoginButton"
+    loginButton.Size = UDim2.new(1, -40, 0, 45)
+    loginButton.Position = UDim2.new(0, 20, 0, 190)
+    loginButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+    loginButton.BorderSizePixel = 0
+    loginButton.Text = "Login"
+    loginButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    loginButton.TextSize = 18
+    loginButton.Font = Enum.Font.GothamBold
+    loginButton.Parent = mainFrame
+    
+    local loginCorner = Instance.new("UICorner")
+    loginCorner.CornerRadius = UDim.new(0, 10)
+    loginCorner.Parent = loginButton
+    
+    -- Status Label
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Name = "StatusLabel"
+    statusLabel.Size = UDim2.new(1, -40, 0, 30)
+    statusLabel.Position = UDim2.new(0, 20, 0, 245)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Text = ""
+    statusLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+    statusLabel.TextSize = 14
+    statusLabel.Font = Enum.Font.Gotham
+    statusLabel.Parent = mainFrame
+    
+    -- Stream Proof Toggle
+    local streamProofButton = Instance.new("TextButton")
+    streamProofButton.Name = "StreamProofButton"
+    streamProofButton.Size = UDim2.new(1, -40, 0, 35)
+    streamProofButton.Position = UDim2.new(0, 20, 0, 290)
+    streamProofButton.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+    streamProofButton.BorderSizePixel = 0
+    streamProofButton.Text = "Stream Proof: OFF"
+    streamProofButton.TextColor3 = Color3.fromRGB(150, 150, 170)
+    streamProofButton.TextSize = 14
+    streamProofButton.Font = Enum.Font.Gotham
+    streamProofButton.Parent = mainFrame
+    
+    local streamProofCorner = Instance.new("UICorner")
+    streamProofCorner.CornerRadius = UDim.new(0, 8)
+    streamProofCorner.Parent = streamProofButton
+    
+    LoginGui.screenGui = screenGui
+    LoginGui.mainFrame = mainFrame
+    
+    -- Animate in
+    mainFrame.Size = UDim2.new(0, 400, 0, 0)
+    mainFrame:TweenSize(UDim2.new(0, 400, 0, 350), Enum.EasingDirection.Out, Enum.EasingStyle.Back, 0.5, true)
+    
+    -- Load saved credentials
+    local savedCredentials = LoadCredentials()
+    local rememberMe = false
+    
+    if savedCredentials then
+        licenseBox.Text = savedCredentials.license or ""
+        rememberMe = savedCredentials.rememberMe or false
+        rememberCheck.Visible = rememberMe
+        if rememberMe then
+            rememberButton.BackgroundColor3 = Color3.fromRGB(61, 224, 200)
+        end
+        
+        -- Load stream proof state
+        if savedCredentials.streamProof ~= nil then
+            StreamProof.active = savedCredentials.streamProof
+            settings.StreamProof = savedCredentials.streamProof
+        end
+    end
+    
+    -- Remember me toggle
+    rememberButton.MouseButton1Click:Connect(function()
+        rememberMe = not rememberMe
+        rememberCheck.Visible = rememberMe
+        
+        if rememberMe then
+            TweenService:Create(rememberButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(61, 224, 200)}):Play()
+        else
+            TweenService:Create(rememberButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 50)}):Play()
+        end
+    end)
+    
+    -- Stream proof toggle
+    streamProofButton.MouseButton1Click:Connect(function()
+        local isActive = ToggleStreamProof()
+        if isActive then
+            streamProofButton.Text = "Stream Proof: ON"
+            streamProofButton.TextColor3 = Color3.fromRGB(76, 175, 80)
+            streamProofButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+        else
+            streamProofButton.Text = "Stream Proof: OFF"
+            streamProofButton.TextColor3 = Color3.fromRGB(150, 150, 170)
+            streamProofButton.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+        end
+    end)
+    
+    -- Initialize stream proof button state
+    if StreamProof.active then
+        streamProofButton.Text = "Stream Proof: ON"
+        streamProofButton.TextColor3 = Color3.fromRGB(76, 175, 80)
+        streamProofButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+    end
+    
+    -- Login button
+    loginButton.MouseButton1Click:Connect(function()
+        local license = licenseBox.Text
+        
+        if license == "" then
+            statusLabel.Text = "Error: Please enter a license key"
+            statusLabel.TextColor3 = Color3.fromRGB(244, 67, 54)
+            return
+        end
+        
+        statusLabel.Text = "Loading..."
+        statusLabel.TextColor3 = Color3.fromRGB(61, 224, 200)
+        
+        -- Simulate authentication (replace with real Sahloul Auth)
+        spawn(function()
+            wait(1)
+            
+            -- For demo purposes, accept any license with format XXXX-XXXX-XXXX-XXXX
+            if license:match("^%w%w%w%w%-%w%w%w%w%-%w%w%w%w%-%w%w%w%w$") then
+                LoginGui.authenticated = true
+                LoginGui.session = {license = license, username = "User"}
+                
+                -- Save credentials if remember me is enabled
+                if rememberMe then
+                    SaveCredentials({
+                        license = license, 
+                        rememberMe = true,
+                        streamProof = StreamProof.active
+                    })
+                else
+                    ClearCredentials()
+                end
+                
+                statusLabel.Text = "Success! Loading main menu..."
+                statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
+                
+                wait(1)
+                
+                -- Animate out and destroy
+                mainFrame:TweenSize(UDim2.new(0, 400, 0, 0), Enum.EasingDirection.In, Enum.EasingStyle.Back, 0.4, true, function()
+                    screenGui:Destroy()
+                    LoginGui.screenGui = nil
+                    LoginGui.mainFrame = nil
+                end)
+            else
+                statusLabel.Text = "Error: Invalid license format"
+                statusLabel.TextColor3 = Color3.fromRGB(244, 67, 54)
+            end
+        end)
+    end)
+    
+    -- Enter key support
+    licenseBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            loginButton.MouseButton1Click:Fire()
+        end
+    end)
+end
+
+local function WaitForAuthentication()
+    CreateLoginGui()
+    
+    -- Wait for authentication
+    while not LoginGui.authenticated do
+        if not LoginGui.screenGui or not LoginGui.screenGui.Parent then
+            -- GUI was destroyed, recreate it
+            CreateLoginGui()
+        end
+        wait(0.1)
+    end
+    
+    -- Start stream proof if it was enabled
+    if StreamProof.active then
+        StartStreamProofDetection()
+    end
+    
+    return LoginGui.session
+end
+
+-- ============================================
+-- AUTHENTICATION CHECK
+-- ============================================
+
+local session = WaitForAuthentication()
 
 local defaultSettings = {
     Speed = 16, 
@@ -33,7 +606,8 @@ local defaultSettings = {
     AutoEscape = false,
     AntiAFK = false,
     AntiTrap = false,
-    PanicTP = false
+    PanicTP = false,
+    StreamProof = false
 }
 
 local userScripts = {}
@@ -101,6 +675,9 @@ local settings = {}
 for k, v in pairs(defaultSettings) do
     settings[k] = v
 end
+
+-- Initialize StreamProof from settings
+StreamProof.active = settings.StreamProof or false
 
 local spinActive = false
 local spinSpeed = 20
@@ -6329,6 +6906,20 @@ function UpdateRightContent()
                     end)
                 else
                     if antiAFKConnection then antiAFKConnection:Disconnect(); antiAFKConnection = nil end
+                end
+            end
+        })
+        ToggleRow(otherSection, {
+            text = "Stream Proof", id = "streamproof", state = settings.StreamProof,
+            onToggle = function(val)
+                settings.StreamProof = val
+                if val then
+                    StartStreamProofDetection()
+                    notif("Stream Proof: Enabled", 2)
+                else
+                    StopStreamProofDetection()
+                    SetGuiVisibility(true)
+                    notif("Stream Proof: Disabled", 2)
                 end
             end
         })
