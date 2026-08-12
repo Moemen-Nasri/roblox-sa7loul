@@ -145,6 +145,9 @@ local invisSaved = {}
 local adminRemotesCache = nil
 local unpack2 = table.unpack or unpack
 
+local bringDistance = 4
+local flingForce = 9999
+
 function AddPressAnim(btn)
     btn.MouseButton1Down:Connect(function()
         TweenService:Create(btn, TweenInfo.new(0.08), {Size = btn.Size - UDim2.new(0.01, 0, 0.01, 0)}):Play()
@@ -287,7 +290,7 @@ function StartBring(targetName)
             hum = target.Character:FindFirstChildOfClass("Humanoid")
             if hum then hum.PlatformStand = true end
             
-            local targetPos = myRoot.Position + (myRoot.CFrame.LookVector * 4)
+            local targetPos = myRoot.Position + (myRoot.CFrame.LookVector * (bringDistance or 4))
             targetPos = Vector3.new(targetPos.X, myRoot.Position.Y, targetPos.Z)
             bp.Position = targetPos
             
@@ -3558,53 +3561,87 @@ minimizedHint.TextXAlignment = Enum.TextXAlignment.Left
 minimizedHint.Visible = false
 
 -- ────────────────────────── DRAG ──────────────────────────
+local minimized = false
 local dragging = false
 local dragOffset = Vector2.zero
+local dragLockUntil = 0
+local suppressBtnClick = 0
+
+local function pointInGui(pos, gui)
+    if not gui then return false end
+    local p = gui.AbsolutePosition
+    local s = gui.AbsoluteSize
+    return pos.X >= p.X and pos.X <= p.X + s.X and pos.Y >= p.Y and pos.Y <= p.Y + s.Y
+end
+
+local function headerClicked(input)
+    local pos = input.Position
+    if not pointInGui(pos, Header) then return end
+    if minimized then
+        if pointInGui(pos, closeBtn) then return end
+        ApplyMinimized(false)
+        suppressBtnClick = os.clock() + 0.6
+        dragLockUntil = os.clock() + 0.6
+        return
+    end
+    if os.clock() < dragLockUntil then return end
+    if pointInGui(pos, minimizeBtn) or pointInGui(pos, closeBtn) or pointInGui(pos, menuKeyChip) then return end
+    dragging = true
+    dragOffset = pos - Vector2.new(Window.AbsolutePosition.X, Window.AbsolutePosition.Y)
+end
+
 Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragOffset = input.Position - Vector2.new(Window.AbsolutePosition.X, Window.AbsolutePosition.Y)
+        headerClicked(input)
     end
 end)
-Header.InputEnded:Connect(function(input)
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        headerClicked(input)
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = false
     end
 end)
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local newPos = input.Position - dragOffset
-        Window.Position = UDim2.fromOffset(newPos.X, newPos.Y)
+RunService.RenderStepped:Connect(function()
+    if dragging then
+        local pos = UserInputService:GetMouseLocation()
+        pcall(function()
+            Window.Position = UDim2.fromOffset(pos.X - dragOffset.X, pos.Y - dragOffset.Y)
+        end)
     end
 end)
 
 -- minimize / restore
-local minimized = false
 function ApplyMinimized(state)
+    minimized = state
+    minimizeBtn.Text = state and "✚" or "–"
+    headerSub.Visible = not state
+    menuKeyChip.Visible = not state
+    minimizedHint.Visible = state
     if state then
-        minimized = true
-        minimizeBtn.Text = "✚"
-        headerSub.Visible = false
-        menuKeyChip.Visible = false
-        minimizedHint.Visible = true
+        Sidebar.Visible = false
+        ContentScroll.Visible = false
+        SearchBar.Visible = false
+        statusBar.Visible = false
         pcall(function()
-            TweenService:Create(Window, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            TweenService:Create(Window, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
                 Size = UDim2.new(0, 300, 0, 54),
                 AnchorPoint = Vector2.new(0, 0),
                 Position = UDim2.fromOffset(14, 14)
             }):Play()
         end)
-        task.wait(0.22)
-        Sidebar.Visible = false
-        ContentScroll.Visible = false
-        SearchBar.Visible = false
-        statusBar.Visible = false
+        task.spawn(function()
+            task.wait(0.25)
+            if minimized then
+                Window.AnchorPoint = Vector2.new(0, 0)
+                Window.Position = UDim2.fromOffset(14, 14)
+                Window.Size = UDim2.new(0, 300, 0, 54)
+            end
+        end)
     else
-        minimized = false
-        minimizeBtn.Text = "–"
-        headerSub.Visible = true
-        menuKeyChip.Visible = true
-        minimizedHint.Visible = false
         Sidebar.Visible = true
         ContentScroll.Visible = true
         SearchBar.Visible = true
@@ -3617,14 +3654,18 @@ function ApplyMinimized(state)
             }):Play()
         end)
         task.spawn(function()
-            task.wait(0.3)
+            task.wait(0.32)
             if not minimized then
+                Window.AnchorPoint = Vector2.new(0.5, 0.5)
+                Window.Position = UDim2.fromScale(0.5, 0.5)
+                Window.Size = UDim2.new(0, 720, 0, 540)
                 pcall(UpdateRightContent)
             end
         end)
     end
 end
 minimizeBtn.MouseButton1Click:Connect(function()
+    if os.clock() < suppressBtnClick then return end
     ApplyMinimized(not minimized)
 end)
 
@@ -4241,10 +4282,19 @@ local function Dropdown(parent, opts)
     list.Visible = false
     Instance.new("UICorner", list).CornerRadius = UDim.new(0, 8)
     Instance.new("UIStroke", list).Color = UITheme.BORDER
-    local listLayout = Instance.new("UIListLayout", list)
+    local listScroll = Instance.new("ScrollingFrame")
+    listScroll.Parent = list
+    listScroll.BackgroundTransparency = 1
+    listScroll.BorderSizePixel = 0
+    listScroll.Size = UDim2.new(1, 0, 1, 0)
+    listScroll.ScrollBarThickness = 3
+    listScroll.ScrollBarImageTransparency = 0.5
+    listScroll.ScrollBarImageColor3 = UITheme.Accent
+    listScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    local listLayout = Instance.new("UIListLayout", listScroll)
     listLayout.Padding = UDim.new(0, 2)
     listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    Instance.new("UIPadding", list).PaddingTop = UDim.new(0, 3)
+    Instance.new("UIPadding", listScroll).PaddingTop = UDim.new(0, 3)
 
     local currentIdx = opts.default or 1
     local function setLabel()
@@ -4262,12 +4312,12 @@ local function Dropdown(parent, opts)
     box.MouseButton1Click:Connect(function()
         open = not open
         if open then
-            for _, child in ipairs(list:GetChildren()) do
+            for _, child in ipairs(listScroll:GetChildren()) do
                 if child:IsA("TextButton") then child:Destroy() end
             end
             for i, o in ipairs(opts.options) do
                 local optBtn = Instance.new("TextButton")
-                optBtn.Parent = list
+                optBtn.Parent = listScroll
                 optBtn.BackgroundColor3 = UITheme.ELEMENT
                 optBtn.BackgroundTransparency = 0.4
                 optBtn.BorderSizePixel = 0
@@ -5564,23 +5614,71 @@ end
 -- ────────────────────────── END CUFF CODE ──────────────────────────
 
 -- ────────────────────────── SPAWNER ENGINE (generic items) ──────────────────────────
+local function Normalize(s)
+    return string.lower((s or ""):gsub("[àáâäãå]", "a"):gsub("[èéêë]", "e"):gsub("[ìíîï]", "i"):gsub("[òóôöõ]", "o"):gsub("[ùúûü]", "u"):gsub("ç", "c"):gsub("ñ", "n"):gsub("%s+", " "))
+end
+
+local function ItemIcon(name)
+    local n = Normalize(name)
+    local map = {
+        { {"knife", "couteau", "cutter", "machete", "cleaver", "dart", "kunai", "stab"}, "🔪" },
+        { {"gun", "pistol", "pistolet", "rifle", "fusil", "shotgun", "bazooka"}, "🔫" },
+        { {"axe", "hache", "hatchet", "hachoir"}, "🪓" },
+        { {"hammer", "marteau", "mallet"}, "🔨" },
+        { {"sword", "epee", "katana", "saber"}, "⚔️" },
+        { {"bat", "batte", "club", "cricket"}, "🏏" },
+        { {"ring", "alliance"}, "💍" },
+        { {"dryer", "seche", "cheveux"}, "🌬️" },
+        { {"cuff", "menotte"}, "🔗" },
+        { {"locker", "casier", "armoire"}, "🗄️" },
+        { {"glove", "gant"}, "🧤" },
+        { {"box", "boite"}, "📦" },
+        { {"key", "cle"}, "🗝️" },
+        { {"candle", "bougie"}, "🕯️" },
+        { {"soap", "savon"}, "🧼" },
+        { {"coin", "cash", "money", "loot"}, "💰" },
+        { {"med", "firstaid", "bandage", "kit", "soin"}, "🩹" },
+        { {"armor", "armure", "vest", "gilet"}, "🦺" },
+    }
+    for _, e in ipairs(map) do
+        for _, t in ipairs(e[1]) do
+            if n:find(t, 1, true) then return e[2] end
+        end
+    end
+    return "📦"
+end
+
 local function ScanItemsByKeyword(keyword)
     local seen = {}
     local results = {}
-    local lowerKey = string.lower(keyword)
+    local tokens = {}
+    for token in string.gmatch(keyword or "", "[^|]+") do
+        local t = Normalize(token):gsub(" ", "")
+        if t ~= "" then table.insert(tokens, t) end
+    end
+    if #tokens == 0 then return results end
     local function scan(root)
         if not root then return end
-        for _, obj in ipairs(root:GetDescendants()) do
-            if (obj:IsA("Tool") or obj:IsA("Model") or obj:IsA("BasePart"))
-                and string.lower(obj.Name):find(lowerKey, 1, true)
-                and not seen[obj.Name] then
-                seen[obj.Name] = true
-                table.insert(results, obj.Name)
+        pcall(function()
+            for _, obj in ipairs(root:GetDescendants()) do
+                if (obj:IsA("Tool") or obj:IsA("Model") or obj:IsA("BasePart"))
+                    and not seen[obj.Name] then
+                    local norm = Normalize(obj.Name):gsub(" ", "")
+                    for _, t in ipairs(tokens) do
+                        if norm:find(t, 1, true) then
+                            seen[obj.Name] = true
+                            table.insert(results, obj.Name)
+                            break
+                        end
+                    end
+                end
             end
-        end
+        end)
     end
     scan(workspace)
     scan(game:GetService("ReplicatedStorage"))
+    scan(game:GetService("ReplicatedFirst"))
+    scan(game:GetService("ServerStorage"))
     local players = PlayersSvc:GetPlayers()
     for _, player in ipairs(players) do
         scan(player:FindFirstChild("Backpack"))
@@ -5600,6 +5698,7 @@ local function FindSpawnObject(itemName)
         return nil
     end
     return findIn(PlayersSvc) or findIn(workspace) or findIn(game:GetService("ReplicatedStorage"))
+        or findIn(game:GetService("ReplicatedFirst")) or findIn(game:GetService("ServerStorage"))
 end
 
 local function GiveSpawnItemToPlayer(itemName, targetPlayer)
@@ -5778,6 +5877,27 @@ function UpdateRightContent()
                 end
             end
         })
+        Slider(movement, {
+            text = "Gravity", min = 0, max = 196.2, def = 196.2, decimals = 1,
+            onChanged = function(val)
+                pcall(function() workspace.Gravity = val end)
+            end
+        })
+        Slider(movement, {
+            text = "Swim Speed", min = 10, max = 100, def = 50,
+            onChanged = function(val)
+                pcall(function()
+                    if lp.Character then
+                        local hum = lp.Character:FindFirstChildOfClass("Humanoid")
+                        if hum then hum.SwimSpeed = val end
+                    end
+                end)
+            end
+        })
+        Button(movement, "↺ Reset gravity (196.2)", function()
+            pcall(function() workspace.Gravity = 196.2 end)
+            notif("Gravity reset", 2)
+        end)
         ToggleRow(movement, {
             text = "Auto Escape", id = "autoesc", state = settings.AutoEscape,
             desc = "Teleports to exit when the timer starts",
@@ -6142,7 +6262,7 @@ function UpdateRightContent()
             local thrust = nil
             pcall(function()
                 thrust = Instance.new("BodyThrust", lp.Character.HumanoidRootPart)
-                thrust.Force = Vector3.new(9999, 9999, 9999)
+                thrust.Force = Vector3.new(flingForce, flingForce, flingForce)
                 thrust.Name = "YeetForce"
             end)
             coroutine.wrap(function()
@@ -6316,10 +6436,32 @@ function UpdateRightContent()
                 end
             end
         })
+        Slider(spinSection, {
+            text = "Bring distance", min = 1, max = 12, def = bringDistance,
+            onChanged = function(val) bringDistance = val end
+        })
+        Slider(spinSection, {
+            text = "Fling force", min = 1000, max = 50000, def = flingForce,
+            onChanged = function(val) flingForce = val end
+        })
 
         -- 🔗 CUFF ITEMS — spawner / giver
         local cuffSection = Section(ContentScroll, "Cuff Items — Spawn / Give / Take", "🔗")
         local cuffStatus = Label(cuffSection, "Scanning for cuffs...", UITheme.SUBTEXT, 11)
+        local cuffPlayerOptions = {}
+        for i = #cuffPlayerOptions, 1, -1 do cuffPlayerOptions[i] = nil end
+        for _, p in ipairs(PlayersSvc:GetPlayers()) do
+            table.insert(cuffPlayerOptions, { text = p.Name, value = p })
+        end
+        Dropdown(cuffSection, {
+            text = "Give to player",
+            options = cuffPlayerOptions,
+            default = 1,
+            onChanged = function(value)
+                SetSelectedPlayer(value)
+                notif("Cuff target: " .. (value and value.Name or "None"), 2)
+            end
+        })
         local cuffRows = Instance.new("Frame")
         cuffRows.Parent = cuffSection
         cuffRows.BackgroundTransparency = 1
@@ -6459,7 +6601,7 @@ function UpdateRightContent()
             nameLabel.BackgroundTransparency = 1
             nameLabel.Size = UDim2.new(0.36, 0, 1, 0)
             nameLabel.Font = Enum.Font.Gotham
-            nameLabel.Text = itemName
+            nameLabel.Text = ItemIcon(itemName) .. "  " .. itemName
             nameLabel.TextColor3 = UITheme.TEXT
             nameLabel.TextSize = 11
             nameLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -6515,12 +6657,33 @@ function UpdateRightContent()
         end
 
         local targetChipSection = Section(ContentScroll, "Target", "👤")
-        MakeTargetChip(targetChipSection)
+        local targetChip = MakeTargetChip(targetChipSection)
+        local spawnerPlayerOptions = {}
+        for i = #spawnerPlayerOptions, 1, -1 do spawnerPlayerOptions[i] = nil end
+        for _, p in ipairs(PlayersSvc:GetPlayers()) do
+            table.insert(spawnerPlayerOptions, { text = p.Name, value = p })
+        end
+        Dropdown(targetChipSection, {
+            text = "Give to player",
+            options = spawnerPlayerOptions,
+            default = 1,
+            onChanged = function(value)
+                SetSelectedPlayer(value)
+                if targetChip then
+                    targetChip.Text = "👤 Give to: " .. (value and value.Name or "None (click me)")
+                end
+                notif("Give target: " .. (value and value.Name or "None"), 2)
+            end
+        })
+        Note(targetChipSection, "Pick from the list — scroll it if there are many players")
 
-        BuildSpawnerCategory("Ring Box", "💍", "ring")
-        BuildSpawnerCategory("Sèche-cheveux (Hair Dryer)", "🌬", "dryer")
-        BuildSpawnerCategory("Cuffs", "🔗", "cuff")
-        BuildSpawnerCategory("Lockers", "🗄", "locker")
+        BuildSpawnerCategory("Ring Box", "💍", "ring|alliance")
+        BuildSpawnerCategory("Sèche-cheveux (Hair Dryer)", "🌬", "dryer|seche|cheveux|hair")
+        BuildSpawnerCategory("Cuffs", "🔗", "cuff|menotte")
+        BuildSpawnerCategory("Lockers", "🗄", "locker|casier")
+        BuildSpawnerCategory("Gloves", "🧤", "glove|gant")
+        BuildSpawnerCategory("Box", "📦", "box|boite")
+        BuildSpawnerCategory("Weapons", "🗡", "knife|cutter|couteau|couteaux|axe|hache|hatchet|bat|batte|hammer|marteau|sword|epee|blade|gun|pistol|pistolet|rifle|fusil|shotgun|machete|machette|cleaver|wrench|dart|kunai|katana|weapon|arme|dague|sabre")
 
         local customSection = Section(ContentScroll, "Custom search", "🔎")
         local customBox = TextBox(customSection, { placeholder = "Item keyword: e.g. key, candle, soap ..." })
@@ -6845,6 +7008,30 @@ function UpdateRightContent()
             keybind = false,
             onToggle = function(val) TsSet("c4", val) end
         })
+        Slider(legacySection, {
+            text = "Collect delay", min = 5, max = 100, def = 35,
+            onChanged = function(val) tsunamiCfg.collectDelay = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "Popcorn cooldown", min = 5, max = 100, def = 35,
+            onChanged = function(val) tsunamiCfg.popCooldown = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "Safe TP delay", min = 50, max = 500, def = 200,
+            onChanged = function(val) tsunamiCfg.safeDelay = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "Minigame bot delay", min = 20, max = 300, def = 80,
+            onChanged = function(val) tsunamiCfg.mgBotDelay = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "C4 delay", min = 20, max = 300, def = 120,
+            onChanged = function(val) tsunamiCfg.c4Delay = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "C4 column (0 = random)", min = 0, max = 7, def = 0,
+            onChanged = function(val) tsunamiCfg.c4Col = val end
+        })
         Button(legacySection, "⏹ Stop all helpers", function()
             tsunamiCfg.on = false
             tsunamiCfg.clicker = false
@@ -7079,11 +7266,13 @@ end)
 PlayersSvc.PlayerAdded:Connect(function()
     task.wait(0.3)
     if CurrentTab == "  Players" then UpdatePlayerList() end
+    if CurrentTab == "  Spawner" or CurrentTab == "  Fun" then pcall(UpdateRightContent) end
     RefreshTrollTargetOptions()
 end)
 PlayersSvc.PlayerRemoving:Connect(function(player)
     task.wait(0.3)
     if CurrentTab == "  Players" then UpdatePlayerList() end
+    if CurrentTab == "  Spawner" or CurrentTab == "  Fun" then pcall(UpdateRightContent) end
     if TrollTargetSel == player then
         TrollTargetSel = nil
         RefreshTrollTargetOptions()
