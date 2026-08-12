@@ -3435,6 +3435,12 @@ Header.BorderSizePixel = 0
 Header.Size = UDim2.new(1, 0, 0, 54)
 Header.ZIndex = 5
 Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 16)
+local headerGrad = Instance.new("UIGradient", Header)
+headerGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, UITheme.BG_DEEP),
+    ColorSequenceKeypoint.new(0.6, UITheme.PANEL),
+    ColorSequenceKeypoint.new(1, UITheme.BG_DEEP)
+})
 local headerBottom = Instance.new("Frame")
 headerBottom.Parent = Header
 headerBottom.BackgroundColor3 = UITheme.BORDER
@@ -3494,7 +3500,7 @@ headerSub.Position = UDim2.new(0, 36, 0, 30)
 headerSub.TextXAlignment = Enum.TextXAlignment.Left
 
 -- header buttons (minimize / close)
-local function headerIconButton(text, color)
+function headerIconButton(text, color)
     local btn = Instance.new("TextButton")
     btn.Parent = Header
     btn.BackgroundColor3 = UITheme.ELEMENT
@@ -3562,31 +3568,36 @@ end)
 
 -- minimize / restore
 local minimized = false
-minimizeBtn.MouseButton1Click:Connect(function()
-    if not minimized then
+function ApplyMinimized(state)
+    if state then
         minimized = true
-        TweenService:Create(Window, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 260, 0, 54),
+        minimizeBtn.Text = "✚"
+        TweenService:Create(Window, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Size = UDim2.new(0, 300, 0, 54),
             AnchorPoint = Vector2.new(0, 0),
             Position = UDim2.fromOffset(14, 14)
         }):Play()
-        task.wait(0.25)
+        task.wait(0.22)
         Sidebar.Visible = false
         ContentScroll.Visible = false
         SearchBar.Visible = false
         statusBar.Visible = false
     else
         minimized = false
+        minimizeBtn.Text = "–"
         Sidebar.Visible = true
         ContentScroll.Visible = true
         SearchBar.Visible = true
         statusBar.Visible = true
-        TweenService:Create(Window, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        TweenService:Create(Window, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
             Size = UDim2.new(0, 720, 0, 540),
             AnchorPoint = Vector2.new(0.5, 0.5),
             Position = UDim2.fromScale(0.5, 0.5)
         }):Play()
     end
+end
+minimizeBtn.MouseButton1Click:Connect(function()
+    ApplyMinimized(not minimized)
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
@@ -3675,12 +3686,25 @@ sidebarList.Padding = UDim.new(0, 3)
 sidebarList.SortOrder = Enum.SortOrder.LayoutOrder
 Instance.new("UIPadding", SidebarScroll).PaddingTop = UDim.new(0, 10)
 
+local sidebarTitle = Instance.new("TextLabel")
+sidebarTitle.Parent = SidebarScroll
+sidebarTitle.BackgroundTransparency = 1
+sidebarTitle.LayoutOrder = -1
+sidebarTitle.Size = UDim2.new(1, -24, 0, 24)
+sidebarTitle.Font = Enum.Font.GothamBold
+sidebarTitle.Text = "☰  MENU"
+sidebarTitle.TextColor3 = UITheme.Accent
+sidebarTitle.TextSize = 12
+sidebarTitle.TextXAlignment = Enum.TextXAlignment.Left
+sidebarTitle.TextYAlignment = Enum.TextYAlignment.Center
+UITheme:RegisterAccent(function(c) sidebarTitle.TextColor3 = c end)
+
 local TabItems = {
     { key = "  Home",       icon = "⌂", label = "Home" },
     { key = "  Player",     icon = "☄", label = "Player" },
+    { key = "  Revive",     icon = "✚", label = "Revive" },
     { key = "  World",      icon = "✺", label = "World" },
     { key = "  Players",    icon = "☰", label = "Players" },
-    { key = "  Revive",     icon = "✚", label = "Revive" },
     { key = "  Fun",        icon = "✿", label = "Fun" },
     { key = "  Spawner",    icon = "🔧", label = "Spawner" },
     { key = "  Troll",      icon = "☠", label = "Troll" },
@@ -3710,7 +3734,8 @@ rgbQuick.TextColor3 = UITheme.SUBTEXT
 rgbQuick.TextSize = 10
 Instance.new("UICorner", rgbQuick).CornerRadius = UDim.new(0, 7)
 
-local function BuildSidebar()
+local tabVisuals = {}
+function BuildSidebar()
     for _, item in ipairs(TabItems) do
         local btn = Instance.new("TextButton")
         btn.Parent = SidebarScroll
@@ -3759,11 +3784,11 @@ local function BuildSidebar()
     end
 end
 local tabVisuals = {}
-local function RefreshTabVisuals()
+function RefreshTabVisuals()
     for key, vis in pairs(tabVisuals) do
         local active = (CurrentTab == key)
         TweenService:Create(vis.btn, TweenInfo.new(0.18), {
-            BackgroundTransparency = active and 0.5 or 1,
+            BackgroundTransparency = active and 0.35 or 1,
             TextColor3 = active and UITheme.TEXT or UITheme.SUBTEXT
         }):Play()
         TweenService:Create(vis.glow, TweenInfo.new(0.18), {
@@ -3815,16 +3840,22 @@ statusLabel.TextYAlignment = Enum.TextYAlignment.Center
 UITheme:RegisterAccent(function(c) statusLabel.TextColor3 = c end)
 
 task.spawn(function()
+    local lastFrame = os.clock()
     while statusLabel and statusLabel.Parent do
-        local ping = 0
         pcall(function()
-            ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+            local now = os.clock()
+            local fps = 1 / math.max(0.001, now - lastFrame)
+            lastFrame = now
+            local ping = 0
+            pcall(function()
+                ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+            end)
+            local activeCount = 0
+            for _, v in pairs(settings) do
+                if v == true then activeCount = activeCount + 1 end
+            end
+            statusLabel.Text = "FPS: " .. math.floor(fps) .. "  |  Ping: " .. ping .. "ms  |  Players: " .. #PlayersSvc:GetPlayers() .. "  |  Active toggles: " .. activeCount .. "  |  RightShift = hide UI"
         end)
-        local activeCount = 0
-        for _, v in pairs(settings) do
-            if v == true then activeCount = activeCount + 1 end
-        end
-        statusLabel.Text = "FPS: " .. math.floor(fpsMeter) .. "  |  Ping: " .. ping .. "ms  |  Players: " .. #PlayersSvc:GetPlayers() .. "  |  Active toggles: " .. activeCount .. "  |  RightShift = hide UI"
         task.wait(1)
     end
 end)
@@ -3832,7 +3863,7 @@ end)
 -- ────────────────────────── COMPONENTS ──────────────────────────
 local activeRows = {}
 
-local function ClearContent()
+function ClearContent()
     activeRows = {}
     for _, child in ipairs(ContentScroll:GetChildren()) do
         if child:IsA("Frame") or child:IsA("TextLabel") then
@@ -3841,7 +3872,7 @@ local function ClearContent()
     end
 end
 
-local function RefreshSearch()
+function RefreshSearch()
     local q = SearchBox.Text:lower()
     for _, h in ipairs(activeRows) do
         local match = (q == "") or (h.tag and h.tag:find(q, 1, true))
@@ -3850,7 +3881,7 @@ local function RefreshSearch()
 end
 SearchBox:GetPropertyChangedSignal("Text"):Connect(RefreshSearch)
 
-local function trackRow(row, tag)
+function trackRow(row, tag)
     local handle = { Row = row, tag = tag and tag:lower() or "" }
     table.insert(activeRows, handle)
     return handle
@@ -5643,15 +5674,16 @@ function UpdateRightContent()
 
         local info = Section(ContentScroll, "Changelog V3", "📋")
         local changelog = {
-            "✦ V3.1 — Premium polish pass",
+            "✦ V3.2 — Design rework & stability",
+            "✦ FIXED: full UI not building on some executors (load error)",
+            "✦ Reordered tabs: Home · Player · Revive · World · Players",
+            "✦ Minimize: small bar stays with ✚ restore button",
             "✦ NEW: Spawner tab (Ring Box / Sèche-cheveux / Cuffs / Lockers)",
             "✦ NEW: Jump Power, FOV, Fly+NoClip, TP to downed, random loot TP",
-            "✦ NEW: TP to target · Copy tools · Attack target (Fun tab)",
-            "✦ NEW: Live status bar (FPS / Ping / Players / Active toggles)",
-            "✦ Redesigned section cards, fixed compatibility (old executors)",
-            "✦ RGB mode, search bar, draggable header, keybinds for every toggle",
+            "✦ NEW: TP to target · Copy tools · Attack target",
+            "✦ Redesigned section cards + live status bar (FPS/Ping)",
+            "✦ Keybinds on every toggle · RGB mode · search bar",
             "✦ Troll tab (fling, annoy, fake admin, ghost, earrape, click-TP)",
-            "✦ All V2 logic preserved & merged",
         }
         for _, line in ipairs(changelog) do
             Label(info, line, UITheme.SUBTEXT, 11)
