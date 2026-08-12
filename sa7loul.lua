@@ -245,102 +245,22 @@ local function StartBring(targetName)
         notif("Player not found", 2)
         return
     end
-    if bringActive then StopBring() end
-    bringActive = true
-    notif("Bringing: " .. target.Name, 2)
     
-    coroutine.wrap(function()
-        local originSaved = false
-        
-        local function SaveOrigin()
-            if not bringOrigins[target] and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                local save = {root = target.Character.HumanoidRootPart.CFrame, parts = {}}
-                for _, part in ipairs(target.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then save.parts[part] = part.CFrame end
-                end
-                bringOrigins[target] = save
-            end
-        end
-        
-        while bringActive and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") do
-            local targetRoot = target.Character.HumanoidRootPart
-            local myRoot = lp.Character.HumanoidRootPart
-            
-            if not originSaved then
-                SaveOrigin()
-                originSaved = true
-            end
-            
-            -- Calculate target position
-            local targetPos = myRoot.Position + (myRoot.CFrame.LookVector * 3)
-            targetPos = Vector3.new(targetPos.X, myRoot.Position.Y, targetPos.Z)
-            
-            -- Try ALL possible methods of teleportation
-            pcall(function()
-                targetRoot.CFrame = CFrame.new(targetPos)
-            end)
-            
-            pcall(function()
-                targetRoot.CFrame = CFrame.new(targetPos, myRoot.CFrame.LookVector)
-            end)
-            
-            pcall(function()
-                target.Character:MoveTo(targetPos)
-            end)
-            
-            pcall(function()
-                target.Character:PivotTo(CFrame.new(targetPos))
-            end)
-            
-            pcall(function()
-                targetRoot.Position = targetPos
-            end)
-            
-            -- Try using TeleportService
-            pcall(function()
-                game:GetService("TeleportService"):Teleport(target, targetPos)
-            end)
-            
-            -- Try setting character properties
-            local hum = target.Character:FindFirstChildOfClass("Humanoid")
-            if hum then 
-                pcall(function()
-                    hum.PlatformStand = true
-                    hum.WalkSpeed = 0
-                    hum.JumpPower = 0
-                end)
-            end
-            
-            -- Try anchoring and moving
-            pcall(function()
-                targetRoot.Anchored = true
-                targetRoot.CFrame = CFrame.new(targetPos)
-                targetRoot.Anchored = false
-            end)
-            
-            -- Try velocity manipulation
-            pcall(function()
-                targetRoot.AssemblyLinearVelocity = (targetPos - targetRoot.Position).Unit * 100
-            end)
-            
-            RunService.RenderStepped:Wait()
-        end
-        
-        -- Cleanup
-        local hum = target.Character:FindFirstChildOfClass("Humanoid")
-        if hum then 
-            pcall(function()
-                hum.PlatformStand = false
-                hum.WalkSpeed = 16
-                hum.JumpPower = 50
-            end)
-        end
-        pcall(function()
-            targetRoot.Anchored = false
-        end)
-        bringActive = false
-        notif("Bring stopped", 2)
-    end)()
+    -- Just teleport once instead of continuous bring
+    local myRoot = lp.Character.HumanoidRootPart
+    local targetRoot = target.Character.HumanoidRootPart
+    local targetPos = myRoot.Position + (myRoot.CFrame.LookVector * 3)
+    targetPos = Vector3.new(targetPos.X, myRoot.Position.Y, targetPos.Z)
+    
+    local success = pcall(function()
+        targetRoot.CFrame = CFrame.new(targetPos)
+    end)
+    
+    if success then
+        notif("Teleported " .. target.Name .. " to you", 2)
+    else
+        notif("Teleport failed - game may have anti-cheat", 2)
+    end
 end
 
 local function StopBring()
@@ -918,108 +838,38 @@ local function KillAuraLoop()
 end
 
 local function StartBringAll()
-    if bringAllActive then StopBringAll() end
-    bringAllActive = true
-    notif("Bring All: bringing everyone", 2)
+    local myRoot = lp.Character.HumanoidRootPart
+    local alive = {}
+    local teleported = 0
     
-    coroutine.wrap(function()
-        while bringAllActive and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") do
-            local myRoot = lp.Character.HumanoidRootPart
-            local alive = {}
-            for _, player in ipairs(game.Players:GetPlayers()) do
-                if player ~= lp and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    table.insert(alive, player)
-                end
-            end
-            
-            for i, player in ipairs(alive) do
-                local root = player.Character.HumanoidRootPart
-                
-                if not bringOrigins[player] then
-                    local save = {root = root.CFrame, parts = {}}
-                    for _, part in ipairs(player.Character:GetDescendants()) do
-                        if part:IsA("BasePart") then save.parts[part] = part.CFrame end
-                    end
-                    bringOrigins[player] = save
-                end
-                
-                -- Position in circle around player
-                local angle = ((i - 1) / #alive) * math.pi * 2
-                local offset = Vector3.new(math.cos(angle) * 5, 0, math.sin(angle) * 5)
-                local targetPos = myRoot.Position + offset
-                
-                -- Try ALL methods for each player
-                pcall(function()
-                    root.CFrame = CFrame.new(targetPos)
-                end)
-                
-                pcall(function()
-                    root.CFrame = CFrame.new(targetPos, myRoot.CFrame.LookVector)
-                end)
-                
-                pcall(function()
-                    player.Character:MoveTo(targetPos)
-                end)
-                
-                pcall(function()
-                    player.Character:PivotTo(CFrame.new(targetPos))
-                end)
-                
-                pcall(function()
-                    root.Position = targetPos
-                end)
-                
-                pcall(function()
-                    game:GetService("TeleportService"):Teleport(player, targetPos)
-                end)
-                
-                pcall(function()
-                    root.AssemblyLinearVelocity = (targetPos - root.Position).Unit * 100
-                end)
-                
-                -- Try anchoring method
-                pcall(function()
-                    root.Anchored = true
-                    root.CFrame = CFrame.new(targetPos)
-                    root.Anchored = false
-                end)
-                
-                -- Disable humanoid
-                local hum = player.Character:FindFirstChildOfClass("Humanoid")
-                if hum then 
-                    pcall(function()
-                        hum.PlatformStand = true
-                        hum.WalkSpeed = 0
-                        hum.JumpPower = 0
-                    end)
-                end
-            end
-            
-            RunService.RenderStepped:Wait()
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if player ~= lp and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            table.insert(alive, player)
         end
+    end
+    
+    for i, player in ipairs(alive) do
+        local root = player.Character.HumanoidRootPart
         
-        -- Cleanup
-        for _, player in ipairs(game.Players:GetPlayers()) do
-            if player.Character then
-                local hum = player.Character:FindFirstChildOfClass("Humanoid")
-                if hum then 
-                    pcall(function()
-                        hum.PlatformStand = false
-                        hum.WalkSpeed = 16
-                        hum.JumpPower = 50
-                    end)
-                end
-                local root = player.Character:FindFirstChild("HumanoidRootPart")
-                if root then
-                    pcall(function()
-                        root.Anchored = false
-                    end)
-                end
-            end
+        -- Position in circle around player
+        local angle = ((i - 1) / #alive) * math.pi * 2
+        local offset = Vector3.new(math.cos(angle) * 5, 0, math.sin(angle) * 5)
+        local targetPos = myRoot.Position + offset
+        
+        local success = pcall(function()
+            root.CFrame = CFrame.new(targetPos)
+        end)
+        
+        if success then
+            teleported = teleported + 1
         end
-        bringAllActive = false
-        notif("Bring All stopped", 2)
-    end)()
+    end
+    
+    if teleported > 0 then
+        notif("Teleported " .. teleported .. " players to you", 2)
+    else
+        notif("Teleport failed - game may have anti-cheat", 2)
+    end
 end
 
 local function StopBringAll()
