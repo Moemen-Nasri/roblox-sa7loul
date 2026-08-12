@@ -1,5 +1,187 @@
 -- sa7loul | Survive the Killer V2
 -- Support version v2.31.0
+-- ULTRA-SIMPLIFIED MENU VERSION
+
+print("SA7LOUL SCRIPT STARTING...")
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local StarterGui = game:GetService("StarterGui")
+
+-- SIMPLE MENU
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "Sa7loul_V3"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+print("ScreenGui created")
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 500, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+print("MainFrame created")
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 15)
+MainCorner.Parent = MainFrame
+
+local Header = Instance.new("Frame")
+Header.Name = "Header"
+Header.Size = UDim2.new(1, 0, 0, 60)
+Header.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+Header.BorderSizePixel = 0
+Header.Parent = MainFrame
+
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 15)
+HeaderCorner.Parent = Header
+
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Size = UDim2.new(1, 0, 1, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "sa7loul V3"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 28
+Title.Font = Enum.Font.GothamBold
+Title.Parent = Header
+
+print("Header created")
+
+-- Content
+local Content = Instance.new("Frame")
+Content.Name = "Content"
+Content.Size = UDim2.new(1, -20, 1, -80)
+Content.Position = UDim2.new(0, 10, 0, 70)
+Content.BackgroundTransparency = 1
+Content.Parent = MainFrame
+
+-- Simple Toggle Function
+local function CreateToggle(parent, text, callback)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, 0, 0, 40)
+    container.BackgroundTransparency = 1
+    container.Parent = parent
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0, 200, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 16
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
+    
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 80, 0, 30)
+    button.Position = UDim2.new(1, -90, 0, 5)
+    button.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+    button.BorderSizePixel = 0
+    button.Text = "OFF"
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 14
+    button.Font = Enum.Font.Gotham
+    button.Parent = container
+    
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 8)
+    buttonCorner.Parent = button
+    
+    local state = false
+    button.MouseButton1Click:Connect(function()
+        state = not state
+        button.Text = state and "ON" or "OFF"
+        button.BackgroundColor3 = state and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(70, 70, 80)
+        if callback then
+            callback(state)
+        end
+    end)
+    
+    return container
+end
+
+-- Add some basic toggles
+CreateToggle(Content, "Speed", function(state) print("Speed:", state) end)
+CreateToggle(Content, "Fly", function(state) print("Fly:", state) end)
+CreateToggle(Content, "ESP", function(state) print("ESP:", state) end)
+CreateToggle(Content, "NoClip", function(state) print("NoClip:", state) end)
+
+print("Toggles created")
+
+-- Close Button
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0, 120, 0, 40)
+CloseButton.Position = UDim2.new(0.5, -60, 1, -50)
+CloseButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+CloseButton.BorderSizePixel = 0
+CloseButton.Text = "Close"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.TextSize = 18
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.Parent = MainFrame
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 10)
+CloseCorner.Parent = CloseButton
+
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+print("Close button created")
+
+-- Make draggable
+local dragging = false
+local dragInput = nil
+local dragStart = nil
+local startPos = nil
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+print("Drag functionality added")
+
+-- Notification
+StarterGui:SetCore("SendNotification", {
+    Title = "sa7loul",
+    Text = "Menu loaded successfully!",
+    Duration = 3
+})
+
+print("=== SA7LOUL MENU LOADED ===")
 
 local configs = {
     savedConfigs = {},
