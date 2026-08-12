@@ -1939,37 +1939,8 @@ CloseBtn.MouseButton1Click:Connect(function()
     h:Destroy()
 end)
 
--- MINIMIZE (collapses to a small bar)
-local MiniBar = Instance.new("Frame")
-MiniBar.Parent = h
-MiniBar.AnchorPoint = Vector2.new(1, 0)
-MiniBar.Position = UDim2.new(1, -12, 0, 12)
-MiniBar.Size = UDim2.new(0, 170, 0, 36)
-MiniBar.BackgroundColor3 = BG_PANEL
-MiniBar.BorderSizePixel = 0
-MiniBar.BackgroundTransparency = 0.1
-MiniBar.Visible = false
-Instance.new("UICorner", MiniBar).CornerRadius = UDim.new(0, 10)
-
-local MiniBarBtn = Instance.new("TextButton")
-MiniBarBtn.Parent = MiniBar
-MiniBarBtn.Size = UDim2.new(1, 0, 1, 0)
-MiniBarBtn.BackgroundTransparency = 1
-MiniBarBtn.Font = Enum.Font.GothamBold
-MiniBarBtn.Text = "✦ sa7loul  +"
-MiniBarBtn.TextColor3 = ACCENT
-MiniBarBtn.TextSize = 14
-MiniBarBtn.MouseEnter:Connect(function()
-    TweenService:Create(MiniBarBtn, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
-end)
-MiniBarBtn.MouseLeave:Connect(function()
-    TweenService:Create(MiniBarBtn, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {TextColor3 = ACCENT}):Play()
-end)
-MiniBarBtn.MouseButton1Click:Connect(function()
-    MiniBar.Visible = false
-    Main.Visible = true
-end)
-
+-- MINIMIZE (shrinks the window instead of hiding)
+local minimized = false
 local MinimBtn = Instance.new("TextButton")
 MinimBtn.Parent = TopBar
 MinimBtn.BackgroundTransparency = 1
@@ -1986,13 +1957,22 @@ MinimBtn.MouseLeave:Connect(function()
     TweenService:Create(MinimBtn, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {TextColor3 = TEXT_SECONDARY}):Play()
 end)
 MinimBtn.MouseButton1Click:Connect(function()
-    TweenService:Create(Main, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 640, 0, 0),
-        Position = UDim2.new(0.5, -320, 0.3, 0)
-    }):Play()
-    task.wait(0.25)
-    Main.Visible = false
-    MiniBar.Visible = true
+    minimized = not minimized
+    if minimized then
+        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+            Size = UDim2.new(0, 230, 0, 40)
+        }):Play()
+        LeftMenu.Visible = false
+        RightContent.Visible = false
+        MinimBtn.Text = "+"
+    else
+        LeftMenu.Visible = true
+        RightContent.Visible = true
+        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 640, 0, 520)
+        }):Play()
+        MinimBtn.Text = "–"
+    end
 end)
 
 -- LEFT MENU — redesigned with icons and better spacing
