@@ -579,7 +579,9 @@ end
 -- AUTHENTICATION CHECK (TEMPORARY BYPASS FOR TESTING)
 -- ============================================
 
+print("Starting script...")
 local session = {license = "test-0000-0000-0000", username = "TestUser"} 
+print("Session created:", session.username)
 -- local session = WaitForAuthentication() -- Disabled temporarily
 
 local defaultSettings = {
@@ -2839,17 +2841,50 @@ local NovaUI = Instance.new("ScreenGui")
 NovaUI.Name = "sa7loul_V3"
 NovaUI.ResetOnSpawn = false
 NovaUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+NovaUI.Enabled = true
+NovaUI.IgnoreGuiInset = true
 NovaUI.Parent = CoreGui
+
+print("NovaUI created and parented to CoreGui")
 
 local Window = Instance.new("Frame")
 Window.Name = "Window"
 Window.Parent = NovaUI
 Window.BackgroundColor3 = UITheme.BG
-Window.BackgroundTransparency = 1
+Window.BackgroundTransparency = 0
 Window.BorderSizePixel = 0
 Window.AnchorPoint = Vector2.new(0.5, 0.5)
 Window.Position = UDim2.fromScale(0.5, 0.5)
 Window.Size = UDim2.new(0, 720, 0, 540)
+Window.Visible = true
+
+print("Window created and configured")
+
+-- Add a test label to verify GUI is working
+local testLabel = Instance.new("TextLabel")
+testLabel.Name = "TestLabel"
+testLabel.Size = UDim2.new(0, 200, 0, 50)
+testLabel.Position = UDim2.new(0.5, -100, 0.5, -25)
+testLabel.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+testLabel.Text = "TEST GUI WORKING"
+testLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+testLabel.TextSize = 20
+testLabel.Font = Enum.Font.GothamBold
+testLabel.Parent = NovaUI
+print("Test label added")
+
+-- Force visibility after a short delay
+spawn(function()
+    wait(0.5)
+    if NovaUI and NovaUI.Parent then
+        NovaUI.Enabled = true
+        print("NovaUI.Enabled forced to true")
+    end
+    if Window and Window.Parent then
+        Window.Visible = true
+        print("Window.Visible forced to true")
+    end
+end)
 local windowCorner = Instance.new("UICorner", Window)
 windowCorner.CornerRadius = UDim.new(0, 16)
 local windowStroke = Instance.new("UIStroke", Window)
@@ -2900,11 +2935,10 @@ UITheme:RegisterAccent(function(c)
     })
 end, true)
 
--- opening animation
-TweenService:Create(Window, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    BackgroundTransparency = 0,
-    Size = UDim2.new(0, 720, 0, 540)
-}):Play()
+-- opening animation (simplified)
+Window.BackgroundTransparency = 0
+Window.Size = UDim2.new(0, 720, 0, 540)
+print("Window animation completed")
 
 --  HEADER 
 local Header = Instance.new("Frame")
