@@ -3340,13 +3340,24 @@ local UITheme = {
     Hue       = 0.5,
 }
 local accentListeners = {}
-function UITheme:RegisterAccent(fn)
-    table.insert(accentListeners, fn)
+local coreAccentListeners = {}
+function UITheme:RegisterAccent(fn, core)
+    if core then
+        table.insert(coreAccentListeners, fn)
+    else
+        table.insert(accentListeners, fn)
+    end
 end
 function UITheme:ApplyAccent()
+    for _, fn in ipairs(coreAccentListeners) do
+        pcall(fn, UITheme.Accent)
+    end
     for _, fn in ipairs(accentListeners) do
         pcall(fn, UITheme.Accent)
     end
+end
+function UITheme:ClearContentAccents()
+    accentListeners = {}
 end
 function UITheme:Tick(dt)
     if UITheme.RGB then
@@ -3420,7 +3431,7 @@ UITheme:RegisterAccent(function(c)
         ColorSequenceKeypoint.new(0.5, c),
         ColorSequenceKeypoint.new(1, UITheme.PURPLE)
     })
-end)
+end, true)
 
 -- opening animation
 TweenService:Create(Window, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
@@ -3467,7 +3478,7 @@ logoStroke.Transparency = 0.7
 UITheme:RegisterAccent(function(c)
     logoDot.BackgroundColor3 = c
     logoStroke.Color = c
-end)
+end, true)
 
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Parent = Header
@@ -3489,7 +3500,7 @@ titleAccent.TextSize = 14
 titleAccent.Size = UDim2.new(0, 30, 0, 18)
 titleAccent.Position = UDim2.new(0, 128, 0, 9)
 titleAccent.TextXAlignment = Enum.TextXAlignment.Left
-UITheme:RegisterAccent(function(c) titleAccent.TextColor3 = c end)
+UITheme:RegisterAccent(function(c) titleAccent.TextColor3 = c end, true)
 
 local headerSub = Instance.new("TextLabel")
 headerSub.Parent = Header
@@ -3766,7 +3777,7 @@ sidebarTitle.TextColor3 = UITheme.Accent
 sidebarTitle.TextSize = 12
 sidebarTitle.TextXAlignment = Enum.TextXAlignment.Left
 sidebarTitle.TextYAlignment = Enum.TextYAlignment.Center
-UITheme:RegisterAccent(function(c) sidebarTitle.TextColor3 = c end)
+UITheme:RegisterAccent(function(c) sidebarTitle.TextColor3 = c end, true)
 
 local TabItems = {
     { key = "  Home",       icon = "⌂", label = "Home" },
@@ -3833,7 +3844,7 @@ function BuildSidebar()
         glowBar.BackgroundTransparency = 1
         glowBar.ZIndex = 5
         Instance.new("UICorner", glowBar).CornerRadius = UDim.new(1, 0)
-        UITheme:RegisterAccent(function(c) glowBar.BackgroundColor3 = c end)
+        UITheme:RegisterAccent(function(c) glowBar.BackgroundColor3 = c end, true)
 
         btn.MouseEnter:Connect(function()
             if CurrentTab ~= item.key then
@@ -3852,7 +3863,6 @@ function BuildSidebar()
         tabVisuals[item.key] = { btn = btn, glow = glowBar }
     end
 end
-local tabVisuals = {}
 function RefreshTabVisuals()
     for key, vis in pairs(tabVisuals) do
         local active = (CurrentTab == key)
@@ -3906,7 +3916,7 @@ statusLabel.TextColor3 = UITheme.SUBTEXT
 statusLabel.TextSize = 10
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.TextYAlignment = Enum.TextYAlignment.Center
-UITheme:RegisterAccent(function(c) statusLabel.TextColor3 = c end)
+UITheme:RegisterAccent(function(c) statusLabel.TextColor3 = c end, true)
 
 task.spawn(function()
     local lastFrame = os.clock()
@@ -3934,6 +3944,7 @@ local activeRows = {}
 
 function ClearContent()
     activeRows = {}
+    UITheme:ClearContentAccents()
     for _, child in ipairs(ContentScroll:GetChildren()) do
         if child:IsA("Frame") or child:IsA("TextLabel") then
             child:Destroy()
@@ -5497,6 +5508,12 @@ function GetAllCuffItemNames()
         local chr = player.Character
         if chr and chr.Parent then scan(chr) end
     end
+    for _, name in ipairs({"Cuffs", "Cuff", "Menottes", "Menotte", "Handcuffs", "Handcuff"}) do
+        if not seen[name] then
+            seen[name] = true
+            table.insert(results, name)
+        end
+    end
     return results
 end
 
@@ -5725,6 +5742,11 @@ function GiveSpawnItemToPlayer(itemName, targetPlayer)
                 PositionItemNearPlayer(item, target)
             end
         else
+            for _, part in ipairs(item:GetDescendants()) do
+                if part:IsA("BasePart") then part.Anchored = false end
+            end
+            local base = item:FindFirstChild("PrimaryPart") or item:FindFirstChildWhichIsA("BasePart")
+            if base then base.Anchored = false end
             item.Parent = workspace
             PositionItemNearPlayer(item, target)
         end
@@ -5765,6 +5787,84 @@ function TakeSpawnItemsFromTarget(target, keyword)
         notif("No matching items on " .. targetPlayer.Name, 2)
     end
     return taken
+end
+
+-- ────────────────────────── ITEM CATALOG + SNAPSHOT ──────────────────────────
+-- Live scan finds items currently in the server; the catalog fills in the
+-- known STK items so the spawner always shows a full list.
+local KNOWN_CATALOG = {
+    "Sèche-Cheveux", "Seche-Cheveux", "Hair Dryer", "Hairdryer",
+    "Coupe-Cheveux", "Hair Cutter", "Rasoir", "Razor",
+    "Cuffs", "Cuff", "Menottes", "Menotte", "Handcuffs", "Handcuff",
+    "Couteau", "Couteaux", "Knife", "Butcher Knife", "Batte", "Bat", "Hache", "Axe",
+    "Pistolet", "Gun", "Pistol", "Marteau", "Hammer", "Épée", "Epee", "Sword", "Sabre", "Dague", "Dagger",
+    "Casier", "Casiers", "Locker", "Lockers",
+    "Gants", "Gant", "Gloves", "Boxing Gloves",
+    "Alliance", "Bougie", "Candle", "Savon", "Soap", "Clé", "Cle", "Key",
+}
+local spawnerItemCache = {}
+function CollectItemSnapshot()
+    spawnerItemCache = {}
+    local function add(root)
+        if not root then return end
+        pcall(function()
+            for _, obj in ipairs(root:GetDescendants()) do
+                if obj:IsA("Tool") or obj:IsA("Model") or obj:IsA("BasePart") then
+                    spawnerItemCache[obj.Name] = true
+                end
+            end
+        end)
+    end
+    add(workspace)
+    add(game:GetService("ReplicatedStorage"))
+    add(game:GetService("ReplicatedFirst"))
+    add(game:GetService("ServerStorage"))
+    for _, player in ipairs(PlayersSvc:GetPlayers()) do
+        add(player:FindFirstChild("Backpack"))
+        local chr = player.Character
+        if chr and chr.Parent then add(chr) end
+    end
+end
+
+function TokensOf(keyword)
+    local tokens = {}
+    for token in string.gmatch(keyword or "", "[^|]+") do
+        local t = Normalize(token):gsub(" ", "")
+        if t ~= "" then table.insert(tokens, t) end
+    end
+    return tokens
+end
+
+function NameMatchesTokens(name, tokens)
+    local norm = Normalize(name):gsub(" ", "")
+    if norm:find("ringbox", 1, true) then return false end
+    for _, t in ipairs(tokens) do
+        if norm:find(t, 1, true) then return true end
+    end
+    return false
+end
+
+function FindItemsByKeyword(keyword, includeCatalog)
+    local tokens = TokensOf(keyword)
+    if #tokens == 0 then return {} end
+    local seen = {}
+    local results = {}
+    for name in pairs(spawnerItemCache) do
+        if NameMatchesTokens(name, tokens) and not seen[name] then
+            seen[name] = true
+            table.insert(results, name)
+        end
+    end
+    table.sort(results)
+    if includeCatalog then
+        for _, name in ipairs(KNOWN_CATALOG) do
+            if not seen[name] and NameMatchesTokens(name, tokens) then
+                seen[name] = true
+                table.insert(results, name)
+            end
+        end
+    end
+    return results
 end
 -- ────────────────────────── END SPAWNER ENGINE ──────────────────────────
 
@@ -6640,7 +6740,7 @@ function UpdateRightContent()
                 for _, child in ipairs(rows:GetChildren()) do
                     if child:IsA("Frame") or child:IsA("TextLabel") then child:Destroy() end
                 end
-                local names = ScanItemsByKeyword(keyword)
+                local names = FindItemsByKeyword(keyword, true)
                 if #names == 0 then
                     status.Text = title .. " — nothing found (start a round & rescan)"
                     Label(rows, "No items found for: " .. keyword, UITheme.DIM, 11)
@@ -6651,7 +6751,7 @@ function UpdateRightContent()
                     MakeItemRow(rows, itemName)
                 end
             end
-            Button(section, "🔍 Rescan", rebuild)
+            Button(section, "🔍 Rescan", function() CollectItemSnapshot(); rebuild() end)
             task.defer(rebuild)
             return section
         end
@@ -6677,12 +6777,13 @@ function UpdateRightContent()
         })
         Note(targetChipSection, "Pick from the list — scroll it if there are many players")
 
-        BuildSpawnerCategory("Ring Box", "💍", "ring|alliance")
+        CollectItemSnapshot()
+
         BuildSpawnerCategory("Sèche-cheveux (Hair Dryer)", "🌬", "dryer|seche|cheveux|hair")
+        BuildSpawnerCategory("Coupe-cheveux (Hair Cutter)", "✂", "cutter|coupe|rasoir|razor")
         BuildSpawnerCategory("Cuffs", "🔗", "cuff|menotte")
         BuildSpawnerCategory("Lockers", "🗄", "locker|casier")
         BuildSpawnerCategory("Gloves", "🧤", "glove|gant")
-        BuildSpawnerCategory("Box", "📦", "box|boite")
         BuildSpawnerCategory("Weapons", "🗡", "knife|cutter|couteau|couteaux|axe|hache|hatchet|bat|batte|hammer|marteau|sword|epee|blade|gun|pistol|pistolet|rifle|fusil|shotgun|machete|machette|cleaver|wrench|dart|kunai|katana|weapon|arme|dague|sabre")
 
         local customSection = Section(ContentScroll, "Custom search", "🔎")
