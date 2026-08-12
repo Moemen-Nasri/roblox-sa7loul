@@ -1545,7 +1545,36 @@ local function UnbanAllFromList()
     notif("Unban fired for all " .. #bannedCache, 2)
 end
 
-local tsunamiCfg = {on = false, clicker = false, c4 = false, c4Timer = 0, c4Index = 0, c4Delay = 1.2, c4Col = 0, collectDelay = 0.35, collectTimer = 0, clickerDelay = 0.1, baseline = 0, collected = 0, god = false, autojump = false, jumpTimer = 0, safe = false, safeTimer = 0, safeDelay = 2, mgBot = false, mgBotTimer = 0, mgBotDelay = 0.8}
+local tsunamiCfg = {on = false, clicker = false, c4 = false, c4Timer = 0, c4Index = 0, c4Delay = 1.2, c4Col = 0, collectDelay = 0.35, collectTimer = 0, clickerDelay = 0.1, baseline = 0, collected = 0, god = false, autojump = false, jumpTimer = 0, safe = false, safeTimer = 0, safeDelay = 2, mgBot = false, mgBotTimer = 0, mgBotDelay = 0.8, popcorn = false, popTimer = 0, popCooldown = 0.35, popCount = 0}
+
+local function FindPopcornCircles()
+    local circles = {}
+    for _, gui in ipairs({lp:FindFirstChild("PlayerGui"), game:GetService("CoreGui")}) do
+        if gui then
+            for _, obj in ipairs(gui:GetDescendants()) do
+                if (obj:IsA("ImageLabel") or obj:IsA("Frame") or obj:IsA("ImageButton") or obj:IsA("TextButton")) and obj.Visible then
+                    local n = string.lower(obj.Name)
+                    if n:match("circle") or n:match("ring") or n:match("pop") or n:match("corn") or n:match("kernel") or n:match("timer") then
+                        table.insert(circles, obj)
+                    end
+                end
+            end
+        end
+    end
+    return circles
+end
+
+local function IsCircleGreen(obj)
+    if not obj then return false end
+    local ok, c = pcall(function()
+        if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
+            return obj.ImageColor3
+        end
+        return obj.BackgroundColor3
+    end)
+    if not ok or not c then return false end
+    return c.G > c.R + 0.08 and c.G > c.B + 0.08
+end
 local tsunamiRunConn = nil
 local tsunamiStatusLabel = nil
 local tsunamiPatterns = {"cash", "coin", "money", "brainrot", "corn", "pop", "collect", "loot"}
@@ -1594,7 +1623,7 @@ local function UpdateTsunamiStatus()
     if tsunamiCfg.baseline > 0 then
         pct = math.floor(tsunamiCfg.collected / tsunamiCfg.baseline * 100)
     end
-    tsunamiStatusLabel.Text = "Ping: " .. ping .. "ms · Collect: " .. tsunamiCfg.collected .. "/" .. tsunamiCfg.baseline .. " (" .. pct .. "%) · MG: " .. (tsunamiCfg.mgBot and "ON" or "OFF")
+    tsunamiStatusLabel.Text = "Ping: " .. ping .. "ms · 🍿 " .. tsunamiCfg.popCount .. "/99 · 💰 " .. pct .. "%"
 end
 
 local function TsunamiGodMode()
@@ -1654,7 +1683,7 @@ local function RebuildTsunami()
     tsunamiCfg.jumpTimer = 0
     tsunamiCfg.safeTimer = 0
     tsunamiCfg.mgBotTimer = 0
-    if not (tsunamiCfg.on or tsunamiCfg.clicker or tsunamiCfg.c4 or tsunamiCfg.god or tsunamiCfg.autojump or tsunamiCfg.safe or tsunamiCfg.mgBot) then
+    if not (tsunamiCfg.on or tsunamiCfg.clicker or tsunamiCfg.c4 or tsunamiCfg.god or tsunamiCfg.autojump or tsunamiCfg.safe or tsunamiCfg.mgBot or tsunamiCfg.popcorn) then
         if tsunamiStatusLabel then tsunamiStatusLabel.Text = "All OFF" end
         return
     end
@@ -1673,6 +1702,24 @@ local function RebuildTsunami()
             local m = UserInputService:GetMouseLocation()
             vim:SendMouseButtonEvent(m.X, m.Y, 0, true, game, 1)
             vim:SendMouseButtonEvent(m.X, m.Y, 0, false, game, 1)
+        end
+        if tsunamiCfg.popcorn then
+            tsunamiCfg.popTimer = tsunamiCfg.popTimer + dt
+            local circles = FindPopcornCircles()
+            if #circles == 0 then
+                tsunamiCfg.popCount = 0
+            elseif tsunamiCfg.popTimer >= tsunamiCfg.popCooldown then
+                tsunamiCfg.popTimer = 0
+                if #circles >= 2 then
+                    local target = circles[#circles]
+                    if IsCircleGreen(target) then
+                        local pos = target.AbsolutePosition + target.AbsoluteSize / 2
+                        vim:SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 1)
+                        vim:SendMouseButtonEvent(pos.X, pos.Y, 0, false, game, 1)
+                        tsunamiCfg.popCount = math.min(tsunamiCfg.popCount + 1, 99)
+                    end
+                end
+            end
         end
         if tsunamiCfg.god then
             TsunamiGodMode()
@@ -1746,6 +1793,464 @@ local function RebuildTsunami()
             UpdateTsunamiStatus()
         end
     end)
+end
+
+-- ================================================================
+-- 🍿 POPCORN BURST — osu!-style popcorn rhythm minigame
+-- Self-contained. Launched from the "Tsunami" tab toggle.
+-- GUI goes into CoreGui (same as the hub). Fully client-side.
+-- Best score persists to sa7loul_popcorn.json (pcall-guarded).
+-- ================================================================
+local PopcornBurstAPI = nil
+do
+    local popcornCfg = {
+        active = false,
+        gui = nil, overlay = nil, canvas = nil, popup = nil, hud = nil,
+        countdown = nil, endFrame = nil, endTitle = nil, endSub = nil,
+        endScores = nil, sfx = nil,
+        tasks = {},
+        kernels = {},
+        spots = {},
+        score = 0, judged = 0,
+        stats = { Perfect = 0, Great = 0, Good = 0, Miss = 0 },
+        best = 0,
+    }
+    local statusLabel = nil
+
+    local POPCONFIG = {
+        KernelCount     = 12,
+        KernelDuration  = 1.5,
+        SpawnInterval   = 1.35,
+        Countdown       = 3,
+        PerfectWindow   = 0.08,
+        GreatWindow     = 0.20,
+        GoodWindow      = 0.40,
+        Points          = { Perfect = 100, Great = 50, Good = 20, Miss = 0 },
+        CircleSize      = 110,
+        RingStartScale  = 1.8,
+        ClickBuffer     = 0.45,
+        PopSfxId        = "rbxassetid://1234567890", -- <-- replace with your pop sound
+    }
+
+    local POPCOLORS = {
+        kernel = Color3.fromRGB(255, 200, 60),
+        target = Color3.fromRGB(240, 240, 245),
+        gold   = Color3.fromRGB(255, 215, 0),
+        green  = Color3.fromRGB(86, 255, 129),
+        blue   = Color3.fromRGB(77, 148, 255),
+        red    = Color3.fromRGB(255, 77, 77),
+        text   = Color3.fromRGB(240, 240, 245),
+    }
+
+    local function PopcornUpdateStatus()
+        if not statusLabel or not statusLabel.Parent then return end
+        if popcornCfg.active then
+            statusLabel.Text = "🍿 Playing... Score: " .. popcornCfg.score
+        else
+            statusLabel.Text = "🍿 Minigame: OFF · Best: " .. popcornCfg.best
+        end
+    end
+
+    local function PopcornLoadBest()
+        local ok, data = pcall(function()
+            return game:GetService("HttpService"):JSONDecode(readfile("sa7loul_popcorn.json"))
+        end)
+        if ok and type(data) == "number" then
+            popcornCfg.best = data
+        end
+    end
+
+    local function PopcornSaveBest()
+        pcall(function()
+            writefile("sa7loul_popcorn.json", game:GetService("HttpService"):JSONEncode(popcornCfg.best))
+        end)
+    end
+
+    PopcornLoadBest()
+
+    local function PopcornSchedule(delay, fn)
+        local t = task.delay(delay, function()
+            if popcornCfg.active then fn() end
+        end)
+        table.insert(popcornCfg.tasks, t)
+    end
+
+    local function PopcornMakeCircle(size, thickness, color)
+        local f = Instance.new("Frame")
+        f.Size = UDim2.fromOffset(size, size)
+        f.AnchorPoint = Vector2.new(0.5, 0.5)
+        f.BackgroundTransparency = 1
+        f.BorderSizePixel = 0
+        f.ZIndex = 6
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = f
+        local stroke = Instance.new("UIStroke")
+        stroke.Thickness = thickness
+        stroke.Color = color
+        stroke.Parent = f
+        return f
+    end
+
+    local baseSize = POPCONFIG.CircleSize
+    local startSize = baseSize * POPCONFIG.RingStartScale
+
+    local function PopcornRadiusAt(elapsed)
+        local t = math.clamp(elapsed / POPCONFIG.KernelDuration, 0, 1)
+        local size = baseSize + (startSize - baseSize) * (1 - t)
+        return size / 2
+    end
+
+    local function PopcornRandomPos()
+        local size = popcornCfg.canvas.AbsoluteSize
+        local margin = math.floor(startSize + 60)
+        local maxX = math.max(margin + 1, math.floor(size.X - margin))
+        local maxY = math.max(margin + 91, math.floor(size.Y - margin))
+        return Vector2.new(math.random(margin, maxX), math.random(margin + 90, maxY))
+    end
+
+    local function PopcornSpawnKernel(data)
+        local center = PopcornRandomPos()
+        local target = PopcornMakeCircle(baseSize, 5, POPCOLORS.target)
+        target.Position = UDim2.fromOffset(center.X, center.Y)
+        target.Parent = popcornCfg.canvas
+        local ring = PopcornMakeCircle(startSize, 8, POPCOLORS.kernel)
+        ring.Position = UDim2.fromOffset(center.X, center.Y)
+        ring.Parent = popcornCfg.canvas
+        local k = {
+            id = data.id, center = center, target = target, ring = ring,
+            startTime = os.clock(), judged = false,
+        }
+        table.insert(popcornCfg.kernels, k)
+        popcornCfg.spots[data.id] = center
+        TweenService:Create(ring,
+            TweenInfo.new(POPCONFIG.KernelDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
+                Size = UDim2.fromOffset(baseSize, baseSize),
+            }):Play()
+    end
+
+    local function PopcornPopEffect(center)
+        local burst = PopcornMakeCircle(baseSize * 0.8, 6, POPCOLORS.kernel)
+        burst.Position = UDim2.fromOffset(center.X, center.Y)
+        burst.Parent = popcornCfg.canvas
+        local stroke = burst:FindFirstChild("UIStroke")
+        TweenService:Create(burst,
+            TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.fromOffset(baseSize * 2.6, baseSize * 2.6),
+            }):Play()
+        TweenService:Create(stroke,
+            TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Transparency = 1,
+            }):Play()
+        if popcornCfg.sfx then
+            popcornCfg.sfx:Stop()
+            popcornCfg.sfx:Play()
+        end
+        task.delay(0.4, function() burst:Destroy() end)
+    end
+
+    local function PopcornRemoveKernel(k, silent)
+        for i, kk in ipairs(popcornCfg.kernels) do
+            if kk == k then table.remove(popcornCfg.kernels, i) break end
+        end
+        k.target:Destroy()
+        k.ring:Destroy()
+        if not silent then PopcornPopEffect(k.center) end
+    end
+
+    local function PopcornShowText(text, color, center)
+        local popup = popcornCfg.popup
+        popup.Text = text
+        popup.TextColor3 = color
+        popup.Visible = true
+        popup.AnchorPoint = Vector2.new(0.5, 0.5)
+        popup.Position = UDim2.fromOffset(center.X, center.Y) - UDim2.fromOffset(0, 55)
+        popup.TextTransparency = 0
+        TweenService:Create(popup,
+            TweenInfo.new(0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                TextTransparency = 1,
+                Position = UDim2.fromOffset(center.X, center.Y) - UDim2.fromOffset(0, 120),
+            }):Play()
+        task.delay(0.7, function() popup.Visible = false end)
+    end
+
+    local function PopcornJudgmentColor(judgement)
+        if judgement == "Perfect" then return POPCOLORS.gold end
+        if judgement == "Great" then return POPCOLORS.green end
+        if judgement == "Good" then return POPCOLORS.blue end
+        return POPCOLORS.red
+    end
+
+    local function PopcornFinish()
+        popcornCfg.active = false
+        for _, t in ipairs(popcornCfg.tasks) do
+            t:Cancel()
+        end
+        popcornCfg.tasks = {}
+        for i = #popcornCfg.kernels, 1, -1 do
+            PopcornRemoveKernel(popcornCfg.kernels[i], true)
+        end
+        popcornCfg.kernels = {}
+        popcornCfg.spots = {}
+
+        local bonus = ""
+        if popcornCfg.score > popcornCfg.best then
+            popcornCfg.best = popcornCfg.score
+            PopcornSaveBest()
+            bonus = "  ·  NEW BEST!"
+        end
+        local s = popcornCfg.stats
+        popcornCfg.endTitle.Text = "SCORE: " .. popcornCfg.score .. bonus
+        popcornCfg.endSub.Text = "Perfect " .. s.Perfect .. " · Great " .. s.Great
+            .. " · Good " .. s.Good .. " · Miss " .. s.Miss
+        popcornCfg.endScores.Text = "Max possible: " .. (POPCONFIG.Points.Perfect * POPCONFIG.KernelCount)
+            .. "  ·  Best: " .. popcornCfg.best
+        popcornCfg.endFrame.Visible = true
+        PopcornUpdateStatus()
+    end
+
+    local function PopcornJudged(k, judgement, points)
+        if k.judged then return end
+        k.judged = true
+        popcornCfg.score = popcornCfg.score + points
+        popcornCfg.judged = popcornCfg.judged + 1
+        popcornCfg.stats[judgement] = popcornCfg.stats[judgement] + 1
+        PopcornRemoveKernel(k, judgement == "Miss")
+        PopcornShowText(judgement, PopcornJudgmentColor(judgement), k.center)
+        popcornCfg.hud.Text = "Score: " .. popcornCfg.score
+            .. "  ·  Kernels left: " .. (POPCONFIG.KernelCount - popcornCfg.judged)
+        PopcornUpdateStatus()
+        if popcornCfg.judged >= POPCONFIG.KernelCount then
+            PopcornSchedule(0.6, PopcornFinish)
+        end
+    end
+
+    local function PopcornClick()
+        if not popcornCfg.active then return end
+        local m = UserInputService:GetMouseLocation()
+        for i = #popcornCfg.kernels, 1, -1 do
+            local k = popcornCfg.kernels[i]
+            local elapsed = os.clock() - k.startTime
+            if elapsed <= POPCONFIG.KernelDuration + POPCONFIG.ClickBuffer then
+                if (m - k.center).Magnitude <= PopcornRadiusAt(elapsed) then
+                    local error = math.abs(elapsed - POPCONFIG.KernelDuration)
+                    local judgement, points = "Miss", 0
+                    if error <= POPCONFIG.PerfectWindow then
+                        judgement, points = "Perfect", POPCONFIG.Points.Perfect
+                    elseif error <= POPCONFIG.GreatWindow then
+                        judgement, points = "Great", POPCONFIG.Points.Great
+                    elseif error <= POPCONFIG.GoodWindow then
+                        judgement, points = "Good", POPCONFIG.Points.Good
+                    end
+                    PopcornJudged(k, judgement, points)
+                    return
+                end
+            end
+        end
+    end
+
+    local function PopcornRound()
+        popcornCfg.score = 0
+        popcornCfg.judged = 0
+        popcornCfg.stats = { Perfect = 0, Great = 0, Good = 0, Miss = 0 }
+        for _, t in ipairs(popcornCfg.tasks) do
+            t:Cancel()
+        end
+        popcornCfg.tasks = {}
+        for i = #popcornCfg.kernels, 1, -1 do
+            PopcornRemoveKernel(popcornCfg.kernels[i], true)
+        end
+        popcornCfg.kernels = {}
+        popcornCfg.spots = {}
+        popcornCfg.endFrame.Visible = false
+
+        popcornCfg.hud.Text = "Score: 0  ·  Kernels left: " .. POPCONFIG.KernelCount
+        popcornCfg.countdown.Visible = true
+        for i = POPCONFIG.Countdown, 1, -1 do
+            popcornCfg.countdown.Text = tostring(i)
+            popcornCfg.countdown.TextTransparency = 0
+            TweenService:Create(popcornCfg.countdown,
+                TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                { TextTransparency = 1 }):Play()
+            task.wait(1)
+            if not popcornCfg.active then return end
+        end
+        popcornCfg.countdown.Text = "POP!"
+        popcornCfg.countdown.TextTransparency = 0
+        TweenService:Create(popcornCfg.countdown,
+            TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            { TextTransparency = 1 }):Play()
+        task.wait(0.5)
+        popcornCfg.countdown.Visible = false
+        if not popcornCfg.active then return end
+
+        for id = 1, POPCONFIG.KernelCount do
+            local kernelId = id
+            local delay = (id - 1) * POPCONFIG.SpawnInterval
+            PopcornSchedule(delay, function()
+                PopcornSpawnKernel({ id = kernelId })
+            end)
+            PopcornSchedule(delay + POPCONFIG.KernelDuration + POPCONFIG.GoodWindow + 0.1, function()
+                for _, k in ipairs(popcornCfg.kernels) do
+                    if k.id == kernelId then
+                        PopcornJudged(k, "Miss", 0)
+                        break
+                    end
+                end
+            end)
+        end
+    end
+
+    local function PopcornStop()
+        popcornCfg.active = false
+        for _, t in ipairs(popcornCfg.tasks) do
+            t:Cancel()
+        end
+        popcornCfg.tasks = {}
+        for i = #popcornCfg.kernels, 1, -1 do
+            PopcornRemoveKernel(popcornCfg.kernels[i], true)
+        end
+        popcornCfg.kernels = {}
+        popcornCfg.spots = {}
+        popcornCfg.popup.Visible = false
+        popcornCfg.countdown.Visible = false
+        popcornCfg.endFrame.Visible = false
+        if popcornCfg.gui then
+            popcornCfg.gui.Visible = false
+        end
+        PopcornUpdateStatus()
+    end
+
+    local function PopcornBuildGUI()
+        if popcornCfg.gui then
+            popcornCfg.gui.Visible = true
+            return
+        end
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "PopcornBurstGUI"
+        gui.IgnoreGuiInset = true
+        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        gui.Parent = game:GetService("CoreGui")
+        popcornCfg.gui = gui
+
+        local function make(class, parent, props)
+            local obj = Instance.new(class)
+            for kk, vv in pairs(props) do obj[kk] = vv end
+            obj.Parent = parent
+            return obj
+        end
+
+        popcornCfg.overlay = make("Frame", gui, {
+            Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(10, 11, 16),
+            BackgroundTransparency = 0.35, BorderSizePixel = 0,
+        })
+
+        popcornCfg.canvas = make("Frame", gui, {
+            Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 5,
+        })
+
+        popcornCfg.hud = make("TextLabel", gui, {
+            BackgroundTransparency = 1, Text = "Score: 0", Font = Enum.Font.GothamBold,
+            TextSize = 24, TextColor3 = POPCOLORS.text,
+            Size = UDim2.fromScale(1, 0.06), Position = UDim2.fromScale(0, 0.02),
+            ZIndex = 8,
+        })
+
+        popcornCfg.countdown = make("TextLabel", gui, {
+            BackgroundTransparency = 1, Text = "", Font = Enum.Font.GothamBlack,
+            TextSize = 110, TextColor3 = POPCOLORS.kernel,
+            Size = UDim2.fromScale(1, 0.4), Position = UDim2.fromScale(0, 0.35),
+            Visible = false, TextTransparency = 1, ZIndex = 9,
+        })
+
+        popcornCfg.popup = make("TextLabel", gui, {
+            BackgroundTransparency = 1, Text = "", TextSize = 46, Font = Enum.Font.GothamBlack,
+            TextTransparency = 1, Size = UDim2.fromOffset(300, 70), ZIndex = 20, Visible = false,
+        })
+
+        popcornCfg.endFrame = make("Frame", gui, {
+            Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
+            Visible = false, ZIndex = 30,
+        })
+        local panel = make("Frame", popcornCfg.endFrame, {
+            Size = UDim2.fromOffset(400, 320), Position = UDim2.fromScale(0.5, 0.5),
+            AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Color3.fromRGB(24, 26, 34),
+            BorderSizePixel = 0,
+        })
+        make("UICorner", panel, { CornerRadius = UDim.new(0, 14) })
+        make("UIStroke", panel, { Color = POPCOLORS.kernel, Thickness = 2 })
+        popcornCfg.endTitle = make("TextLabel", panel, {
+            BackgroundTransparency = 1, Text = "", Font = Enum.Font.GothamBlack,
+            TextSize = 26, TextColor3 = POPCOLORS.kernel,
+            Size = UDim2.fromScale(1, 0.2), Position = UDim2.fromScale(0, 0.14),
+        })
+        popcornCfg.endSub = make("TextLabel", panel, {
+            BackgroundTransparency = 1, Text = "", Font = Enum.Font.GothamBold,
+            TextSize = 17, TextColor3 = POPCOLORS.text,
+            Size = UDim2.fromScale(1, 0.14), Position = UDim2.fromScale(0, 0.36),
+        })
+        popcornCfg.endScores = make("TextLabel", panel, {
+            BackgroundTransparency = 1, Text = "", Font = Enum.Font.Gotham,
+            TextSize = 16, TextColor3 = POPCOLORS.text,
+            Size = UDim2.fromScale(1, 0.14), Position = UDim2.fromScale(0, 0.52),
+        })
+
+        local retryBtn = make("TextButton", panel, {
+            Size = UDim2.fromOffset(220, 44), Position = UDim2.fromScale(0.5, 0.75),
+            AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = POPCOLORS.kernel,
+            Text = "PLAY AGAIN", Font = Enum.Font.GothamBold, TextSize = 18,
+            TextColor3 = Color3.fromRGB(20, 20, 24),
+            AutoButtonColor = false, BorderSizePixel = 0,
+        })
+        make("UICorner", retryBtn, { CornerRadius = UDim.new(1, 0) })
+        retryBtn.MouseButton1Click:Connect(function()
+            popcornCfg.endFrame.Visible = false
+            popcornCfg.active = true
+            PopcornRound()
+        end)
+
+        local closeBtn = make("TextButton", gui, {
+            Size = UDim2.fromOffset(130, 36), Position = UDim2.fromScale(1, 0),
+            AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = Color3.fromRGB(60, 62, 74),
+            Text = "✕ CLOSE", Font = Enum.Font.GothamBold, TextSize = 15,
+            TextColor3 = POPCOLORS.text, AutoButtonColor = false, BorderSizePixel = 0,
+            ZIndex = 40,
+        })
+        make("UICorner", closeBtn, { CornerRadius = UDim.new(1, 0) })
+        closeBtn.MouseButton1Click:Connect(function()
+            PopcornStop()
+        end)
+
+        local sfx = Instance.new("Sound")
+        sfx.SoundId = POPCONFIG.PopSfxId
+        sfx.Volume = 0.8
+        sfx.Parent = gui
+        popcornCfg.sfx = sfx
+    end
+
+    local function PopcornStart()
+        if popcornCfg.active then return end
+        PopcornBuildGUI()
+        popcornCfg.active = true
+        PopcornRound()
+        PopcornUpdateStatus()
+    end
+
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+            PopcornClick()
+        end
+    end)
+
+    PopcornBurstAPI = {
+        Start = PopcornStart,
+        Stop = PopcornStop,
+        IsActive = function() return popcornCfg.active end,
+        UpdateStatus = PopcornUpdateStatus,
+        SetStatusLabel = function(instance) statusLabel = instance end,
+    }
 end
 
 local function isKillerNearby(position, radius)
@@ -3813,83 +4318,20 @@ function UpdateRightContent()
         CreateLabel(RightContent, "You must be inside the server to fire bans (rejoin before kick)", TEXT_DIM)
         
     elseif CurrentTab == "  Tsunami" then
-        local tsunamiMain = CreateSection(RightContent, "🌊 Tsunami survival")
-        tsunamiStatusLabel = CreateLabel(tsunamiMain, "Ping: --ms · Collect: 0/0 (0%) · MG: OFF", TEXT_PRIMARY)
-        CreateToggle(tsunamiMain, "💰 Auto Collect", tsunamiCfg.on, function(val)
-            tsunamiCfg.on = val
+        local tsunamiMain = CreateSection(RightContent, "🍿 Popcorn Burst")
+        local stLabel = CreateLabel(tsunamiMain, "🍿 Minigame: OFF", TEXT_PRIMARY)
+        PopcornBurstAPI.SetStatusLabel(stLabel)
+        PopcornBurstAPI.UpdateStatus()
+        CreateToggle(tsunamiMain, "🍿 Play Popcorn Burst", PopcornBurstAPI.IsActive(), function(val)
             if val then
-                tsunamiCfg.baseline = 0
-                tsunamiCfg.collected = 0
-                tsunamiCfg.c4Index = 0
-            end
-            RebuildTsunami()
-        end)
-        CreateSlider(tsunamiMain, "Collect speed (sec)", 0.1, 2, 0.35, function(val)
-            tsunamiCfg.collectDelay = val
-        end)
-        local patBox = CreateTextBox(tsunamiMain, "Collect names: cash,coin,corn...")
-        CreateButton(tsunamiMain, "⚙️ Apply patterns", function()
-            local list = {}
-            for part in string.gmatch(patBox.Text or "", "[^,%s]+") do
-                list[#list + 1] = string.lower(part)
-            end
-            if #list > 0 then
-                tsunamiPatterns = list
-                notif("Patterns: " .. table.concat(tsunamiPatterns, ","), 2)
+                PopcornBurstAPI.Start()
             else
-                notif("Write at least one name", 2)
+                PopcornBurstAPI.Stop()
             end
         end)
-        CreateToggle(tsunamiMain, "🖱️ Auto Clicker", tsunamiCfg.clicker, function(val)
-            tsunamiCfg.clicker = val
-            RebuildTsunami()
-        end)
-        CreateSlider(tsunamiMain, "Clicker CPS", 1, 30, 10, function(val)
-            tsunamiCfg.clickerDelay = 1 / val
-        end)
-        CreateToggle(tsunamiMain, "🐐 God mode", tsunamiCfg.god, function(val)
-            tsunamiCfg.god = val
-            RebuildTsunami()
-        end)
-        CreateToggle(tsunamiMain, "🦘 Auto Jump", tsunamiCfg.autojump, function(val)
-            tsunamiCfg.autojump = val
-            RebuildTsunami()
-        end)
-        CreateToggle(tsunamiMain, "⛈️ Safe zone TP", tsunamiCfg.safe, function(val)
-            tsunamiCfg.safe = val
-            RebuildTsunami()
-        end)
-        CreateSlider(tsunamiMain, "Safe TP interval (sec)", 1, 10, 2, function(val)
-            tsunamiCfg.safeDelay = val
-        end)
-        CreateToggle(tsunamiMain, "🎲 Mini-game bot", tsunamiCfg.mgBot, function(val)
-            tsunamiCfg.mgBot = val
-            tsunamiCfg.mgBotTimer = 0
-            RebuildTsunami()
-        end)
-        CreateSlider(tsunamiMain, "MG bot delay (sec)", 0.3, 3, 0.8, function(val)
-            tsunamiCfg.mgBotDelay = val
-        end)
-        local c4Section = CreateSection(RightContent, "🔗 Connect 4 bot")
-        CreateToggle(c4Section, "🔗 Connect4 bot", tsunamiCfg.c4, function(val)
-            tsunamiCfg.c4 = val
-            tsunamiCfg.c4Timer = 0
-            tsunamiCfg.c4Index = 0
-            RebuildTsunami()
-        end)
-        CreateSlider(c4Section, "C4 delay (sec)", 0.5, 5, 1.2, function(val)
-            tsunamiCfg.c4Delay = val
-        end)
-        CreateSlider(c4Section, "C4 column (0=auto)", 0, 7, 0, function(val)
-            tsunamiCfg.c4Col = math.floor(val)
-        end)
-        CreateSlider(c4Section, "Speed", 16, 120, 40, function(val)
-            settings.Speed = val
-            settings.speedEnabled = true
-            if lp.Character and lp.Character:FindFirstChild("Humanoid") then
-                lp.Character.Humanoid.WalkSpeed = val
-            end
-        end)
+        CreateLabel(tsunamiMain, "Click the golden ring exactly when it meets the white target ring!", TEXT_DIM)
+        CreateLabel(tsunamiMain, "Perfect +100 | Great +50 | Good +20 | Miss 0", TEXT_DIM)
+        CreateLabel(tsunamiMain, "12 kernels per round · best score saved to sa7loul_popcorn.json", TEXT_DIM)
         
     elseif CurrentTab == "  More" then
         local scriptsSection = CreateSection(RightContent, "📦 External scripts")
