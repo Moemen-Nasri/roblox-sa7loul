@@ -5467,17 +5467,17 @@ function UpdatePlayerList()
     end
 end
 
-local function RefreshPlayerSideTab()
+function RefreshPlayerSideTab()
     if trollTargetDD then RefreshTrollTargetOptions() end
 end
 
 -- ────────────────────────── CUFF ITEM SPAWNER / GIVER ──────────────────────────
-local function IsCuffObject(obj)
+function IsCuffObject(obj)
     return (obj:IsA("Tool") or obj:IsA("Model") or obj:IsA("BasePart"))
         and string.lower(obj.Name):find("cuff", 1, true) ~= nil
 end
 
-local function GetAllCuffItemNames()
+function GetAllCuffItemNames()
     local seen = {}
     local results = {}
     local function scan(root)
@@ -5500,7 +5500,7 @@ local function GetAllCuffItemNames()
     return results
 end
 
-local function FindCuffObject(itemName)
+function FindCuffObject(itemName)
     local function findIn(root)
         if not root then return nil end
         return root:FindFirstChild(itemName, true)
@@ -5510,7 +5510,7 @@ local function FindCuffObject(itemName)
     return nil
 end
 
-local function PositionItemNearPlayer(item, target)
+function PositionItemNearPlayer(item, target)
     local base = item
     if item:IsA("Model") then
         base = item:FindFirstChild("PrimaryPart")
@@ -5532,7 +5532,7 @@ local function PositionItemNearPlayer(item, target)
     return ok
 end
 
-local function GiveCuffItemToPlayer(itemName, targetPlayer)
+function GiveCuffItemToPlayer(itemName, targetPlayer)
     local target = targetPlayer or lp
     if not target then
         notif("No target player", 2)
@@ -5568,11 +5568,11 @@ local function GiveCuffItemToPlayer(itemName, targetPlayer)
     return ok
 end
 
-local function SpawnCuffItemForMe(itemName)
+function SpawnCuffItemForMe(itemName)
     return GiveCuffItemToPlayer(itemName, lp)
 end
 
-local function TakeCuffsFromTarget(target)
+function TakeCuffsFromTarget(target)
     local targetPlayer = target or lp
     local taken = 0
     local function grabFrom(root)
@@ -5596,7 +5596,7 @@ local function TakeCuffsFromTarget(target)
     return taken
 end
 
-local function RemoveMyCuffs()
+function RemoveMyCuffs()
     local removed = 0
     local function clearFrom(root)
         if not root then return end
@@ -5614,11 +5614,11 @@ end
 -- ────────────────────────── END CUFF CODE ──────────────────────────
 
 -- ────────────────────────── SPAWNER ENGINE (generic items) ──────────────────────────
-local function Normalize(s)
+function Normalize(s)
     return string.lower((s or ""):gsub("[àáâäãå]", "a"):gsub("[èéêë]", "e"):gsub("[ìíîï]", "i"):gsub("[òóôöõ]", "o"):gsub("[ùúûü]", "u"):gsub("ç", "c"):gsub("ñ", "n"):gsub("%s+", " "))
 end
 
-local function ItemIcon(name)
+function ItemIcon(name)
     local n = Normalize(name)
     local map = {
         { {"knife", "couteau", "cutter", "machete", "cleaver", "dart", "kunai", "stab"}, "🔪" },
@@ -5648,7 +5648,7 @@ local function ItemIcon(name)
     return "📦"
 end
 
-local function ScanItemsByKeyword(keyword)
+function ScanItemsByKeyword(keyword)
     local seen = {}
     local results = {}
     local tokens = {}
@@ -5688,7 +5688,7 @@ local function ScanItemsByKeyword(keyword)
     return results
 end
 
-local function FindSpawnObject(itemName)
+function FindSpawnObject(itemName)
     local function findIn(root)
         if not root then return nil end
         local obj = root:FindFirstChild(itemName, true)
@@ -5701,7 +5701,7 @@ local function FindSpawnObject(itemName)
         or findIn(game:GetService("ReplicatedFirst")) or findIn(game:GetService("ServerStorage"))
 end
 
-local function GiveSpawnItemToPlayer(itemName, targetPlayer)
+function GiveSpawnItemToPlayer(itemName, targetPlayer)
     local target = targetPlayer or lp
     if not target then
         notif("No target player", 2)
@@ -5737,11 +5737,11 @@ local function GiveSpawnItemToPlayer(itemName, targetPlayer)
     return ok
 end
 
-local function SpawnSpawnItemForMe(itemName)
+function SpawnSpawnItemForMe(itemName)
     return GiveSpawnItemToPlayer(itemName, lp)
 end
 
-local function TakeSpawnItemsFromTarget(target, keyword)
+function TakeSpawnItemsFromTarget(target, keyword)
     local targetPlayer = target or lp
     local taken = 0
     local lowerKey = string.lower(keyword or "cuff")
