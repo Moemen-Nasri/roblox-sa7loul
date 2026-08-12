@@ -2259,8 +2259,8 @@ local function CreatePlayerEntry(parent, player)
     local label = Instance.new("TextLabel")
     label.Parent = frame
     label.BackgroundTransparency = 1
-    label.Size = UDim2.new(0.36, 0, 1, 0)
-    label.Position = UDim2.new(0, 10, 0, 0)
+    label.Size = UDim2.new(0.24, 0, 1, 0)
+    label.Position = UDim2.new(0.54, 0, 0, 0)
     label.Font = Enum.Font.GothamBold
     label.Text = player.Name
     label.TextColor3 = TEXT_PRIMARY
@@ -2272,7 +2272,7 @@ local function CreatePlayerEntry(parent, player)
     statusLabel.Parent = frame
     statusLabel.BackgroundTransparency = 1
     statusLabel.Size = UDim2.new(0.16, 0, 1, 0)
-    statusLabel.Position = UDim2.new(0.36, 0, 0, 0)
+    statusLabel.Position = UDim2.new(0.78, 0, 0, 0)
     statusLabel.Font = Enum.Font.Gotham
     statusLabel.TextColor3 = TEXT_SECONDARY
     statusLabel.TextSize = 11
@@ -2301,20 +2301,21 @@ local function CreatePlayerEntry(parent, player)
         local btnRow = Instance.new("Frame")
         btnRow.Parent = frame
         btnRow.BackgroundTransparency = 1
-        btnRow.Size = UDim2.new(0.42, 0, 1, 0)
-        btnRow.Position = UDim2.new(0.58, 0, 0, 0)
+        btnRow.Size = UDim2.new(0.52, 0, 1, 0)
+        btnRow.Position = UDim2.new(0, 0, 0, 0)
         
         local rowLayout = Instance.new("UIListLayout", btnRow)
         rowLayout.FillDirection = Enum.FillDirection.Horizontal
-        rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
         rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        rowLayout.HorizontalFlex = Enum.UIFlexAlignment.Fill
         rowLayout.Padding = UDim.new(0, 4)
         
         local function createToggleBtn(icon, color, onColor, callback)
             local btn = Instance.new("TextButton")
             btn.Parent = btnRow
             btn.BorderSizePixel = 0
-            btn.Size = UDim2.new(0, 34, 0, 26)
+            btn.Size = UDim2.new(0, 30, 0, 26)
             btn.Font = Enum.Font.GothamBold
             btn.Text = icon
             btn.TextColor3 = Color3.fromRGB(255, 255, 255)
