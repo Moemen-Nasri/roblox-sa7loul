@@ -1545,6 +1545,129 @@ local function UnbanAllFromList()
     notif("Unban fired for all " .. #bannedCache, 2)
 end
 
+local tsunamiCfg = {on = false, clicker = false, c4 = false, c4Timer = 0, c4Index = 0, c4Delay = 1.2, c4Col = 0, collectDelay = 0.35, collectTimer = 0, clickerDelay = 0.1, baseline = 0, collected = 0}
+local tsunamiRunConn = nil
+local tsunamiStatusLabel = nil
+local tsunamiPatterns = {"cash", "coin", "money", "brainrot", "corn", "pop", "collect", "loot"}
+
+local function RunTsunamiCollect()
+    local chr = lp.Character
+    local root = chr and chr:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    local targets = {}
+    for _, p in ipairs(workspace:GetDescendants()) do
+        if p:IsA("BasePart") and p.Transparency < 0.9 then
+            local n = string.lower(p.Name)
+            for _, pat in ipairs(tsunamiPatterns) do
+                if n:find(pat) then
+                    table.insert(targets, p)
+                    break
+                end
+            end
+        end
+    end
+    if #targets == 0 then return end
+    local nearest, nd = nil, math.huge
+    for _, t in ipairs(targets) do
+        local d = (t.Position - root.Position).Magnitude
+        if d < nd then
+            nearest, nd = t, d
+        end
+    end
+    if nearest then
+        root.CFrame = nearest.CFrame + Vector3.new(0, 2, 0)
+    end
+    if tsunamiCfg.baseline == 0 or #targets > tsunamiCfg.baseline then
+        tsunamiCfg.baseline = #targets
+    end
+    tsunamiCfg.collected = tsunamiCfg.baseline - #targets
+    if tsunamiCfg.collected < 0 then tsunamiCfg.collected = 0 end
+end
+
+local function UpdateTsunamiStatus()
+    if not tsunamiStatusLabel or not tsunamiStatusLabel.Parent then return end
+    local ping = 0
+    pcall(function()
+        ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+    end)
+    local pct = 0
+    if tsunamiCfg.baseline > 0 then
+        pct = math.floor(tsunamiCfg.collected / tsunamiCfg.baseline * 100)
+    end
+    tsunamiStatusLabel.Text = "Ping: " .. ping .. "ms · Collect: " .. tsunamiCfg.collected .. "/" .. tsunamiCfg.baseline .. " (" .. pct .. "%) · C4: " .. (tsunamiCfg.c4 and "ON" or "OFF")
+end
+
+local function RebuildTsunami()
+    if tsunamiRunConn then
+        tsunamiRunConn:Disconnect()
+        tsunamiRunConn = nil
+    end
+    tsunamiCfg.c4Timer = 0
+    tsunamiCfg.collectTimer = 0
+    if not (tsunamiCfg.on or tsunamiCfg.clicker or tsunamiCfg.c4) then
+        if tsunamiStatusLabel then tsunamiStatusLabel.Text = "All OFF" end
+        return
+    end
+    local statusAcc = 0
+    tsunamiRunConn = RunService.Heartbeat:Connect(function(dt)
+        statusAcc = statusAcc + dt
+        if tsunamiCfg.on then
+            tsunamiCfg.collectTimer = tsunamiCfg.collectTimer + dt
+            if tsunamiCfg.collectTimer >= tsunamiCfg.collectDelay then
+                tsunamiCfg.collectTimer = 0
+                RunTsunamiCollect()
+            end
+        end
+        if tsunamiCfg.clicker then
+            local m = UserInputService:GetMouseLocation()
+            local vim = game:GetService("VirtualInputManager")
+            vim:SendMouseButtonEvent(m.X, m.Y, 0, true, game, 1)
+            vim:SendMouseButtonEvent(m.X, m.Y, 0, false, game, 1)
+        end
+        if tsunamiCfg.c4 then
+            tsunamiCfg.c4Timer = tsunamiCfg.c4Timer + dt
+            if tsunamiCfg.c4Timer >= tsunamiCfg.c4Delay then
+                tsunamiCfg.c4Timer = 0
+                local btns = {}
+                for _, gui in ipairs({lp:FindFirstChild("PlayerGui"), game:GetService("CoreGui")}) do
+                    if gui then
+                        for _, obj in ipairs(gui:GetDescendants()) do
+                            if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Visible then
+                                local n = string.lower(obj.Name)
+                                if n:match("col") or n:match("cell") or n:match("slot") or n:match("drop") or n:match("connect") then
+                                    table.insert(btns, obj)
+                                end
+                            end
+                        end
+                    end
+                end
+                if #btns > 0 then
+                    local picked = nil
+                    if tsunamiCfg.c4Col and tsunamiCfg.c4Col >= 1 and tsunamiCfg.c4Col <= 7 then
+                        for _, b in ipairs(btns) do
+                            local bi = tonumber(b.Name:match("%d+"))
+                            if bi == tsunamiCfg.c4Col then
+                                picked = b
+                                break
+                            end
+                        end
+                    end
+                    if not picked then
+                        tsunamiCfg.c4Index = tsunamiCfg.c4Index + 1
+                        if tsunamiCfg.c4Index > #btns then tsunamiCfg.c4Index = 1 end
+                        picked = btns[tsunamiCfg.c4Index]
+                    end
+                    pcall(function() picked:Activate() end)
+                end
+            end
+        end
+        if statusAcc >= 1 then
+            statusAcc = 0
+            UpdateTsunamiStatus()
+        end
+    end)
+end
+
 local function isKillerNearby(position, radius)
     for _, player in ipairs(game.Players:GetPlayers()) do
         if player ~= lp and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -2347,6 +2470,7 @@ local MenuItems = {
     {key = "  Players", label = "👥 Players"},
     {key = "  Revive", label = "💉 Revive"},
     {key = "  Ban", label = "⛔ Ban"},
+    {key = "  Tsunami", label = "🌊 Tsunami"},
     {key = "  Fun", label = "🎮 Fun"},
     {key = "  More", label = "📦 Extras"},
     {key = "  Settings", label = "⚙️ Settings"}
@@ -3607,6 +3731,62 @@ function UpdateRightContent()
             end
         end
         CreateLabel(RightContent, "You must be inside the server to fire bans (rejoin before kick)", TEXT_DIM)
+        
+    elseif CurrentTab == "  Tsunami" then
+        local tsunamiMain = CreateSection(RightContent, "🌊 Tsunami survival")
+        tsunamiStatusLabel = CreateLabel(tsunamiMain, "Ping: --ms · Collect: 0/0 (0%) · C4: OFF", TEXT_PRIMARY)
+        CreateToggle(tsunamiMain, "💰 Auto Collect", tsunamiCfg.on, function(val)
+            tsunamiCfg.on = val
+            if val then
+                tsunamiCfg.baseline = 0
+                tsunamiCfg.collected = 0
+                tsunamiCfg.c4Index = 0
+            end
+            RebuildTsunami()
+        end)
+        CreateSlider(tsunamiMain, "Collect speed (sec)", 0.1, 2, 0.35, function(val)
+            tsunamiCfg.collectDelay = val
+        end)
+        local patBox = CreateTextBox(tsunamiMain, "Collect names: cash,coin,corn...")
+        CreateButton(tsunamiMain, "⚙️ Apply patterns", function()
+            local list = {}
+            for part in string.gmatch(patBox.Text or "", "[^,%s]+") do
+                list[#list + 1] = string.lower(part)
+            end
+            if #list > 0 then
+                tsunamiPatterns = list
+                notif("Patterns: " .. table.concat(tsunamiPatterns, ","), 2)
+            else
+                notif("Write at least one name", 2)
+            end
+        end)
+        CreateToggle(tsunamiMain, "🖱️ Auto Clicker", tsunamiCfg.clicker, function(val)
+            tsunamiCfg.clicker = val
+            RebuildTsunami()
+        end)
+        CreateSlider(tsunamiMain, "Clicker CPS", 1, 30, 10, function(val)
+            tsunamiCfg.clickerDelay = 1 / val
+        end)
+        local c4Section = CreateSection(RightContent, "🔗 Connect 4 bot")
+        CreateToggle(c4Section, "🔗 Connect4 bot", tsunamiCfg.c4, function(val)
+            tsunamiCfg.c4 = val
+            tsunamiCfg.c4Timer = 0
+            tsunamiCfg.c4Index = 0
+            RebuildTsunami()
+        end)
+        CreateSlider(c4Section, "C4 delay (sec)", 0.5, 5, 1.2, function(val)
+            tsunamiCfg.c4Delay = val
+        end)
+        CreateSlider(c4Section, "C4 column (0=auto)", 0, 7, 0, function(val)
+            tsunamiCfg.c4Col = math.floor(val)
+        end)
+        CreateSlider(c4Section, "Speed", 16, 120, 40, function(val)
+            settings.Speed = val
+            settings.speedEnabled = true
+            if lp.Character and lp.Character:FindFirstChild("Humanoid") then
+                lp.Character.Humanoid.WalkSpeed = val
+            end
+        end)
         
     elseif CurrentTab == "  More" then
         local scriptsSection = CreateSection(RightContent, "📦 External scripts")
