@@ -139,6 +139,9 @@ local selectedPlayerLabel = nil
 local bringOrigins = {}
 local flyFx = {}
 local voiceFx = {active = false, hub = nil, saved = {}}
+local invisActive = false
+local invisConn = nil
+local invisSaved = {}
 local adminRemotesCache = nil
 local unpack2 = table.unpack or unpack
 
@@ -2654,6 +2657,32 @@ function UpdateRightContent()
         end)
         
         local bypassSection = CreateSection(RightContent, "🎫 Bypass")
+        CreateToggle(movementSection, "👻 Invisible", invisActive, function(val)
+            invisActive = val
+            if val then
+                if invisConn then invisConn:Disconnect() end
+                invisSaved = {}
+                invisConn = RunService.RenderStepped:Connect(function()
+                    if not invisActive or not lp.Character then return end
+                    for _, part in ipairs(lp.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            if not invisSaved[part] then invisSaved[part] = part.Transparency end
+                            if part.Transparency < 1 then part.Transparency = 1 end
+                        end
+                    end
+                end)
+            else
+                if invisConn then invisConn:Disconnect(); invisConn = nil end
+                if lp.Character then
+                    for part, tr in pairs(invisSaved) do
+                        if part and part.Parent then
+                            pcall(function() part.Transparency = tr end)
+                        end
+                    end
+                end
+                invisSaved = {}
+            end
+        end)
         CreateToggle(bypassSection, "Double Jump", settings.DoubleJump, function(val)
             settings.DoubleJump = val
             UpdateDoubleJump()
