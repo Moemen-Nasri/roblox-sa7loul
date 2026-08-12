@@ -1,43 +1,29 @@
--- ULTRA MINIMAL TEST
-print("=== SA7LOUL SCRIPT START ===")
+-- ABSOLUTE MINIMAL TEST
+warn("SA7LOUL SCRIPT STARTED") -- warn() appears in console differently
 
-local player = game:GetService("Players").LocalPlayer
-print("Player found:", player.Name)
-
-local playerGui = player:WaitForChild("PlayerGui")
-print("PlayerGui found")
-
-local gui = Instance.new("ScreenGui")
-gui.Name = "TestGui"
-gui.Parent = playerGui
-print("ScreenGui created and parented")
-
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 100)
-frame.Position = UDim2.new(0, 10, 0, 10)
-frame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-frame.Parent = gui
-print("Red frame created")
-
-local text = Instance.new("TextLabel")
-text.Size = UDim2.new(1, 0, 1, 0)
-text.BackgroundTransparency = 1
-text.Text = "TEST"
-text.TextColor3 = Color3.fromRGB(255, 255, 255)
-text.TextSize = 20
-text.Parent = frame
-print("Text label created")
-
-print("=== SA7LOUL SCRIPT END ===")
-
--- Test notification
-pcall(function()
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Test",
-        Text = "If you see this, script works!",
-        Duration = 5
-    })
+-- Change character color to prove script runs
+spawn(function()
+    local player = game:GetService("Players").LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    
+    if humanoid then
+        humanoid.HealthDisplayDistance = 0
+        humanoid.NameDisplayDistance = 0
+        warn("Character modified - script is running!")
+    end
 end)
+
+-- Try to show a message in chat
+spawn(function()
+    local chat = game:GetService("Chat")
+    pcall(function()
+        -- This might not work in all games, but worth trying
+        game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("SayMessageRequest"):FireServer("SA7LOUL SCRIPT LOADED", "All")
+    end)
+end)
+
+warn("SA7LOUL SCRIPT END")
 
 local configs = {
     savedConfigs = {},
