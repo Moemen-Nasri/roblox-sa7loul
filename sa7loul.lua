@@ -158,7 +158,6 @@ local LoginGui = {
 }
 
 local function CreateLoginGui()
-    local TweenService = game:GetService("TweenService")
     local CoreGui = game:GetService("CoreGui")
     
     -- Remove existing login GUI if present
@@ -172,7 +171,6 @@ local function CreateLoginGui()
     screenGui.ResetOnSpawn = false
     screenGui.IgnoreGuiInset = true
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    screenGui.DisplayOrder = 999 -- Ensure it's on top
     screenGui.Parent = CoreGui
     
     -- Main Container
@@ -182,7 +180,7 @@ local function CreateLoginGui()
     mainFrame.Position = UDim2.new(0.5, -200, 0.5, -175)
     mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
     mainFrame.BorderSizePixel = 0
-    mainFrame.Visible = false -- Start invisible, animate in
+    mainFrame.Visible = true
     mainFrame.Parent = screenGui
     
     local corner = Instance.new("UICorner")
@@ -201,25 +199,6 @@ local function CreateLoginGui()
     headerCorner.CornerRadius = UDim.new(0, 15)
     headerCorner.Parent = header
     
-    -- Clip the bottom of the header to make it square
-    local headerClip = Instance.new("Frame")
-    headerClip.Name = "HeaderClip"
-    headerClip.Size = UDim2.new(1, 0, 0.5, 8)
-    headerClip.Position = UDim2.new(0, 0, 0.5, 0)
-    headerClip.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-    headerClip.BorderSizePixel = 0
-    headerClip.ZIndex = header.ZIndex + 1
-    headerClip.Parent = header
-    
-    -- Create a clip to only round the top corners
-    local headerClip = Instance.new("Frame")
-    headerClip.Name = "HeaderClip"
-    headerClip.Size = UDim2.new(1, 0, 1, 20)
-    headerClip.Position = UDim2.new(0, 0, 1, -20)
-    headerClip.BackgroundColor3 = header.BackgroundColor3
-    headerClip.BorderSizePixel = 0
-    headerClip.Parent = header
-    
     local title = Instance.new("TextLabel")
     title.Name = "Title"
     title.Size = UDim2.new(1, 0, 1, 0)
@@ -230,6 +209,7 @@ local function CreateLoginGui()
     title.Font = Enum.Font.GothamBold
     title.TextXAlignment = Enum.TextXAlignment.Center
     title.TextYAlignment = Enum.TextYAlignment.Center
+    title.Font = Enum.Font.GothamBold
     title.Parent = header
     
     -- License Input
@@ -362,9 +342,20 @@ local function CreateLoginGui()
     LoginGui.screenGui = screenGui
     LoginGui.mainFrame = mainFrame
     
-    -- Simply show the GUI without complex animations
-    mainFrame.Visible = true
+    -- Force the GUI to be visible
     screenGui.Enabled = true
+    mainFrame.Visible = true
+    
+    -- Wait a moment and ensure visibility
+    spawn(function()
+        wait(0.1)
+        if screenGui and screenGui.Parent then
+            screenGui.Enabled = true
+        end
+        if mainFrame and mainFrame.Parent then
+            mainFrame.Visible = true
+        end
+    end)
     
     -- Load saved credentials
     local savedCredentials = LoadCredentials()
@@ -585,10 +576,11 @@ local function WaitForAuthentication()
 end
 
 -- ============================================
--- AUTHENTICATION CHECK
+-- AUTHENTICATION CHECK (TEMPORARY BYPASS FOR TESTING)
 -- ============================================
 
-local session = WaitForAuthentication()
+local session = {license = "test-0000-0000-0000", username = "TestUser"} 
+-- local session = WaitForAuthentication() -- Disabled temporarily
 
 local defaultSettings = {
     Speed = 16, 
