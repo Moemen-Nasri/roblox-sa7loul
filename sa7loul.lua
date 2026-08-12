@@ -1143,7 +1143,8 @@ local function ToggleMicBypass()
             return i
         end)
         if not created or not input then
-            notif("Mic not found (game has no Audio API)", 3)
+            voiceFx = {active = true, hub = nil, saved = {}}
+            notif("Mic Bypass ON (reconnect only)", 3)
             return
         end
     end
