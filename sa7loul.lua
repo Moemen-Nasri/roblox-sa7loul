@@ -1108,11 +1108,15 @@ local function ToggleMicBypass()
     if not lpPlayer then return end
     if voiceFx.active then
         for _, w in ipairs(voiceFx.saved) do
-            if w.Wire and not w.Wire.Parent then
-                w.Wire.Parent = w.OriginalParent
-            end
+            pcall(function()
+                if w and w.Wire and not w.Wire.Parent and w.OriginalParent then
+                    w.Wire.Parent = w.OriginalParent
+                end
+            end)
         end
-        if voiceFx.hub and voiceFx.hub.Parent then voiceFx.hub:Destroy() end
+        if voiceFx.hub and voiceFx.hub.Parent then
+            pcall(function() voiceFx.hub:Destroy() end)
+        end
         voiceFx = {}
         notif("Mic Bypass OFF", 2)
         return
@@ -1205,6 +1209,73 @@ local function ToggleMicBypass()
         notif("🎤 Mic Bypass ON", 2)
     else
         notif("No character — enter a game first", 2)
+    end
+end
+
+local function ScanUnbanRemotes()
+    local remotes = {}
+    local roots = {game:GetService("ReplicatedStorage"), game:GetService("ServerScriptService"), workspace:FindFirstChild("ServerStorage")}
+    for _, root in ipairs(roots) do
+        if root then
+            for _, obj in ipairs(root:GetDescendants()) do
+                if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+                    local n = string.lower(obj.Name)
+                    if n:match("ban") or n:match("unban") or n:match("kick") or n:match("mod")
+                        or n:match("whitelist") or n:match("admin") or n:match("panel") or n:match("command") then
+                        table.insert(remotes, obj)
+                    end
+                end
+            end
+        end
+    end
+    return remotes
+end
+
+local function TryUnban()
+    local remotes = ScanUnbanRemotes()
+    if #remotes == 0 then
+        notif("No admin/ban remotes found", 2)
+        return
+    end
+    local payloads = {
+        {"unban", lp.UserId}, {"unban", lp.Name},
+        {"unban", lp.UserId, true}, {"unban", lp.Name, true},
+        {"Unban", lp.UserId}, {"Unban", lp.Name},
+        {"unban", lp}, {"whitelist", lp.UserId}, {"whitelist", lp.Name},
+        {"unban", lp.UserId, "0"}
+    }
+    local hits = 0
+    for _, remote in ipairs(remotes) do
+        for _, args in ipairs(payloads) do
+            local fired = pcall(function()
+                if remote:IsA("RemoteFunction") then
+                    remote:InvokeServer(unpack2(args))
+                else
+                    remote:FireServer(unpack2(args))
+                end
+            end)
+            if fired then hits = hits + 1 end
+        end
+        local raw = pcall(function()
+            if remote:IsA("RemoteFunction") then
+                remote:InvokeServer(lp)
+            else
+                remote:FireServer(lp)
+            end
+        end)
+        if raw then hits = hits + 1 end
+    end
+    notif("Unban attempts fired: " .. hits, 2)
+end
+
+local function RejoinFresh()
+    notif("Rejoining...", 2)
+    task.wait(0.5)
+    local ok = pcall(function()
+        game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId)
+    end)
+    if not ok then
+        pcall(function() game:GetService("TeleportService"):Teleport(game.PlaceId) end)
     end
 end
 
@@ -1962,14 +2033,23 @@ end)
 MinimBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     if minimized then
+        local absPos = Main.AbsolutePosition
+        local screen = h.AbsoluteSize
+        local minX = math.clamp(absPos.X, 0, screen.X - 230)
+        local minY = math.clamp(absPos.Y, 0, screen.Y - 40)
+        Main.Position = UDim2.fromOffset(minX, minY)
         Main.Size = UDim2.new(0, 230, 0, 40)
         LeftMenu.Visible = false
         RightContent.Visible = false
-        MinimBtn.Text = "+"
+        MinimBtn.Size = UDim2.new(1, 0, 1, 0)
+        MinimBtn.Position = UDim2.new(0, 0, 0, 0)
+        MinimBtn.Text = "✚"
     else
         LeftMenu.Visible = true
         RightContent.Visible = true
         Main.Size = UDim2.new(0, 640, 0, 520)
+        MinimBtn.Size = UDim2.new(0, 30, 0, 30)
+        MinimBtn.Position = UDim2.new(1, -80, 0, 8)
         MinimBtn.Text = "–"
     end
 end)
@@ -2662,7 +2742,7 @@ function UpdateRightContent()
             if val then
                 if invisConn then invisConn:Disconnect() end
                 invisSaved = {}
-                invisConn = RunService.RenderStepped:Connect(function()
+                local function hide()
                     if not invisActive or not lp.Character then return end
                     for _, part in ipairs(lp.Character:GetDescendants()) do
                         if part:IsA("BasePart") then
@@ -2670,7 +2750,10 @@ function UpdateRightContent()
                             if part.Transparency < 1 then part.Transparency = 1 end
                         end
                     end
-                end)
+                end
+                invisConn = RunService.RenderStepped:Connect(hide)
+                RunService.Heartbeat:Connect(hide)
+                RunService.Stepped:Connect(hide)
             else
                 if invisConn then invisConn:Disconnect(); invisConn = nil end
                 if lp.Character then
@@ -3477,6 +3560,11 @@ function UpdateRightContent()
         else
             CreateLabel(configListSection, "No saved configs", TEXT_SECONDARY)
         end
+        
+        local unbanSection = CreateSection(RightContent, "🛡️ Unban")
+        CreateButton(unbanSection, "🛡️ Try Unban", TryUnban)
+        CreateButton(unbanSection, "🔁 Rejoin fresh", RejoinFresh)
+        CreateLabel(unbanSection, "DataStore (permanent) bans can't be removed by any script", TEXT_DIM)
         
         local miscSection = CreateSection(RightContent, "🔧 Other")
         CreateToggle(miscSection, "Anti-AFK", settings.AntiAFK, function(val)
