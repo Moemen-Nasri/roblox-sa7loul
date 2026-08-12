@@ -1796,25 +1796,34 @@ local function RebuildTsunami()
 end
 
 -- ================================================================
--- 🍿 POPCORN BURST — osu!-style popcorn rhythm minigame
--- Self-contained. Launched from the "Tsunami" tab toggle.
--- GUI goes into CoreGui (same as the hub). Fully client-side.
--- Best score persists to sa7loul_popcorn.json (pcall-guarded).
--- ================================================================
+-- ════════════════════════════════════════════════════════════════════
+-- 🍿 POPCORN BURST — 3D IN-WORLD TABLETOP MINIGAME (FINAL)
+-- Launched from the "Tsunami" tab toggle. Fully client-side:
+--  · Builds the 3D minigame table in Workspace (board + 2 seats +
+--    digital score display on the table edge).
+--  · Press E near a seat → camera locks onto the board, shrinking-ring
+--    kernels spawn in 3D, click them in-world (raycast on the board).
+--  · Judging: PERFECT +100 / GREAT +50 / GOOD +20 / MISS 0.
+--  · Plays against a local BOT opponent; +10 win / +2 lose / +5 tie
+--    Tokens into leaderstats; best score saved to sa7loul_popcorn.json.
+--  · Works 3D-only: no ScreenGui overlay at all.
+-- ════════════════════════════════════════════════════════════════════
 local PopcornBurstAPI = nil
 do
     local popcornCfg = {
         active = false,
-        gui = nil, overlay = nil, canvas = nil, popup = nil, hud = nil,
-        countdown = nil, endFrame = nil, endTitle = nil, endSub = nil,
-        endScores = nil, sfx = nil,
-        tasks = {},
-        kernels = {},
-        spots = {},
-        score = 0, judged = 0,
+        tableModel = nil, tableTop = nil, kernelTargets = nil,
+        p1Label = nil, p2Label = nil, timerLabel = nil,
+        mode = "idle",            -- "idle" | "playing"
+        round = nil,
+        activeKernels = {},       -- kernelId -> record
+        kernelOrder = {},
+        kernelSpots = {},
+        cameraBusy = false,
+        sfx = nil,
+        score = 0,
         stats = { Perfect = 0, Great = 0, Good = 0, Miss = 0 },
         best = 0,
-        hb = nil,
     }
     local statusLabel = nil
 
@@ -1823,34 +1832,35 @@ do
         KernelDuration  = 1.5,
         SpawnInterval   = 1.35,
         Countdown       = 3,
-        DecoyDelay      = 0.25,  -- decoy ring shows first, then the real ring (like the game)
-        DecoyDuration   = 0.5,
         PerfectWindow   = 0.08,
         GreatWindow     = 0.20,
         GoodWindow      = 0.40,
+        LatencyBuffer   = 0.10,
         Points          = { Perfect = 100, Great = 50, Good = 20, Miss = 0 },
-        CircleSize      = 110,
+        Rewards         = { Winner = 10, Loser = 2, Tie = 5 },
+        BotSkill        = 0.70,   -- bot hit-rate (0.0 - 1.0)
+        GridX           = 4,
+        GridZ           = 4,
+        TargetDiameter  = 0.6,    -- studs
         RingStartScale  = 1.8,
-        ClickBuffer     = 0.45,
+        RingColor       = Color3.fromRGB(255, 200, 60),
+        TargetColor     = Color3.fromRGB(245, 245, 250),
+        KernelColor     = Color3.fromRGB(255, 220, 130),
+        Judgement = {
+            Perfect = { Color = Color3.fromRGB(255, 215, 0),   Pitch = 1.25 },
+            Great   = { Color = Color3.fromRGB(86, 255, 129),  Pitch = 1.06 },
+            Good    = { Color = Color3.fromRGB(77, 148, 255),  Pitch = 0.95 },
+            Miss    = { Color = Color3.fromRGB(255, 77, 77),   Pitch = 0.80 },
+        },
+        Camera          = { Height = 8.2, Back = 4.6, Duration = 1.1 },
         PopSfxId        = "rbxassetid://1234567890", -- <-- replace with your pop sound
     }
 
-    local POPCOLORS = {
-        kernel = Color3.fromRGB(255, 200, 60),
-        target = Color3.fromRGB(240, 240, 245),
-        gold   = Color3.fromRGB(255, 215, 0),
-        green  = Color3.fromRGB(86, 255, 129),
-        amber  = Color3.fromRGB(255, 214, 90),
-        orange = Color3.fromRGB(255, 150, 60),
-        blue   = Color3.fromRGB(77, 148, 255),
-        red    = Color3.fromRGB(255, 77, 77),
-        text   = Color3.fromRGB(240, 240, 245),
-    }
-
+    -- ===== STATUS + BEST SCORE =====
     local function PopcornUpdateStatus()
         if not statusLabel or not statusLabel.Parent then return end
         if popcornCfg.active then
-            statusLabel.Text = "🍿 Playing... Score: " .. popcornCfg.score
+            statusLabel.Text = "🍿 ON · Best: " .. popcornCfg.best
         else
             statusLabel.Text = "🍿 Minigame: OFF · Best: " .. popcornCfg.best
         end
@@ -1873,20 +1883,193 @@ do
 
     PopcornLoadBest()
 
-    local function PopcornSchedule(delay, fn)
-        local t = task.delay(delay, function()
-            if popcornCfg.active then fn() end
-        end)
-        table.insert(popcornCfg.tasks, t)
+    -- ===== TABLE BUILD (client-side; replicates to the server) =====
+    local function PopcornBuildTable()
+        if popcornCfg.tableModel and popcornCfg.tableModel.Parent then return end
+
+        local tableModel = Instance.new("Model")
+        tableModel.Name = "PopcornTable_" .. lp.Name
+        tableModel.Parent = Workspace
+
+        local function mkPart(name, size, pos, color, material, parent)
+            local p = Instance.new("Part")
+            p.Name = name
+            p.Size = size
+            p.Position = pos
+            p.Anchored = true
+            p.CanCollide = false
+            p.TopSurface = Enum.SurfaceType.Smooth
+            p.BottomSurface = Enum.SurfaceType.Smooth
+            p.Color = color
+            p.Material = material or Enum.Material.WoodPlanks
+            p.Parent = parent or tableModel
+            return p
+        end
+
+        local top = mkPart("TableTop", Vector3.new(6, 0.4, 4), Vector3.new(0, 6, 0),
+            Color3.fromRGB(120, 82, 48))
+        mkPart("Leg1", Vector3.new(0.3, 4.2, 0.3), Vector3.new(-2.6, 3.8, -1.6), Color3.fromRGB(90, 60, 35), nil, top)
+        mkPart("Leg2", Vector3.new(0.3, 4.2, 0.3), Vector3.new(2.6, 3.8, -1.6), Color3.fromRGB(90, 60, 35), nil, top)
+        mkPart("Leg3", Vector3.new(0.3, 4.2, 0.3), Vector3.new(-2.6, 3.8, 1.6), Color3.fromRGB(90, 60, 35), nil, top)
+        mkPart("Leg4", Vector3.new(0.3, 4.2, 0.3), Vector3.new(2.6, 3.8, 1.6), Color3.fromRGB(90, 60, 35), nil, top)
+        local deco = mkPart("BoardDeco", Vector3.new(3.2, 0.08, 3.6), Vector3.new(0, 6.26, 0),
+            Color3.fromRGB(255, 200, 60), Enum.Material.Neon, top)
+        deco.Transparency = 0.85
+
+        local function mkSeat(name, pos)
+            local seat = Instance.new("Seat")
+            seat.Name = name
+            seat.Size = Vector3.new(2, 1.3, 2)
+            seat.Position = pos
+            seat.Anchored = true
+            seat.CanCollide = false
+            seat.Color = Color3.fromRGB(190, 60, 60)
+            seat.Material = Enum.Material.SmoothPlastic
+            seat.Parent = tableModel
+            return seat
+        end
+        popcornCfg.seat1 = mkSeat("Seat1", Vector3.new(-1.6, 6.05, 3.4))
+        popcornCfg.seat2 = mkSeat("Seat2", Vector3.new(1.6, 6.05, 3.4))
+        popcornCfg.seats = { popcornCfg.seat1, popcornCfg.seat2 }
+
+        -- digital score display on the table edge, facing the players
+        local scoreGui = Instance.new("SurfaceGui")
+        scoreGui.Name = "ScoreGui"
+        scoreGui.Face = Enum.NormalId.Front
+        scoreGui.CanvasSize = Vector2.new(600, 180)
+        scoreGui.LightInfluence = 0
+        scoreGui.Parent = top
+        local bg = Instance.new("Frame")
+        bg.Size = UDim2.fromScale(1, 1)
+        bg.BackgroundColor3 = Color3.fromRGB(14, 16, 22)
+        bg.BorderSizePixel = 0
+        bg.Parent = scoreGui
+        local p1 = Instance.new("TextLabel")
+        p1.Name = "P1"
+        p1.Size = UDim2.fromScale(0.5, 0.55)
+        p1.Position = UDim2.fromScale(0, 0.15)
+        p1.BackgroundTransparency = 1
+        p1.Font = Enum.Font.GothamBold
+        p1.TextSize = 34
+        p1.TextColor3 = Color3.fromRGB(64, 156, 255)
+        p1.Text = "P1: 0"
+        p1.Parent = scoreGui
+        local p2 = p1:Clone()
+        p2.Name = "P2"
+        p2.Position = UDim2.fromScale(0.5, 0.15)
+        p2.TextColor3 = Color3.fromRGB(255, 99, 71)
+        p2.Text = "P2: 0"
+        p2.Parent = scoreGui
+        local timer = Instance.new("TextLabel")
+        timer.Name = "Timer"
+        timer.Size = UDim2.fromScale(1, 0.3)
+        timer.Position = UDim2.fromScale(0, 0.7)
+        timer.BackgroundTransparency = 1
+        timer.Font = Enum.Font.Gotham
+        timer.TextSize = 24
+        timer.TextColor3 = Color3.fromRGB(255, 215, 0)
+        timer.Text = "Press E near a seat to play"
+        timer.Parent = scoreGui
+
+        local targets = Instance.new("Folder")
+        targets.Name = "KernelTargets"
+        targets.Parent = tableModel
+
+        popcornCfg.tableModel = tableModel
+        popcornCfg.tableTop = top
+        popcornCfg.p1Label = p1
+        popcornCfg.p2Label = p2
+        popcornCfg.timerLabel = timer
+        popcornCfg.kernelTargets = targets
     end
 
-    local function PopcornMakeCircle(size, thickness, color)
+    local function PopcornDestroyTable()
+        popcornCfg.mode = "idle"
+        popcornCfg.round = nil
+        popcornCfg.activeKernels = {}
+        popcornCfg.kernelOrder = {}
+        popcornCfg.kernelSpots = {}
+        if popcornCfg.sfx then pcall(function() popcornCfg.sfx:Stop() end) end
+        if popcornCfg.tableModel and popcornCfg.tableModel.Parent then
+            pcall(function() popcornCfg.tableModel:Destroy() end)
+        end
+        popcornCfg.tableModel = nil
+    end
+
+    local function PopcornSetScore(t1, t2, timerText)
+        if popcornCfg.p1Label and popcornCfg.p1Label.Parent then
+            popcornCfg.p1Label.Text = lp.Name .. ": " .. tostring(t1)
+        end
+        if popcornCfg.p2Label and popcornCfg.p2Label.Parent then
+            popcornCfg.p2Label.Text = "Brainrot Bot: " .. tostring(t2)
+        end
+        if popcornCfg.timerLabel and popcornCfg.timerLabel.Parent then
+            popcornCfg.timerLabel.Text = timerText
+        end
+    end
+
+    -- ===== CAMERA =====
+    local function PopcornBoardView()
+        local top = popcornCfg.tableTop
+        local center = top.Position + Vector3.new(0, 0.3, 0)
+        local lookFrom = top.CFrame.Position
+            + top.CFrame.UpVector * POPCONFIG.Camera.Height
+            + top.CFrame.LookVector * POPCONFIG.Camera.Back
+        return CFrame.lookAt(lookFrom, center)
+    end
+
+    local function PopcornLockCamera()
+        local cam = Workspace.CurrentCamera
+        if not cam then return end
+        cam.CameraType = Enum.CameraType.Scriptable
+        popcornCfg.cameraBusy = true
+        task.spawn(function()
+            local startCF = cam.CFrame
+            local targetCF = PopcornBoardView()
+            local t0 = os.clock()
+            while popcornCfg.cameraBusy do
+                local t = math.clamp((os.clock() - t0) / POPCONFIG.Camera.Duration, 0, 1)
+                local eased = 1 - (1 - t) * (1 - t)
+                cam.CFrame = startCF:Lerp(targetCF, eased)
+                if t >= 1 then break end
+                RunService.Heartbeat:Wait()
+            end
+            while popcornCfg.cameraBusy do
+                cam.CFrame = targetCF
+                RunService.Heartbeat:Wait()
+            end
+        end)
+    end
+
+    local function PopcornUnlockCamera()
+        popcornCfg.cameraBusy = false
+        local cam = Workspace.CurrentCamera
+        if cam then cam.CameraType = Enum.CameraType.Custom end
+    end
+
+    -- ===== BILLBOARD HELPERS =====
+    local startDiameter = POPCONFIG.TargetDiameter * POPCONFIG.RingStartScale
+    local targetScale = POPCONFIG.TargetDiameter / startDiameter
+
+    local function PopcornMakeBillboard(adornee, sizeStuds, offset)
+        local bb = Instance.new("BillboardGui")
+        bb.Adornee = adornee
+        bb.Size = UDim2.fromOffset(sizeStuds, sizeStuds)
+        bb.AlwaysOnTop = true
+        bb.ClipsDescendants = false
+        bb.MaxDistance = 400
+        bb.StudsOffsetWorldSpace = offset or Vector3.new(0, 0.15, 0)
+        bb.Parent = adornee
+        return bb
+    end
+
+    local function PopcornMakeCircle(sizeScale, thickness, color)
         local f = Instance.new("Frame")
-        f.Size = UDim2.fromOffset(size, size)
+        f.Size = UDim2.fromScale(sizeScale, sizeScale)
         f.AnchorPoint = Vector2.new(0.5, 0.5)
+        f.Position = UDim2.fromScale(0.5, 0.5)
         f.BackgroundTransparency = 1
         f.BorderSizePixel = 0
-        f.ZIndex = 6
         local corner = Instance.new("UICorner")
         corner.CornerRadius = UDim.new(1, 0)
         corner.Parent = f
@@ -1897,461 +2080,480 @@ do
         return f
     end
 
-    local baseSize = POPCONFIG.CircleSize
-    local startSize = baseSize * POPCONFIG.RingStartScale
-
-    local function PopcornRingProgress(k, now)
-        return math.clamp((now - k.startTime - POPCONFIG.DecoyDelay) / POPCONFIG.KernelDuration, 0, 1)
+    local function PopcornSpawnAnchor(pos)
+        local p = Instance.new("Part")
+        p.Name = "PopcornFx"
+        p.Size = Vector3.new(0.2, 0.2, 0.2)
+        p.Position = pos
+        p.Anchored = true
+        p.CanCollide = false
+        p.CanQuery = false
+        p.CanTouch = false
+        p.Transparency = 1
+        p.CastShadow = false
+        p.Parent = Workspace
+        return p
     end
 
-    local function PopcornRadiusAt(k, now)
-        local t = PopcornRingProgress(k, now)
-        local size = baseSize + (startSize - baseSize) * (1 - t)
-        return size / 2
-    end
+    -- ===== KERNEL VISUALS (3D billboard rings) =====
+    local function PopcornSpawnKernelVisual(id, part)
+        if popcornCfg.activeKernels[id] then return end
+        local bb = PopcornMakeBillboard(part, startDiameter, Vector3.new(0, 0.35, 0))
 
-    local function PopcornPhaseColor(now, perfectAt)
-        local err = math.abs(now - perfectAt)
-        if err <= POPCONFIG.PerfectWindow then return POPCOLORS.green end
-        if err <= POPCONFIG.GreatWindow then return POPCOLORS.amber end
-        if err <= POPCONFIG.GoodWindow then return POPCOLORS.orange end
-        return POPCOLORS.red
-    end
+        local target = PopcornMakeCircle(targetScale, 4, POPCONFIG.TargetColor)
+        target.Parent = bb
 
-    local function PopcornRandomPos()
-        local size = popcornCfg.canvas.AbsoluteSize
-        local margin = math.floor(startSize + 60)
-        local maxX = math.max(margin + 1, math.floor(size.X - margin))
-        local maxY = math.max(margin + 91, math.floor(size.Y - margin))
-        return Vector2.new(math.random(margin, maxX), math.random(margin + 90, maxY))
-    end
+        local dot = Instance.new("Frame")
+        dot.Size = UDim2.fromScale(0.1, 0.1)
+        dot.AnchorPoint = Vector2.new(0.5, 0.5)
+        dot.Position = UDim2.fromScale(0.5, 0.5)
+        dot.BackgroundColor3 = POPCONFIG.KernelColor
+        dot.BorderSizePixel = 0
+        dot.ZIndex = 3
+        local dotCorner = Instance.new("UICorner")
+        dotCorner.CornerRadius = UDim.new(1, 0)
+        dotCorner.Parent = dot
+        dot.Parent = bb
 
-    local function PopcornSpawnKernel(data)
-        local center = PopcornRandomPos()
-        local now = os.clock()
+        local ring = PopcornMakeCircle(1, 7, POPCONFIG.RingColor)
+        ring.ZIndex = 2
+        ring.Parent = bb
 
-        -- the popcorn kernel object the circle "comes on" (like the real game)
-        local kernelObj = Instance.new("Frame")
-        kernelObj.Size = UDim2.fromOffset(56, 56)
-        kernelObj.Position = UDim2.fromOffset(center.X, center.Y)
-        kernelObj.AnchorPoint = Vector2.new(0.5, 0.5)
-        kernelObj.BackgroundColor3 = POPCOLORS.kernel
-        kernelObj.BorderSizePixel = 0
-        kernelObj.ZIndex = 4
-        local kCorner = Instance.new("UICorner")
-        kCorner.CornerRadius = UDim.new(0, 10)
-        kCorner.Parent = kernelObj
-        local fluff = Instance.new("Frame")
-        fluff.Size = UDim2.new(0.52, 0, 0.5, 0)
-        fluff.Position = UDim2.new(0.5, 0, 0.16, 0)
-        fluff.AnchorPoint = Vector2.new(0.5, 0)
-        fluff.BackgroundColor3 = Color3.fromRGB(255, 250, 235)
-        fluff.BorderSizePixel = 0
-        fluff.ZIndex = 5
-        local fCorner = Instance.new("UICorner")
-        fCorner.CornerRadius = UDim.new(1, 0)
-        fCorner.Parent = fluff
-        fluff.Parent = kernelObj
-        kernelObj.Parent = popcornCfg.canvas
-
-        -- decoy ring: appears first, shrinks and fades out (game style)
-        local decoy = PopcornMakeCircle(startSize * 0.85, 4, Color3.fromRGB(220, 220, 235))
-        decoy.Position = UDim2.fromOffset(center.X, center.Y)
-        decoy.Parent = popcornCfg.canvas
-        local decoyStroke = decoy:FindFirstChild("UIStroke")
-        decoyStroke.Transparency = 0.5
-        TweenService:Create(decoy,
-            TweenInfo.new(POPCONFIG.DecoyDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
-                Size = UDim2.fromOffset(baseSize + 6, baseSize + 6),
-            }):Play()
-        TweenService:Create(decoyStroke,
-            TweenInfo.new(POPCONFIG.DecoyDuration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Transparency = 1,
+        TweenService:Create(ring,
+            TweenInfo.new(POPCONFIG.KernelDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
+                Size = UDim2.fromScale(targetScale, targetScale),
             }):Play()
 
-        -- real shrinking ring: starts right after the decoy, tightens onto the kernel
-        local ring = PopcornMakeCircle(startSize, 8, POPCOLORS.kernel)
-        ring.Position = UDim2.fromOffset(center.X, center.Y)
-        ring.Visible = false
-        ring.Parent = popcornCfg.canvas
-
-        local k = {
-            id = data.id, center = center, target = kernelObj, ring = ring,
-            decoy = decoy, startTime = now, judged = false,
-            perfectAt = now + POPCONFIG.DecoyDelay + POPCONFIG.KernelDuration,
+        popcornCfg.activeKernels[id] = {
+            id = id,
+            part = part,
+            bb = bb,
+            center = part.Position,
+            spawnTime = os.clock(),
+            startRadius = startDiameter / 2,
+            targetRadius = POPCONFIG.TargetDiameter / 2,
         }
-        table.insert(popcornCfg.kernels, k)
-        popcornCfg.spots[data.id] = center
-
-        PopcornSchedule(POPCONFIG.DecoyDelay, function()
-            if not k.judged and ring.Parent then
-                ring.Visible = true
-                TweenService:Create(ring,
-                    TweenInfo.new(POPCONFIG.KernelDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
-                        Size = UDim2.fromOffset(baseSize, baseSize),
-                    }):Play()
-            end
-        end)
-        PopcornSchedule(POPCONFIG.DecoyDuration + 0.15, function()
-            if decoy.Parent then decoy:Destroy() end
-        end)
+        popcornCfg.kernelSpots[id] = part.Position
+        table.insert(popcornCfg.kernelOrder, id)
     end
 
-    local function PopcornPopEffect(k)
-        local center = k.center
-        local burst = PopcornMakeCircle(baseSize * 0.7, 6, POPCOLORS.kernel)
-        burst.Position = UDim2.fromOffset(center.X, center.Y)
-        burst.Parent = popcornCfg.canvas
-        local bStroke = burst:FindFirstChild("UIStroke")
-        TweenService:Create(burst,
+    local function PopcornRemoveKernelVisual(id)
+        local k = popcornCfg.activeKernels[id]
+        if not k then return end
+        popcornCfg.activeKernels[id] = nil
+        for i, kId in ipairs(popcornCfg.kernelOrder) do
+            if kId == id then table.remove(popcornCfg.kernelOrder, i) break end
+        end
+        if k.bb and k.bb.Parent then pcall(function() k.bb:Destroy() end) end
+    end
+
+    local function PopcornPopBurst(center)
+        local anchor = PopcornSpawnAnchor(Vector3.new(center.X, popcornCfg.tableTop.Position.Y + 0.45, center.Z))
+        local bb = PopcornMakeBillboard(anchor, POPCONFIG.TargetDiameter, Vector3.new())
+        local ring = PopcornMakeCircle(1, 6, POPCONFIG.RingColor)
+        ring.Parent = bb
+        TweenService:Create(bb,
             TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.fromOffset(baseSize * 2.6, baseSize * 2.6),
+                Size = UDim2.fromOffset(startDiameter * 2.6, startDiameter * 2.6),
             }):Play()
-        TweenService:Create(bStroke,
+        local stroke = ring:FindFirstChild("UIStroke")
+        TweenService:Create(stroke,
             TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Transparency = 1,
             }):Play()
-        -- the kernel itself pops: swells and turns into white popcorn
-        if k.target and k.target.Parent then
-            local tgt = k.target
-            TweenService:Create(tgt,
-                TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                    Size = UDim2.fromOffset(84, 84),
-                    BackgroundColor3 = Color3.fromRGB(255, 246, 224),
-                }):Play()
-            task.delay(0.35, function()
-                if tgt.Parent then tgt:Destroy() end
-            end)
+        task.delay(0.45, function() anchor:Destroy() end)
+    end
+
+    -- ===== JUDGEMENT TEXT (3D float) =====
+    local function PopcornShowJudgement(text, color, center)
+        local anchor = PopcornSpawnAnchor(Vector3.new(center.X, popcornCfg.tableTop.Position.Y + 0.5, center.Z))
+        local bb = Instance.new("BillboardGui")
+        bb.Adornee = anchor
+        bb.Size = UDim2.fromOffset(2.6, 1.0)
+        bb.AlwaysOnTop = true
+        bb.MaxDistance = 400
+        bb.StudsOffsetWorldSpace = Vector3.new(0, 0.5, 0)
+        bb.Parent = anchor
+
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.fromScale(1, 1)
+        label.BackgroundTransparency = 1
+        label.Text = text
+        label.Font = Enum.Font.GothamBlack
+        label.TextScaled = true
+        label.TextColor3 = color
+        label.TextStrokeTransparency = 0.35
+        label.TextStrokeColor3 = Color3.fromRGB(20, 20, 25)
+        label.Parent = bb
+
+        TweenService:Create(bb,
+            TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                StudsOffsetWorldSpace = Vector3.new(0, 1.8, 0),
+                Size = UDim2.fromOffset(3.4, 1.3),
+            }):Play()
+        TweenService:Create(label,
+            TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                TextTransparency = 1,
+            }):Play()
+        task.delay(1.0, function() anchor:Destroy() end)
+    end
+
+    local function PopcornPlayCountdown()
+        local center = Vector3.new(popcornCfg.tableTop.Position.X, popcornCfg.tableTop.Position.Y + 0.6, popcornCfg.tableTop.Position.Z)
+        for i = POPCONFIG.Countdown, 1, -1 do
+            PopcornShowJudgement(tostring(i), Color3.fromRGB(255, 215, 0), center)
+            task.wait(1)
         end
+        PopcornShowJudgement("POP!", Color3.fromRGB(255, 215, 0), center)
         if popcornCfg.sfx then
-            popcornCfg.sfx:Stop()
+            popcornCfg.sfx.PlaybackSpeed = 1.1
             popcornCfg.sfx:Play()
         end
-        task.delay(0.4, function() burst:Destroy() end)
     end
 
-    local function PopcornRemoveKernel(k, silent)
-        for i, kk in ipairs(popcornCfg.kernels) do
-            if kk == k then table.remove(popcornCfg.kernels, i) break end
+    -- ===== ROUND =====
+    local function PopcornHolePositions()
+        local size = popcornCfg.tableTop.Size
+        local halfX = (size.X / 2) - 0.55
+        local halfZ = (size.Z / 2) - 0.55
+        local holes = {}
+        for gx = 1, POPCONFIG.GridX do
+            local x = -halfX + (gx - 0.5) * ((halfX * 2) / POPCONFIG.GridX)
+            for gz = 1, POPCONFIG.GridZ do
+                local z = -halfZ + (gz - 0.5) * ((halfZ * 2) / POPCONFIG.GridZ)
+                table.insert(holes, Vector3.new(x, 0.09, z))
+            end
         end
-        if k.decoy and k.decoy.Parent then k.decoy:Destroy() end
-        if k.ring and k.ring.Parent then k.ring:Destroy() end
-        if silent then
-            if k.target and k.target.Parent then k.target:Destroy() end
-        else
-            PopcornPopEffect(k)
+        return holes
+    end
+
+    local function PopcornShuffle(t)
+        for i = #t, 2, -1 do
+            local j = math.random(1, i)
+            t[i], t[j] = t[j], t[i]
+        end
+        return t
+    end
+
+    local function PopcornSpawnAnchorPart(kernelId, hole)
+        local p = Instance.new("Part")
+        p.Name = "Kernel_" .. kernelId
+        p.Size = Vector3.new(0.6, 0.02, 0.6)
+        p.Position = popcornCfg.tableTop.CFrame * hole
+        p.Anchored = true
+        p.CanCollide = false
+        p.CanQuery = false
+        p.CanTouch = false
+        p.Transparency = 1
+        p:SetAttribute("Kid", kernelId)
+        p.Parent = popcornCfg.kernelTargets
+        return p
+    end
+
+    -- who: "me" | "bot" ; missed: forced miss ; err: timing error (seconds)
+    local function PopcornJudge(who, kernelId, missed, err)
+        local round = popcornCfg.round
+        if not round or round.finished or round.judged[who][kernelId] then return end
+        round.judged[who][kernelId] = true
+
+        local judgement, points = "Miss", POPCONFIG.Points.Miss
+        if not missed then
+            err = math.max(0, (err or 0) - POPCONFIG.LatencyBuffer)
+            if err <= POPCONFIG.PerfectWindow then
+                judgement, points = "Perfect", POPCONFIG.Points.Perfect
+            elseif err <= POPCONFIG.GreatWindow then
+                judgement, points = "Great", POPCONFIG.Points.Great
+            elseif err <= POPCONFIG.GoodWindow then
+                judgement, points = "Good", POPCONFIG.Points.Good
+            end
+        end
+        round.scores[who] = round.scores[who] + points
+
+        local k = round.kernels[kernelId]
+        if k and k.anchor and k.anchor.Parent then pcall(function() k.anchor:Destroy() end) end
+
+        PopcornSetScore(round.scores.me, round.scores.bot, popcornCfg.timerLabel.Text)
+        if who == "bot" then return end
+
+        if popcornCfg.activeKernels[kernelId] then PopcornRemoveKernelVisual(kernelId) end
+        local spot = popcornCfg.kernelSpots[kernelId]
+        if spot then
+            local cfg = POPCONFIG.Judgement[judgement] or POPCONFIG.Judgement.Miss
+            PopcornShowJudgement(judgement .. "!", cfg.Color, spot)
+            if popcornCfg.sfx then
+                popcornCfg.sfx.PlaybackSpeed = cfg.Pitch
+                popcornCfg.sfx:Play()
+            end
         end
     end
 
-    local function PopcornShowText(text, color, center)
-        local popup = popcornCfg.popup
-        popup.Text = text
-        popup.TextColor3 = color
-        popup.Visible = true
-        popup.AnchorPoint = Vector2.new(0.5, 0.5)
-        popup.Position = UDim2.fromOffset(center.X, center.Y) - UDim2.fromOffset(0, 55)
-        popup.TextTransparency = 0
-        TweenService:Create(popup,
-            TweenInfo.new(0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                TextTransparency = 1,
-                Position = UDim2.fromOffset(center.X, center.Y) - UDim2.fromOffset(0, 120),
-            }):Play()
-        task.delay(0.7, function() popup.Visible = false end)
+    local function PopcornBotAttempt(kernelId)
+        if math.random() > POPCONFIG.BotSkill then
+            PopcornJudge("bot", kernelId, true)
+            return
+        end
+        local spread = 0.45 * (1 - POPCONFIG.BotSkill) + 0.05
+        PopcornJudge("bot", kernelId, false, math.abs((math.random() * 2 - 1) * spread))
     end
 
-    local function PopcornJudgmentColor(judgement)
-        if judgement == "Perfect" then return POPCOLORS.gold end
-        if judgement == "Great" then return POPCOLORS.green end
-        if judgement == "Good" then return POPCOLORS.blue end
-        return POPCOLORS.red
+    local function PopcornStartRound()
+        if popcornCfg.mode ~= "idle" then return end
+        popcornCfg.mode = "playing"
+        local start = os.clock()
+        popcornCfg.round = {
+            start = start,
+            scores = { me = 0, bot = 0 },
+            judged = { me = {}, bot = {} },
+            kernels = {},
+            finished = false,
+        }
+        local round = popcornCfg.round
+
+        PopcornSetScore(0, 0, "3...2...1... GO!")
+        PopcornLockCamera()
+        task.spawn(PopcornPlayCountdown)
+
+        local holes = PopcornShuffle(PopcornHolePositions())
+        for i = 1, POPCONFIG.KernelCount do
+            local delay = POPCONFIG.Countdown + (i - 1) * POPCONFIG.SpawnInterval
+            local hole = holes[i] or holes[math.random(#holes)]
+            round.kernels[i] = {
+                spawnAt = start + delay,
+                expected = start + delay + POPCONFIG.KernelDuration,
+                anchor = nil,
+            }
+            local kid = i
+            task.delay(delay, function()
+                if popcornCfg.mode ~= "playing" or round.finished then return end
+                local k = round.kernels[kid]
+                k.anchor = PopcornSpawnAnchorPart(kid, hole)
+                PopcornSpawnKernelVisual(kid, k.anchor)
+            end)
+            task.delay(delay + POPCONFIG.KernelDuration * 0.6, function()
+                if popcornCfg.mode ~= "playing" or round.finished then return end
+                PopcornBotAttempt(kid)
+            end)
+            task.delay(delay + POPCONFIG.KernelDuration + POPCONFIG.GoodWindow + 0.1, function()
+                if popcornCfg.mode ~= "playing" or round.finished then return end
+                PopcornJudge("me", kid, true)
+            end)
+        end
+
+        local lastDelay = POPCONFIG.Countdown + (POPCONFIG.KernelCount - 1) * POPCONFIG.SpawnInterval
+        local roundEndAt = lastDelay + POPCONFIG.KernelDuration + POPCONFIG.GoodWindow + 1.5
+        task.spawn(function()
+            while popcornCfg.mode == "playing" and not round.finished and (os.clock() - start) < roundEndAt do
+                local elapsed = os.clock() - start
+                if elapsed < POPCONFIG.Countdown then
+                    popcornCfg.timerLabel.Text = tostring(math.ceil(POPCONFIG.Countdown - elapsed))
+                else
+                    popcornCfg.timerLabel.Text = "Time: " .. string.format("%.1f", elapsed - POPCONFIG.Countdown) .. "s"
+                end
+                task.wait(0.1)
+            end
+        end)
+
+        task.delay(roundEndAt, function()
+            if popcornCfg.mode ~= "playing" or round.finished then return end
+            round.finished = true
+            local sMe, sBot = round.scores.me, round.scores.bot
+            local resultText, win, tie = "", false, false
+            if sMe > sBot then
+                win, resultText = true, "YOU WIN!"
+            elseif sBot > sMe then
+                resultText = "BOT WINS"
+            else
+                tie, resultText = true, "TIE!"
+            end
+
+            local reward = tie and POPCONFIG.Rewards.Tie
+                or (win and POPCONFIG.Rewards.Winner or POPCONFIG.Rewards.Loser)
+            pcall(function()
+                local leaderstats = lp:FindFirstChild("leaderstats")
+                if not leaderstats then
+                    leaderstats = Instance.new("Folder")
+                    leaderstats.Name = "leaderstats"
+                    leaderstats.Parent = lp
+                end
+                local tokens = leaderstats:FindFirstChild("Tokens")
+                if not tokens then
+                    tokens = Instance.new("IntValue")
+                    tokens.Name = "Tokens"
+                    tokens.Parent = leaderstats
+                end
+                tokens.Value = tokens.Value + reward
+            end)
+
+            -- best score (only counts MY score vs the max possible)
+            if sMe > popcornCfg.best then
+                popcornCfg.best = sMe
+                PopcornSaveBest()
+            end
+            popcornCfg.score = sMe
+
+            PopcornSetScore(sMe, sBot,
+                resultText .. "  (+" .. tostring(reward) .. " Tokens)")
+            PopcornUnlockCamera()
+            notif("🍿 " .. resultText .. "  +" .. tostring(reward) .. " Tokens"
+
+                .. "  (Score " .. sMe .. " | Best " .. popcornCfg.best .. ")", 4)
+            task.delay(1.2, function()
+                if popcornCfg.mode ~= "playing" then return end
+                popcornCfg.mode = "idle"
+                popcornCfg.round = nil
+                for id, _ in pairs(popcornCfg.activeKernels) do PopcornRemoveKernelVisual(id) end
+                popcornCfg.activeKernels = {}
+                popcornCfg.kernelOrder = {}
+                popcornCfg.kernelSpots = {}
+                for _, child in ipairs(popcornCfg.kernelTargets:GetChildren()) do
+                    child:Destroy()
+                end
+                PopcornSetScore(sMe, sBot, "Press E near a seat to play")
+                PopcornUpdateStatus()
+            end)
+        end)
     end
 
-    local function PopcornFinish()
-        popcornCfg.active = false
-        if popcornCfg.hb then
-            popcornCfg.hb:Disconnect()
-            popcornCfg.hb = nil
+    local function PopcornCleanupRound()
+        PopcornUnlockCamera()
+        if popcornCfg.round then popcornCfg.round.finished = true end
+        popcornCfg.round = nil
+        popcornCfg.mode = "idle"
+        for id, _ in pairs(popcornCfg.activeKernels) do PopcornRemoveKernelVisual(id) end
+        popcornCfg.activeKernels = {}
+        popcornCfg.kernelOrder = {}
+        popcornCfg.kernelSpots = {}
+        if popcornCfg.kernelTargets then
+            for _, child in ipairs(popcornCfg.kernelTargets:GetChildren()) do
+                child:Destroy()
+            end
         end
-        for _, t in ipairs(popcornCfg.tasks) do
-            t:Cancel()
-        end
-        popcornCfg.tasks = {}
-        for i = #popcornCfg.kernels, 1, -1 do
-            PopcornRemoveKernel(popcornCfg.kernels[i], true)
-        end
-        popcornCfg.kernels = {}
-        popcornCfg.spots = {}
-
-        local bonus = ""
-        if popcornCfg.score > popcornCfg.best then
-            popcornCfg.best = popcornCfg.score
-            PopcornSaveBest()
-            bonus = "  ·  NEW BEST!"
-        end
-        local s = popcornCfg.stats
-        popcornCfg.endTitle.Text = "SCORE: " .. popcornCfg.score .. bonus
-        popcornCfg.endSub.Text = "Perfect " .. s.Perfect .. " · Great " .. s.Great
-            .. " · Good " .. s.Good .. " · Miss " .. s.Miss
-        popcornCfg.endScores.Text = "Max possible: " .. (POPCONFIG.Points.Perfect * POPCONFIG.KernelCount)
-            .. "  ·  Best: " .. popcornCfg.best
-        popcornCfg.endFrame.Visible = true
-        PopcornUpdateStatus()
     end
 
-    local function PopcornJudged(k, judgement, points)
-        if k.judged then return end
-        k.judged = true
-        popcornCfg.score = popcornCfg.score + points
-        popcornCfg.judged = popcornCfg.judged + 1
-        popcornCfg.stats[judgement] = popcornCfg.stats[judgement] + 1
-        PopcornRemoveKernel(k, judgement == "Miss")
-        PopcornShowText(judgement, PopcornJudgmentColor(judgement), k.center)
-        popcornCfg.hud.Text = "Score: " .. popcornCfg.score
-            .. "  ·  Kernels left: " .. (POPCONFIG.KernelCount - popcornCfg.judged)
-        PopcornUpdateStatus()
-        if popcornCfg.judged >= POPCONFIG.KernelCount then
-            PopcornSchedule(0.6, PopcornFinish)
-        end
+    -- ===== CLICK DETECTION (3D raycast on the board plane) =====
+    local function PopcornCurrentRadius(k)
+        local t = math.clamp((os.clock() - k.spawnTime) / POPCONFIG.KernelDuration, 0, 1)
+        return k.startRadius + (k.targetRadius - k.startRadius) * t
     end
 
     local function PopcornClick()
-        if not popcornCfg.active then return end
-        local m = UserInputService:GetMouseLocation()
-        local now = os.clock()
-        for i = #popcornCfg.kernels, 1, -1 do
-            local k = popcornCfg.kernels[i]
-            if not k.judged and now >= k.startTime + POPCONFIG.DecoyDelay
-                and now <= k.perfectAt + POPCONFIG.GoodWindow + POPCONFIG.ClickBuffer then
-                if (m - k.center).Magnitude <= PopcornRadiusAt(k, now) then
-                    local error = math.abs(now - k.perfectAt)
-                    local judgement, points = "Miss", 0
-                    if error <= POPCONFIG.PerfectWindow then
-                        judgement, points = "Perfect", POPCONFIG.Points.Perfect
-                    elseif error <= POPCONFIG.GreatWindow then
-                        judgement, points = "Great", POPCONFIG.Points.Great
-                    elseif error <= POPCONFIG.GoodWindow then
-                        judgement, points = "Good", POPCONFIG.Points.Good
-                    end
-                    PopcornJudged(k, judgement, points)
+        if popcornCfg.mode ~= "playing" then return end
+        local round = popcornCfg.round
+        if not round or round.finished then return end
+        local cam = Workspace.CurrentCamera
+        if not cam then return end
+
+        local mouse = UserInputService:GetMouseLocation()
+        local ray = cam:ViewportPointToRay(mouse.X, mouse.Y)
+        local planeY = popcornCfg.tableTop.Position.Y + 0.15
+        if math.abs(ray.Direction.Y) < 0.0001 then return end
+        local tHit = (planeY - ray.Origin.Y) / ray.Direction.Y
+        if tHit <= 0 then return end
+        local hit = ray.Origin + ray.Direction * tHit
+
+        for i = #popcornCfg.kernelOrder, 1, -1 do
+            local id = popcornCfg.kernelOrder[i]
+            local k = popcornCfg.activeKernels[id]
+            if k and (os.clock() - k.spawnTime) <= POPCONFIG.KernelDuration then
+                local dx = hit.X - k.center.X
+                local dz = hit.Z - k.center.Z
+                if (dx * dx + dz * dz) <= (PopcornCurrentRadius(k) ^ 2) then
+                    PopcornRemoveKernelVisual(id)
+                    PopcornPopBurst(k.center)
+                    local err = math.abs(os.clock() - round.kernels[id].expected)
+                    PopcornJudge("me", id, false, err)
                     return
                 end
             end
         end
     end
 
-    local function PopcornRound()
-        popcornCfg.score = 0
-        popcornCfg.judged = 0
-        popcornCfg.stats = { Perfect = 0, Great = 0, Good = 0, Miss = 0 }
-        for _, t in ipairs(popcornCfg.tasks) do
-            t:Cancel()
-        end
-        popcornCfg.tasks = {}
-        for i = #popcornCfg.kernels, 1, -1 do
-            PopcornRemoveKernel(popcornCfg.kernels[i], true)
-        end
-        popcornCfg.kernels = {}
-        popcornCfg.spots = {}
-        popcornCfg.endFrame.Visible = false
-
-        popcornCfg.hud.Text = "Score: 0  ·  Kernels left: " .. POPCONFIG.KernelCount
-        popcornCfg.countdown.Visible = true
-        for i = POPCONFIG.Countdown, 1, -1 do
-            popcornCfg.countdown.Text = tostring(i)
-            popcornCfg.countdown.TextTransparency = 0
-            TweenService:Create(popcornCfg.countdown,
-                TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                { TextTransparency = 1 }):Play()
-            task.wait(1)
-            if not popcornCfg.active then return end
-        end
-        popcornCfg.countdown.Text = "POP!"
-        popcornCfg.countdown.TextTransparency = 0
-        TweenService:Create(popcornCfg.countdown,
-            TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            { TextTransparency = 1 }):Play()
-        task.wait(0.5)
-        popcornCfg.countdown.Visible = false
-        if not popcornCfg.active then return end
-
-        if popcornCfg.hb then
-            popcornCfg.hb:Disconnect()
-        end
-        popcornCfg.hb = RunService.Heartbeat:Connect(function()
-            local now = os.clock()
-            for _, k in ipairs(popcornCfg.kernels) do
-                if not k.judged then
-                    local stroke = k.ring:FindFirstChild("UIStroke")
-                    if stroke then
-                        stroke.Color = PopcornPhaseColor(now, k.perfectAt)
-                    end
-                end
-            end
-        end)
-
-        for id = 1, POPCONFIG.KernelCount do
-            local kernelId = id
-            local delay = (id - 1) * POPCONFIG.SpawnInterval
-            PopcornSchedule(delay, function()
-                PopcornSpawnKernel({ id = kernelId })
-            end)
-            PopcornSchedule(delay + POPCONFIG.DecoyDelay + POPCONFIG.KernelDuration + POPCONFIG.GoodWindow + 0.1, function()
-                for _, k in ipairs(popcornCfg.kernels) do
-                    if k.id == kernelId then
-                        PopcornJudged(k, "Miss", 0)
-                        break
-                    end
-                end
-            end)
-        end
-    end
-
-    local function PopcornStop()
-        popcornCfg.active = false
-        if popcornCfg.hb then
-            popcornCfg.hb:Disconnect()
-            popcornCfg.hb = nil
-        end
-        for _, t in ipairs(popcornCfg.tasks) do
-            t:Cancel()
-        end
-        popcornCfg.tasks = {}
-        for i = #popcornCfg.kernels, 1, -1 do
-            PopcornRemoveKernel(popcornCfg.kernels[i], true)
-        end
-        popcornCfg.kernels = {}
-        popcornCfg.spots = {}
-        popcornCfg.popup.Visible = false
-        popcornCfg.countdown.Visible = false
-        popcornCfg.endFrame.Visible = false
-        if popcornCfg.gui then
-            popcornCfg.gui.Visible = false
-        end
-        PopcornUpdateStatus()
-    end
-
-    local function PopcornBuildGUI()
-        if popcornCfg.gui then
-            popcornCfg.gui.Visible = true
-            return
-        end
-        local gui = Instance.new("ScreenGui")
-        gui.Name = "PopcornBurstGUI"
-        gui.IgnoreGuiInset = true
-        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        gui.Parent = game:GetService("CoreGui")
-        popcornCfg.gui = gui
-
-        local function make(class, parent, props)
-            local obj = Instance.new(class)
-            for kk, vv in pairs(props) do obj[kk] = vv end
-            obj.Parent = parent
-            return obj
-        end
-
-        popcornCfg.overlay = make("Frame", gui, {
-            Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(10, 11, 16),
-            BackgroundTransparency = 0.35, BorderSizePixel = 0,
-        })
-
-        popcornCfg.canvas = make("Frame", gui, {
-            Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 5,
-        })
-
-        popcornCfg.hud = make("TextLabel", gui, {
-            BackgroundTransparency = 1, Text = "Score: 0", Font = Enum.Font.GothamBold,
-            TextSize = 24, TextColor3 = POPCOLORS.text,
-            Size = UDim2.fromScale(1, 0.06), Position = UDim2.fromScale(0, 0.02),
-            ZIndex = 8,
-        })
-
-        popcornCfg.countdown = make("TextLabel", gui, {
-            BackgroundTransparency = 1, Text = "", Font = Enum.Font.GothamBlack,
-            TextSize = 110, TextColor3 = POPCOLORS.kernel,
-            Size = UDim2.fromScale(1, 0.4), Position = UDim2.fromScale(0, 0.35),
-            Visible = false, TextTransparency = 1, ZIndex = 9,
-        })
-
-        popcornCfg.popup = make("TextLabel", gui, {
-            BackgroundTransparency = 1, Text = "", TextSize = 46, Font = Enum.Font.GothamBlack,
-            TextTransparency = 1, Size = UDim2.fromOffset(300, 70), ZIndex = 20, Visible = false,
-        })
-
-        popcornCfg.endFrame = make("Frame", gui, {
-            Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
-            Visible = false, ZIndex = 30,
-        })
-        local panel = make("Frame", popcornCfg.endFrame, {
-            Size = UDim2.fromOffset(400, 320), Position = UDim2.fromScale(0.5, 0.5),
-            AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Color3.fromRGB(24, 26, 34),
-            BorderSizePixel = 0,
-        })
-        make("UICorner", panel, { CornerRadius = UDim.new(0, 14) })
-        make("UIStroke", panel, { Color = POPCOLORS.kernel, Thickness = 2 })
-        popcornCfg.endTitle = make("TextLabel", panel, {
-            BackgroundTransparency = 1, Text = "", Font = Enum.Font.GothamBlack,
-            TextSize = 26, TextColor3 = POPCOLORS.kernel,
-            Size = UDim2.fromScale(1, 0.2), Position = UDim2.fromScale(0, 0.14),
-        })
-        popcornCfg.endSub = make("TextLabel", panel, {
-            BackgroundTransparency = 1, Text = "", Font = Enum.Font.GothamBold,
-            TextSize = 17, TextColor3 = POPCOLORS.text,
-            Size = UDim2.fromScale(1, 0.14), Position = UDim2.fromScale(0, 0.36),
-        })
-        popcornCfg.endScores = make("TextLabel", panel, {
-            BackgroundTransparency = 1, Text = "", Font = Enum.Font.Gotham,
-            TextSize = 16, TextColor3 = POPCOLORS.text,
-            Size = UDim2.fromScale(1, 0.14), Position = UDim2.fromScale(0, 0.52),
-        })
-
-        local retryBtn = make("TextButton", panel, {
-            Size = UDim2.fromOffset(220, 44), Position = UDim2.fromScale(0.5, 0.75),
-            AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = POPCOLORS.kernel,
-            Text = "PLAY AGAIN", Font = Enum.Font.GothamBold, TextSize = 18,
-            TextColor3 = Color3.fromRGB(20, 20, 24),
-            AutoButtonColor = false, BorderSizePixel = 0,
-        })
-        make("UICorner", retryBtn, { CornerRadius = UDim.new(1, 0) })
-        retryBtn.MouseButton1Click:Connect(function()
-            popcornCfg.endFrame.Visible = false
-            popcornCfg.active = true
-            PopcornRound()
-        end)
-
-        local closeBtn = make("TextButton", gui, {
-            Size = UDim2.fromOffset(130, 36), Position = UDim2.fromScale(1, 0),
-            AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = Color3.fromRGB(60, 62, 74),
-            Text = "✕ CLOSE", Font = Enum.Font.GothamBold, TextSize = 15,
-            TextColor3 = POPCOLORS.text, AutoButtonColor = false, BorderSizePixel = 0,
-            ZIndex = 40,
-        })
-        make("UICorner", closeBtn, { CornerRadius = UDim.new(1, 0) })
-        closeBtn.MouseButton1Click:Connect(function()
-            PopcornStop()
-        end)
-
-        local sfx = Instance.new("Sound")
-        sfx.SoundId = POPCONFIG.PopSfxId
-        sfx.Volume = 0.8
-        sfx.Parent = gui
-        popcornCfg.sfx = sfx
-    end
-
-    local function PopcornStart()
-        if popcornCfg.active then return end
-        PopcornBuildGUI()
-        popcornCfg.active = true
-        PopcornRound()
-        PopcornUpdateStatus()
-    end
-
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
         if input.UserInputType == Enum.UserInputType.MouseButton1
             or input.UserInputType == Enum.UserInputType.Touch then
-            PopcornClick()
+            pcall(PopcornClick)
         end
     end)
+
+    -- ===== SIT / STAND (E near a seat) =====
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.KeyCode ~= Enum.KeyCode.E then return end
+        if not popcornCfg.active then return end
+
+        if popcornCfg.mode == "playing" then
+            PopcornCleanupRound()
+            PopcornSetScore(0, 0, "Press E near a seat to play")
+            return
+        end
+
+        local char = lp.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if not hum then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local nearest, best = nil, 6
+        for _, seat in ipairs(popcornCfg.seats) do
+            local d = hrp and (hrp.Position - seat.Position).Magnitude or math.huge
+            if d < best then best, nearest = d, seat end
+        end
+        if nearest then
+            hum:Sit()
+            task.wait(0.35)
+            PopcornStartRound()
+        end
+    end)
+
+    -- standing up mid-round = round cancelled
+    task.spawn(function()
+        while true do
+            task.wait(0.5)
+            if popcornCfg.active and popcornCfg.mode == "playing" then
+                local char = lp.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                local seat1, seat2 = popcornCfg.seat1, popcornCfg.seat2
+                if hum and (not hum.Seated or (hum.SeatPart ~= seat1 and hum.SeatPart ~= seat2)) then
+                    PopcornCleanupRound()
+                    PopcornSetScore(0, 0, "Press E near a seat to play")
+                end
+            end
+        end
+    end)
+
+    -- respawn mid-round = clean restart
+    lp.CharacterAdded:Connect(function()
+        task.wait(0.2)
+        if popcornCfg.active and popcornCfg.mode == "playing" then
+            PopcornCleanupRound()
+            PopcornSetScore(0, 0, "Press E near a seat to play")
+        end
+    end)
+
+    -- ===== API =====
+    local function PopcornStart()
+        if popcornCfg.active then return end
+        pcall(PopcornBuildTable)
+        popcornCfg.active = true
+        popcornCfg.mode = "idle"
+        PopcornSetScore(0, 0, "Press E near a seat to play")
+        if not popcornCfg.sfx then
+            local sfx = Instance.new("Sound")
+            sfx.SoundId = POPCONFIG.PopSfxId
+            sfx.Volume = 0.85
+            sfx.Parent = lp
+            popcornCfg.sfx = sfx
+        end
+        PopcornUpdateStatus()
+        notif("🍿 Popcorn Burst ON — walk to the table and press E", 3)
+    end
+
+    local function PopcornStop()
+        if not popcornCfg.active then return end
+        popcornCfg.active = false
+        pcall(PopcornCleanupRound)
+        pcall(PopcornDestroyTable)
+        PopcornUpdateStatus()
+    end
 
     PopcornBurstAPI = {
         Start = PopcornStart,
@@ -4438,9 +4640,9 @@ function UpdateRightContent()
                 PopcornBurstAPI.Stop()
             end
         end)
-        CreateLabel(tsunamiMain, "Decoy ring first, then the real ring over the corn — click when it goes GREEN!", TEXT_DIM)
-        CreateLabel(tsunamiMain, "Green = Perfect +100 | yellow = Great +50 | orange = Good +20 | red = Miss", TEXT_DIM)
-        CreateLabel(tsunamiMain, "12 kernels per round · best score saved to sa7loul_popcorn.json", TEXT_DIM)
+        CreateLabel(tsunamiMain, "3D table builds in-world — walk to it and press E to sit", TEXT_DIM)
+        CreateLabel(tsunamiMain, "Click kernels on the board when the ring meets the target: Perfect +100 | Great +50 | Good +20", TEXT_DIM)
+        CreateLabel(tsunamiMain, "1v1 vs Brainrot Bot · +10 win / +2 lose / +5 tie Tokens · best saved to sa7loul_popcorn.json", TEXT_DIM)
         
     elseif CurrentTab == "  More" then
         local scriptsSection = CreateSection(RightContent, "📦 External scripts")
@@ -4835,673 +5037,3 @@ end)
 
 notif("✨ sa7loul V2 — loaded", 3)
 
--- ============================================================================
--- POPCORN BURST — 3D TABLETOP MINIGAME (merged single-script version)
--- ============================================================================
--- Runs 100% client-side (executor-friendly): builds the 3D minigame table in
--- Workspace, starts a match when you sit at a seat (press E near a seat),
--- spawns shrinking-ring kernels on the board, locks the camera, judges your
--- clicks locally (OSU!-style windows), plays vs a local BOT opponent, pays
--- out +10/+2/+5 Tokens (winner/loser/tie) into leaderstats and resets.
--- Everything below is self-contained; tweak the PB config table to balance.
--- ============================================================================
-do
-    if _G.PopcornBurst_Loaded then return end
-    _G.PopcornBurst_Loaded = true
-
-    local Players = game:GetService("Players")
-    local UIS = game:GetService("UserInputService")
-    local TweenService = game:GetService("TweenService")
-    local RunService = game:GetService("RunService")
-    local Workspace = game:GetService("Workspace")
-
-    local lp = Players.LocalPlayer
-
-    -- PB CONFIG --------------------------------------------------------------
-    local PB = {
-        SoundId        = "rbxassetid://1234567890", -- <-- replace with your pop sound
-        KernelCount    = 12,   -- kernels per round
-        KernelDuration = 1.5,  -- ring shrink time (seconds)
-        SpawnInterval  = 1.35, -- seconds between kernels
-        Countdown      = 3,    -- "3,2,1" before kernels start
-        PerfectWindow  = 0.08,
-        GreatWindow    = 0.20,
-        GoodWindow     = 0.40,
-        LatencyBuffer  = 0.10,
-        Points         = { Perfect = 100, Great = 50, Good = 20, Miss = 0 },
-        Rewards        = { Winner = 10, Loser = 2, Tie = 5 },
-        BotSkill       = 0.70, -- bot hit-rate (0.0 - 1.0)
-        GridX          = 4,
-        GridZ          = 4,
-        TargetDiameter = 0.6,  -- studs
-        RingStartScale = 1.8,
-        RingColor      = Color3.fromRGB(255, 200, 60),
-        TargetColor    = Color3.fromRGB(245, 245, 250),
-        KernelColor    = Color3.fromRGB(255, 220, 130),
-        Judgement = {
-            Perfect = { Color = Color3.fromRGB(255, 215, 0),   Pitch = 1.25 },
-            Great   = { Color = Color3.fromRGB(86, 255, 129),  Pitch = 1.06 },
-            Good    = { Color = Color3.fromRGB(77, 148, 255),  Pitch = 0.95 },
-            Miss    = { Color = Color3.fromRGB(255, 77, 77),   Pitch = 0.80 },
-        },
-        Camera = { Height = 8.2, Back = 4.6, Duration = 1.1 },
-    }
-
-    -- ===== TABLE BUILD (client-side; replicates to the server) =====
-    local tableModel = Workspace:FindFirstChild("PopcornTable_" .. lp.Name)
-    if not tableModel then
-        tableModel = Instance.new("Model")
-        tableModel.Name = "PopcornTable_" .. lp.Name
-    end
-
-    local function mkPart(name, size, pos, color, material, parent)
-        local p = Instance.new("Part")
-        p.Name = name
-        p.Size = size
-        p.Position = pos
-        p.Anchored = true
-        p.CanCollide = false
-        p.TopSurface = Enum.SurfaceType.Smooth
-        p.BottomSurface = Enum.SurfaceType.Smooth
-        p.Color = color
-        p.Material = material or Enum.Material.WoodPlanks
-        p.Parent = parent or tableModel
-        return p
-    end
-
-    local top = mkPart("TableTop", Vector3.new(6, 0.4, 4), Vector3.new(0, 6, 0),
-        Color3.fromRGB(120, 82, 48))
-    mkPart("Leg1", Vector3.new(0.3, 4.2, 0.3), Vector3.new(-2.6, 3.8, -1.6), Color3.fromRGB(90, 60, 35), nil, top)
-    mkPart("Leg2", Vector3.new(0.3, 4.2, 0.3), Vector3.new(2.6, 3.8, -1.6), Color3.fromRGB(90, 60, 35), nil, top)
-    mkPart("Leg3", Vector3.new(0.3, 4.2, 0.3), Vector3.new(-2.6, 3.8, 1.6), Color3.fromRGB(90, 60, 35), nil, top)
-    mkPart("Leg4", Vector3.new(0.3, 4.2, 0.3), Vector3.new(2.6, 3.8, 1.6), Color3.fromRGB(90, 60, 35), nil, top)
-    local deco = mkPart("BoardDeco", Vector3.new(3.2, 0.08, 3.6), Vector3.new(0, 6.26, 0),
-        Color3.fromRGB(255, 200, 60), Enum.Material.Neon, top)
-    deco.Transparency = 0.85
-
-    local function mkSeat(name, pos)
-        local seat = Instance.new("Seat")
-        seat.Name = name
-        seat.Size = Vector3.new(2, 1.3, 2)
-        seat.Position = pos
-        seat.Anchored = true
-        seat.CanCollide = false
-        seat.Color = Color3.fromRGB(190, 60, 60)
-        seat.Material = Enum.Material.SmoothPlastic
-        seat.Parent = tableModel
-        return seat
-    end
-    local seat1 = mkSeat("Seat1", Vector3.new(-1.6, 6.05, 3.4))
-    local seat2 = mkSeat("Seat2", Vector3.new(1.6, 6.05, 3.4))
-
-    -- digital score display on the table edge, facing the players
-    local scoreGui = Instance.new("SurfaceGui")
-    scoreGui.Name = "ScoreGui"
-    scoreGui.Face = Enum.NormalId.Front
-    scoreGui.CanvasSize = Vector2.new(600, 180)
-    scoreGui.LightInfluence = 0
-    scoreGui.Parent = top
-    local bg = Instance.new("Frame")
-    bg.Size = UDim2.fromScale(1, 1)
-    bg.BackgroundColor3 = Color3.fromRGB(14, 16, 22)
-    bg.BorderSizePixel = 0
-    bg.Parent = scoreGui
-    local p1Label = Instance.new("TextLabel")
-    p1Label.Name = "P1"
-    p1Label.Size = UDim2.fromScale(0.5, 0.55)
-    p1Label.Position = UDim2.fromScale(0, 0.15)
-    p1Label.BackgroundTransparency = 1
-    p1Label.Font = Enum.Font.GothamBold
-    p1Label.TextSize = 34
-    p1Label.TextColor3 = Color3.fromRGB(64, 156, 255)
-    p1Label.Text = "P1: 0"
-    p1Label.Parent = scoreGui
-    local p2Label = p1Label:Clone()
-    p2Label.Name = "P2"
-    p2Label.Position = UDim2.fromScale(0.5, 0.15)
-    p2Label.TextColor3 = Color3.fromRGB(255, 99, 71)
-    p2Label.Text = "P2: 0"
-    p2Label.Parent = scoreGui
-    local timerLabel = Instance.new("TextLabel")
-    timerLabel.Name = "Timer"
-    timerLabel.Size = UDim2.fromScale(1, 0.3)
-    timerLabel.Position = UDim2.fromScale(0, 0.7)
-    timerLabel.BackgroundTransparency = 1
-    timerLabel.Font = Enum.Font.Gotham
-    timerLabel.TextSize = 24
-    timerLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
-    timerLabel.Text = "Press E near a seat to play"
-    timerLabel.Parent = scoreGui
-
-    local kernelTargets = tableModel:FindFirstChild("KernelTargets")
-    if not kernelTargets then
-        kernelTargets = Instance.new("Folder")
-        kernelTargets.Name = "KernelTargets"
-        kernelTargets.Parent = tableModel
-    end
-
-    if not tableModel.Parent then tableModel.Parent = Workspace end
-    local tableTop = tableModel.TableTop
-
-    -- ===== STATE =====
-    local mode = "idle"        -- "idle" | "playing"
-    local round = nil          -- round data
-    local activeKernels = {}   -- kernelId -> visual record
-    local kernelOrder = {}     -- spawn order (most recent last)
-    local kernelSpots = {}     -- kernelId -> world position
-    local cameraBusy = false
-    local seatedCon = nil
-
-    local popSfx = Instance.new("Sound")
-    popSfx.SoundId = PB.SoundId
-    popSfx.Volume = 0.85
-    popSfx.Parent = script
-
-    -- ===== SCOREBOARD =====
-    local function setScore(t1, t2, timerText)
-        p1Label.Text = lp.Name .. ": " .. tostring(t1)
-        p2Label.Text = "Brainrot Bot: " .. tostring(t2)
-        timerLabel.Text = timerText
-    end
-
-    -- ===== CAMERA =====
-    local function boardViewCFrame()
-        local center = tableTop.Position + Vector3.new(0, 0.3, 0)
-        local lookFrom = tableTop.CFrame.Position
-            + tableTop.CFrame.UpVector * PB.Camera.Height
-            + tableTop.CFrame.LookVector * PB.Camera.Back
-        return CFrame.lookAt(lookFrom, center)
-    end
-
-    local function lockCamera()
-        local cam = Workspace.CurrentCamera
-        if not cam then return end
-        cam.CameraType = Enum.CameraType.Scriptable
-        cameraBusy = true
-        task.spawn(function()
-            local startCF = cam.CFrame
-            local targetCF = boardViewCFrame()
-            local t0 = os.clock()
-            while cameraBusy do
-                local t = math.clamp((os.clock() - t0) / PB.Camera.Duration, 0, 1)
-                local eased = 1 - (1 - t) * (1 - t)
-                cam.CFrame = startCF:Lerp(targetCF, eased)
-                if t >= 1 then break end
-                RunService.Heartbeat:Wait()
-            end
-            while cameraBusy do
-                cam.CFrame = targetCF
-                RunService.Heartbeat:Wait()
-            end
-        end)
-    end
-
-    local function unlockCamera()
-        cameraBusy = false
-        local cam = Workspace.CurrentCamera
-        if cam then cam.CameraType = Enum.CameraType.Custom end
-    end
-
-    -- ===== BILLBOARD HELPERS =====
-    local startDiameter = PB.TargetDiameter * PB.RingStartScale
-    local targetScale = PB.TargetDiameter / startDiameter
-
-    local function makeBillboard(adornee, sizeStuds, offset)
-        local bb = Instance.new("BillboardGui")
-        bb.Adornee = adornee
-        bb.Size = UDim2.fromOffset(sizeStuds, sizeStuds)
-        bb.AlwaysOnTop = true
-        bb.ClipsDescendants = false
-        bb.MaxDistance = 400
-        bb.StudsOffsetWorldSpace = offset or Vector3.new(0, 0.15, 0)
-        bb.Parent = adornee
-        return bb
-    end
-
-    local function makeCircleFrame(sizeScale, thickness, color)
-        local f = Instance.new("Frame")
-        f.Size = UDim2.fromScale(sizeScale, sizeScale)
-        f.AnchorPoint = Vector2.new(0.5, 0.5)
-        f.Position = UDim2.fromScale(0.5, 0.5)
-        f.BackgroundTransparency = 1
-        f.BorderSizePixel = 0
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(1, 0)
-        corner.Parent = f
-        local stroke = Instance.new("UIStroke")
-        stroke.Thickness = thickness
-        stroke.Color = color
-        stroke.Parent = f
-        return f
-    end
-
-    local function spawnAnchor(pos)
-        local p = Instance.new("Part")
-        p.Name = "PopcornFx"
-        p.Size = Vector3.new(0.2, 0.2, 0.2)
-        p.Position = pos
-        p.Anchored = true
-        p.CanCollide = false
-        p.CanQuery = false
-        p.CanTouch = false
-        p.Transparency = 1
-        p.CastShadow = false
-        p.Parent = Workspace
-        return p
-    end
-
-    -- ===== KERNEL VISUALS =====
-    local function spawnKernelVisual(id, part)
-        if activeKernels[id] then return end
-        local bb = makeBillboard(part, startDiameter, Vector3.new(0, 0.35, 0))
-        bb.Name = "Visual_" .. id
-
-        local target = makeCircleFrame(targetScale, 4, PB.TargetColor)
-        target.Parent = bb
-
-        local dot = Instance.new("Frame")
-        dot.Size = UDim2.fromScale(0.1, 0.1)
-        dot.AnchorPoint = Vector2.new(0.5, 0.5)
-        dot.Position = UDim2.fromScale(0.5, 0.5)
-        dot.BackgroundColor3 = PB.KernelColor
-        dot.BorderSizePixel = 0
-        dot.ZIndex = 3
-        local dotCorner = Instance.new("UICorner")
-        dotCorner.CornerRadius = UDim.new(1, 0)
-        dotCorner.Parent = dot
-        dot.Parent = bb
-
-        local ring = makeCircleFrame(1, 7, PB.RingColor)
-        ring.ZIndex = 2
-        ring.Parent = bb
-
-        local shrink = TweenService:Create(ring,
-            TweenInfo.new(PB.KernelDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
-                Size = UDim2.fromScale(targetScale, targetScale),
-            })
-        shrink:Play()
-
-        activeKernels[id] = {
-            id = id,
-            part = part,
-            bb = bb,
-            center = part.Position,
-            spawnTime = os.clock(),
-            startRadius = startDiameter / 2,
-            targetRadius = PB.TargetDiameter / 2,
-        }
-        kernelSpots[id] = part.Position
-        table.insert(kernelOrder, id)
-    end
-
-    local function removeKernelVisual(id)
-        local k = activeKernels[id]
-        if not k then return end
-        activeKernels[id] = nil
-        for i, kId in ipairs(kernelOrder) do
-            if kId == id then table.remove(kernelOrder, i) break end
-        end
-        if k.bb and k.bb.Parent then k.bb:Destroy() end
-    end
-
-    local function popBurst(center)
-        local anchor = spawnAnchor(Vector3.new(center.X, tableTop.Position.Y + 0.45, center.Z))
-        local bb = makeBillboard(anchor, PB.TargetDiameter, Vector3.new())
-        local ring = makeCircleFrame(1, 6, PB.RingColor)
-        ring.Parent = bb
-        local grow = TweenService:Create(bb,
-            TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.fromOffset(startDiameter * 2.6, startDiameter * 2.6),
-            })
-        local stroke = ring:FindFirstChild("UIStroke")
-        local fade = TweenService:Create(stroke,
-            TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Transparency = 1,
-            })
-        grow:Play(); fade:Play()
-        task.delay(0.45, function() anchor:Destroy() end)
-    end
-
-    -- ===== JUDGEMENT TEXT (3D float above the spot) =====
-    local function showJudgement(text, color, center)
-        local anchor = spawnAnchor(Vector3.new(center.X, tableTop.Position.Y + 0.5, center.Z))
-        local bb = Instance.new("BillboardGui")
-        bb.Adornee = anchor
-        bb.Size = UDim2.fromOffset(2.6, 1.0)
-        bb.AlwaysOnTop = true
-        bb.MaxDistance = 400
-        bb.StudsOffsetWorldSpace = Vector3.new(0, 0.5, 0)
-        bb.Parent = anchor
-
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.fromScale(1, 1)
-        label.BackgroundTransparency = 1
-        label.Text = text
-        label.Font = Enum.Font.GothamBlack
-        label.TextScaled = true
-        label.TextColor3 = color
-        label.TextStrokeTransparency = 0.35
-        label.TextStrokeColor3 = Color3.fromRGB(20, 20, 25)
-        label.Parent = bb
-
-        TweenService:Create(bb,
-            TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                StudsOffsetWorldSpace = Vector3.new(0, 1.8, 0),
-                Size = UDim2.fromOffset(3.4, 1.3),
-            }):Play()
-        TweenService:Create(label,
-            TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                TextTransparency = 1,
-            }):Play()
-        task.delay(1.0, function() anchor:Destroy() end)
-    end
-
-    local function playCountdown()
-        local center = Vector3.new(tableTop.Position.X, tableTop.Position.Y + 0.6, tableTop.Position.Z)
-        for i = PB.Countdown, 1, -1 do
-            showJudgement(tostring(i), Color3.fromRGB(255, 215, 0), center)
-            task.wait(1)
-        end
-        showJudgement("POP!", Color3.fromRGB(255, 215, 0), center)
-        popSfx.PlaybackSpeed = 1.1
-        popSfx:Play()
-    end
-
-    -- ===== ROUND =====
-    local function holePositions()
-        local size = tableTop.Size
-        local halfX = (size.X / 2) - 0.55
-        local halfZ = (size.Z / 2) - 0.55
-        local holes = {}
-        for gx = 1, PB.GridX do
-            local x = -halfX + (gx - 0.5) * ((halfX * 2) / PB.GridX)
-            for gz = 1, PB.GridZ do
-                local z = -halfZ + (gz - 0.5) * ((halfZ * 2) / PB.GridZ)
-                table.insert(holes, Vector3.new(x, 0.09, z))
-            end
-        end
-        return holes
-    end
-
-    local function shuffle(t)
-        for i = #t, 2, -1 do
-            local j = math.random(1, i)
-            t[i], t[j] = t[j], t[i]
-        end
-        return t
-    end
-
-    local function spawnKernelAnchor(kernelId, hole)
-        local p = Instance.new("Part")
-        p.Name = "Kernel_" .. kernelId
-        p.Size = Vector3.new(0.6, 0.02, 0.6)
-        p.Position = tableTop.CFrame * hole
-        p.Anchored = true
-        p.CanCollide = false
-        p.CanQuery = false
-        p.CanTouch = false
-        p.Transparency = 1
-        p:SetAttribute("Kid", kernelId)
-        p.Parent = kernelTargets
-        return p
-    end
-
-    -- who: "me" | "bot" ; missed: forced miss ; err: timing error (seconds)
-    local function judgeKernel(who, kernelId, missed, err)
-        if round.finished or round.judged[who][kernelId] then return end
-        round.judged[who][kernelId] = true
-
-        local judgement, points = "Miss", PB.Points.Miss
-        if not missed then
-            err = math.max(0, (err or 0) - PB.LatencyBuffer)
-            if err <= PB.PerfectWindow then
-                judgement, points = "Perfect", PB.Points.Perfect
-            elseif err <= PB.GreatWindow then
-                judgement, points = "Great", PB.Points.Great
-            elseif err <= PB.GoodWindow then
-                judgement, points = "Good", PB.Points.Good
-            end
-        end
-        round.scores[who] = round.scores[who] + points
-
-        local k = round.kernels[kernelId]
-        if k and k.anchor and k.anchor.Parent then k.anchor:Destroy() end
-
-        setScore(round.scores.me, round.scores.bot, timerLabel.Text)
-        if who == "bot" then return end
-
-        -- my paid-in visuals
-        if activeKernels[kernelId] then removeKernelVisual(kernelId) end
-        local spot = kernelSpots[kernelId]
-        if spot then
-            local cfg = PB.Judgement[judgement] or PB.Judgement.Miss
-            showJudgement(judgement .. "!", cfg.Color, spot)
-            popSfx.PlaybackSpeed = cfg.Pitch
-            popSfx:Play()
-        end
-    end
-
-    local function botAttempt(kernelId)
-        -- bot decides with skill; timing error grows as skill falls
-        if math.random() > PB.BotSkill then
-            judgeKernel("bot", kernelId, true)
-            return
-        end
-        local spread = 0.45 * (1 - PB.BotSkill) + 0.05
-        local err = (math.random() * 2 - 1) * spread
-        judgeKernel("bot", kernelId, false, math.abs(err))
-    end
-
-    local function startRound()
-        mode = "playing"
-        local start = os.clock()
-        round = {
-            start = start,
-            scores = { me = 0, bot = 0 },
-            judged = { me = {}, bot = {} },
-            kernels = {},
-            finished = false,
-        }
-
-        setScore(0, 0, "3...2...1... GO!")
-        lockCamera()
-        task.spawn(playCountdown)
-
-        local holes = shuffle(holePositions())
-        for i = 1, PB.KernelCount do
-            local delay = PB.Countdown + (i - 1) * PB.SpawnInterval
-            local hole = holes[i] or holes[math.random(#holes)]
-            round.kernels[i] = {
-                spawnAt = start + delay,
-                expected = start + delay + PB.KernelDuration,
-                anchor = nil,
-            }
-            task.delay(delay, function()
-                if round.finished then return end
-                local k = round.kernels[i]
-                k.anchor = spawnKernelAnchor(i, hole)
-                spawnKernelVisual(i, k.anchor)
-            end)
-            -- bot tries every kernel
-            task.delay(delay + PB.KernelDuration * 0.6, function()
-                if round.finished then return end
-                botAttempt(i)
-            end)
-            -- my miss timer
-            task.delay(delay + PB.KernelDuration + PB.GoodWindow + 0.1, function()
-                if round.finished then return end
-                judgeKernel("me", i, true)
-            end)
-        end
-
-        -- live timer text
-        local lastDelay = PB.Countdown + (PB.KernelCount - 1) * PB.SpawnInterval
-        local roundEndAt = lastDelay + PB.KernelDuration + PB.GoodWindow + 1.5
-        task.spawn(function()
-            while not round.finished and (os.clock() - start) < roundEndAt do
-                local elapsed = os.clock() - start
-                if elapsed < PB.Countdown then
-                    timerLabel.Text = tostring(math.ceil(PB.Countdown - elapsed))
-                else
-                    timerLabel.Text = "Time: " .. string.format("%.1f", elapsed - PB.Countdown) .. "s"
-                end
-                task.wait(0.1)
-            end
-        end)
-
-        -- round end + payout
-        task.delay(roundEndAt, function()
-            if round.finished then return end
-            round.finished = true
-            local sMe, sBot = round.scores.me, round.scores.bot
-            local resultText, win, tie = "", false, false
-            if sMe > sBot then
-                win, resultText = true, "YOU WIN!"
-            elseif sBot > sMe then
-                resultText = "BOT WINS"
-            else
-                tie, resultText = true, "TIE!"
-            end
-
-            -- Token payout into leaderstats (replicates to the server)
-            local leaderstats = lp:FindFirstChild("leaderstats")
-            if not leaderstats then
-                leaderstats = Instance.new("Folder")
-                leaderstats.Name = "leaderstats"
-                leaderstats.Parent = lp
-            end
-            local tokens = leaderstats:FindFirstChild("Tokens")
-            if not tokens then
-                tokens = Instance.new("IntValue")
-                tokens.Name = "Tokens"
-                tokens.Parent = leaderstats
-            end
-            if tie then
-                tokens.Value = tokens.Value + PB.Rewards.Tie
-            elseif win then
-                tokens.Value = tokens.Value + PB.Rewards.Winner
-            else
-                tokens.Value = tokens.Value + PB.Rewards.Loser
-            end
-
-            setScore(sMe, sBot, resultText .. "  (+" .. tostring(tie and PB.Rewards.Tie or (win and PB.Rewards.Winner or PB.Rewards.Loser)) .. " Tokens)")
-            unlockCamera()
-            task.delay(0.8, function()
-                if mode ~= "playing" then return end
-                cleanupRound()
-                mode = "idle"
-                setScore(sMe, sBot, "Press E near a seat to play")
-            end)
-        end)
-    end
-
-    local function cleanupRound()
-        unlockCamera()
-        if round then round.finished = true end
-        for id, _ in pairs(activeKernels) do removeKernelVisual(id) end
-        activeKernels = {}
-        kernelOrder = {}
-        kernelSpots = {}
-        for _, child in ipairs(kernelTargets:GetChildren()) do child:Destroy() end
-    end
-
-    -- ===== CLICK DETECTION (3D raycast on the board plane) =====
-    local function currentRadius(k)
-        local t = math.clamp((os.clock() - k.spawnTime) / PB.KernelDuration, 0, 1)
-        return k.startRadius + (k.targetRadius - k.startRadius) * t
-    end
-
-    local function tryClick()
-        if mode ~= "playing" or not round or round.finished then return end
-        local cam = Workspace.CurrentCamera
-        if not cam then return end
-
-        local mouse = UIS:GetMouseLocation()
-        local ray = cam:ViewportPointToRay(mouse.X, mouse.Y)
-        local planeY = tableTop.Position.Y + 0.15
-        if math.abs(ray.Direction.Y) < 0.0001 then return end
-        local tHit = (planeY - ray.Origin.Y) / ray.Direction.Y
-        if tHit <= 0 then return end
-        local hit = ray.Origin + ray.Direction * tHit
-
-        for i = #kernelOrder, 1, -1 do
-            local id = kernelOrder[i]
-            local k = activeKernels[id]
-            if k and (os.clock() - k.spawnTime) <= PB.KernelDuration then
-                local dx = hit.X - k.center.X
-                local dz = hit.Z - k.center.Z
-                if (dx * dx + dz * dz) <= (currentRadius(k) ^ 2) then
-                    removeKernelVisual(id)
-                    popBurst(k.center)
-                    local err = math.abs(os.clock() - round.kernels[id].expected)
-                    judgeKernel("me", id, false, err)
-                    return
-                end
-            end
-        end
-    end
-
-    UIS.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
-        if input.UserInputType == Enum.UserInputType.MouseButton1
-            or input.UserInputType == Enum.UserInputType.Touch then
-            tryClick()
-        end
-    end)
-
-    -- ===== SIT / STAND (press E near a seat) =====
-    UIS.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
-        if input.KeyCode ~= Enum.KeyCode.E then return end
-
-        if mode == "playing" then
-            cleanupRound()
-            mode = "idle"
-            setScore(0, 0, "Press E near a seat to play")
-            return
-        end
-
-        local char = lp.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if not hum then return end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        local nearest = nil
-        local best = 6
-        for _, seat in ipairs({ seat1, seat2 }) do
-            local d = hrp and (hrp.Position - seat.Position).Magnitude or math.huge
-            if d < best then best, nearest = d, seat end
-        end
-        if nearest then
-            hum:Sit()
-            task.wait(0.35)
-            startRound()
-        end
-    end)
-
-    -- standing up mid-round = round cancelled
-    task.spawn(function()
-        while true do
-            task.wait(0.5)
-            local char = lp.Character
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            if hum and mode == "playing" then
-                local seatedOnOurs = (hum.SeatPart == seat1 or hum.SeatPart == seat2)
-                if not hum.Seated or not seatedOnOurs then
-                    cleanupRound()
-                    mode = "idle"
-                    setScore(0, 0, "Press E near a seat to play")
-                end
-            end
-        end
-    end)
-
-    -- respawn mid-round = clean restart
-    lp.CharacterAdded:Connect(function()
-        task.wait(0.2)
-        if mode == "playing" then
-            cleanupRound()
-            mode = "idle"
-            setScore(0, 0, "Press E near a seat to play")
-        end
-    end)
-end
