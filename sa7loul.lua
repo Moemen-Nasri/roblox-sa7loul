@@ -1545,7 +1545,7 @@ local function UnbanAllFromList()
     notif("Unban fired for all " .. #bannedCache, 2)
 end
 
-local tsunamiCfg = {on = false, clicker = false, c4 = false, c4Timer = 0, c4Index = 0, c4Delay = 1.2, c4Col = 0, collectDelay = 0.35, collectTimer = 0, clickerDelay = 0.1, baseline = 0, collected = 0}
+local tsunamiCfg = {on = false, clicker = false, c4 = false, c4Timer = 0, c4Index = 0, c4Delay = 1.2, c4Col = 0, collectDelay = 0.35, collectTimer = 0, clickerDelay = 0.1, baseline = 0, collected = 0, god = false, autojump = false, jumpTimer = 0, safe = false, safeTimer = 0, safeDelay = 2, mgBot = false, mgBotTimer = 0, mgBotDelay = 0.8}
 local tsunamiRunConn = nil
 local tsunamiStatusLabel = nil
 local tsunamiPatterns = {"cash", "coin", "money", "brainrot", "corn", "pop", "collect", "loot"}
@@ -1594,7 +1594,54 @@ local function UpdateTsunamiStatus()
     if tsunamiCfg.baseline > 0 then
         pct = math.floor(tsunamiCfg.collected / tsunamiCfg.baseline * 100)
     end
-    tsunamiStatusLabel.Text = "Ping: " .. ping .. "ms · Collect: " .. tsunamiCfg.collected .. "/" .. tsunamiCfg.baseline .. " (" .. pct .. "%) · C4: " .. (tsunamiCfg.c4 and "ON" or "OFF")
+    tsunamiStatusLabel.Text = "Ping: " .. ping .. "ms · Collect: " .. tsunamiCfg.collected .. "/" .. tsunamiCfg.baseline .. " (" .. pct .. "%) · MG: " .. (tsunamiCfg.mgBot and "ON" or "OFF")
+end
+
+local function TsunamiGodMode()
+    local chr = lp.Character
+    if not chr then return end
+    local hum = chr:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    hum.Health = hum.MaxHealth
+    hum.WalkSpeed = math.max(hum.WalkSpeed, 16)
+end
+
+local function TsunamiSafeTP()
+    local chr = lp.Character
+    local root = chr and chr:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    local best, bestY = nil, -math.huge
+    for _, p in ipairs(workspace:GetDescendants()) do
+        if p:IsA("BasePart") and p.Position.Y > bestY and p.Transparency < 0.95 then
+            local n = string.lower(p.Name)
+            if n:match("safe") or n:match("island") or n:match("platform") or n:match("zone") or n:match("roof") or n:match("tower") or n:match("top") then
+                best, bestY = p, p.Position.Y
+            end
+        end
+    end
+    if best then
+        root.CFrame = best.CFrame + Vector3.new(0, 6, 0)
+    end
+end
+
+local function FindGameButtons(patterns, roots)
+    local btns = {}
+    for _, gui in ipairs(roots or {lp:FindFirstChild("PlayerGui"), game:GetService("CoreGui")}) do
+        if gui then
+            for _, obj in ipairs(gui:GetDescendants()) do
+                if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Visible then
+                    local n = string.lower(obj.Name)
+                    for _, pat in ipairs(patterns) do
+                        if n:match(pat) then
+                            table.insert(btns, obj)
+                            break
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return btns
 end
 
 local function RebuildTsunami()
@@ -1604,11 +1651,15 @@ local function RebuildTsunami()
     end
     tsunamiCfg.c4Timer = 0
     tsunamiCfg.collectTimer = 0
-    if not (tsunamiCfg.on or tsunamiCfg.clicker or tsunamiCfg.c4) then
+    tsunamiCfg.jumpTimer = 0
+    tsunamiCfg.safeTimer = 0
+    tsunamiCfg.mgBotTimer = 0
+    if not (tsunamiCfg.on or tsunamiCfg.clicker or tsunamiCfg.c4 or tsunamiCfg.god or tsunamiCfg.autojump or tsunamiCfg.safe or tsunamiCfg.mgBot) then
         if tsunamiStatusLabel then tsunamiStatusLabel.Text = "All OFF" end
         return
     end
     local statusAcc = 0
+    local vim = game:GetService("VirtualInputManager")
     tsunamiRunConn = RunService.Heartbeat:Connect(function(dt)
         statusAcc = statusAcc + dt
         if tsunamiCfg.on then
@@ -1620,9 +1671,38 @@ local function RebuildTsunami()
         end
         if tsunamiCfg.clicker then
             local m = UserInputService:GetMouseLocation()
-            local vim = game:GetService("VirtualInputManager")
             vim:SendMouseButtonEvent(m.X, m.Y, 0, true, game, 1)
             vim:SendMouseButtonEvent(m.X, m.Y, 0, false, game, 1)
+        end
+        if tsunamiCfg.god then
+            TsunamiGodMode()
+        end
+        if tsunamiCfg.autojump then
+            tsunamiCfg.jumpTimer = tsunamiCfg.jumpTimer + dt
+            if tsunamiCfg.jumpTimer >= 0.6 then
+                tsunamiCfg.jumpTimer = 0
+                vim:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                vim:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+            end
+        end
+        if tsunamiCfg.safe then
+            tsunamiCfg.safeTimer = tsunamiCfg.safeTimer + dt
+            if tsunamiCfg.safeTimer >= tsunamiCfg.safeDelay then
+                tsunamiCfg.safeTimer = 0
+                TsunamiSafeTP()
+            end
+        end
+        if tsunamiCfg.mgBot then
+            tsunamiCfg.mgBotTimer = tsunamiCfg.mgBotTimer + dt
+            if tsunamiCfg.mgBotTimer >= tsunamiCfg.mgBotDelay then
+                tsunamiCfg.mgBotTimer = 0
+                local btns = FindGameButtons({"fish", "cast", "reel", "pull", "pop", "click", "play", "start", "spin", "roll", "bet"}, nil)
+                if #btns > 0 then
+                    tsunamiCfg.c4Index = tsunamiCfg.c4Index + 1
+                    if tsunamiCfg.c4Index > #btns then tsunamiCfg.c4Index = 1 end
+                    pcall(function() btns[tsunamiCfg.c4Index]:Activate() end)
+                end
+            end
         end
         if tsunamiCfg.c4 then
             tsunamiCfg.c4Timer = tsunamiCfg.c4Timer + dt
@@ -3734,7 +3814,7 @@ function UpdateRightContent()
         
     elseif CurrentTab == "  Tsunami" then
         local tsunamiMain = CreateSection(RightContent, "🌊 Tsunami survival")
-        tsunamiStatusLabel = CreateLabel(tsunamiMain, "Ping: --ms · Collect: 0/0 (0%) · C4: OFF", TEXT_PRIMARY)
+        tsunamiStatusLabel = CreateLabel(tsunamiMain, "Ping: --ms · Collect: 0/0 (0%) · MG: OFF", TEXT_PRIMARY)
         CreateToggle(tsunamiMain, "💰 Auto Collect", tsunamiCfg.on, function(val)
             tsunamiCfg.on = val
             if val then
@@ -3766,6 +3846,29 @@ function UpdateRightContent()
         end)
         CreateSlider(tsunamiMain, "Clicker CPS", 1, 30, 10, function(val)
             tsunamiCfg.clickerDelay = 1 / val
+        end)
+        CreateToggle(tsunamiMain, "🐐 God mode", tsunamiCfg.god, function(val)
+            tsunamiCfg.god = val
+            RebuildTsunami()
+        end)
+        CreateToggle(tsunamiMain, "🦘 Auto Jump", tsunamiCfg.autojump, function(val)
+            tsunamiCfg.autojump = val
+            RebuildTsunami()
+        end)
+        CreateToggle(tsunamiMain, "⛈️ Safe zone TP", tsunamiCfg.safe, function(val)
+            tsunamiCfg.safe = val
+            RebuildTsunami()
+        end)
+        CreateSlider(tsunamiMain, "Safe TP interval (sec)", 1, 10, 2, function(val)
+            tsunamiCfg.safeDelay = val
+        end)
+        CreateToggle(tsunamiMain, "🎲 Mini-game bot", tsunamiCfg.mgBot, function(val)
+            tsunamiCfg.mgBot = val
+            tsunamiCfg.mgBotTimer = 0
+            RebuildTsunami()
+        end)
+        CreateSlider(tsunamiMain, "MG bot delay (sec)", 0.3, 3, 0.8, function(val)
+            tsunamiCfg.mgBotDelay = val
         end)
         local c4Section = CreateSection(RightContent, "🔗 Connect 4 bot")
         CreateToggle(c4Section, "🔗 Connect4 bot", tsunamiCfg.c4, function(val)
