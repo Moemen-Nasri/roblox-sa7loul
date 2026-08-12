@@ -138,6 +138,7 @@ local selectedPlayer = nil
 local selectedPlayerLabel = nil
 local bringOrigins = {}
 local flyFx = {}
+local voiceFx = {active = false, hub = nil, saved = {}}
 local adminRemotesCache = nil
 local unpack2 = table.unpack or unpack
 
@@ -274,8 +275,8 @@ local function StartBring(targetName)
                 bp = Instance.new("BodyPosition")
                 bp.Name = "BringHold"
                 bp.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                bp.P = 40000
-                bp.D = 8000
+                bp.P = 60000
+                bp.D = 5000
                 bp.Position = targetRoot.Position
                 bp.Parent = targetRoot
             end
@@ -285,30 +286,13 @@ local function StartBring(targetName)
             
             local targetPos = myRoot.Position + (myRoot.CFrame.LookVector * 4)
             targetPos = Vector3.new(targetPos.X, myRoot.Position.Y, targetPos.Z)
-            local delta = targetPos - targetRoot.Position
-            if delta.Magnitude > 4 then delta = delta.Unit * 4 end
             bp.Position = targetPos
-            for _, part in ipairs(target.Character:GetDescendants()) do
-                if part:IsA("BasePart") and part ~= targetRoot then
-                    part.Anchored = true
-                    part.CFrame = part.CFrame + delta
-                end
-            end
-            targetRoot.Anchored = true
-            targetRoot.CFrame = CFrame.new(targetPos)
-            targetRoot.AssemblyLinearVelocity = Vector3.zero
-            targetRoot.AssemblyAngularVelocity = Vector3.zero
             
             RunService.RenderStepped:Wait()
         end
         
         if bp and bp.Parent then bp:Destroy() end
         if hum then hum.PlatformStand = false end
-        if target.Character then
-            for _, part in pairs(target.Character:GetDescendants()) do
-                if part:IsA("BasePart") then part.Anchored = false end
-            end
-        end
         bringActive = false
         notif("Bring stopped", 2)
     end)()
@@ -971,23 +955,26 @@ local function UnbringPlayer(player)
     if save then
         bringOrigins[player] = nil
         local ok = pcall(function()
-            for part, cf in pairs(save.parts) do
-                if part and part.Parent then
-                    part.CFrame = cf
-                    part.Anchored = false
-                end
-            end
             if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 local root = player.Character.HumanoidRootPart
-                root.CFrame = save.root
-                root.Anchored = false
                 if root:FindFirstChild("BringHold") then
                     root.BringHold:Destroy()
                 end
                 if root:FindFirstChild("BringAllHold") then
                     root.BringAllHold:Destroy()
                 end
+                local bp = Instance.new("BodyPosition")
+                bp.Name = "UnbringTP"
+                bp.P = 9e9
+                bp.D = 2e4
+                bp.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                bp.Position = save.root.Position
+                bp.Parent = root
+                task.wait(0.2)
+                if bp.Parent then bp:Destroy() end
             end
+            local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.PlatformStand = false end
         end)
         if ok then return true end
     end
@@ -1073,28 +1060,133 @@ local function GiveFlyNoClip()
     local fx = flyFx[lp]
     if fx then
         if fx.connection then fx.connection:Disconnect() end
-        settings.Fly = false
-        UpdateFly()
         if lp.Character then
             for _, part in ipairs(lp.Character:GetDescendants()) do
                 if part:IsA("BasePart") then part.CanCollide = true end
             end
+            local hum = lp.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.PlatformStand = false end
         end
         flyFx[lp] = nil
         notif("Fly+NoClip OFF", 2)
         return
     end
     
-    settings.Fly = true
-    UpdateFly()
-    local nc = RunService.RenderStepped:Connect(function()
-        if not lp.Character then return end
-        for _, part in ipairs(lp.Character:GetDescendants()) do
+    local speed = settings.flySpeed or 50
+    local conn = RunService.RenderStepped:Connect(function(dt)
+        local chr = lp.Character
+        if not (chr and chr:FindFirstChild("HumanoidRootPart")) then return end
+        local root = chr.HumanoidRootPart
+        local cam = workspace.CurrentCamera
+        local moveDir = Vector3.new()
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir + Vector3.new(0, -1, 0) end
+        if moveDir.Magnitude > 0 then
+            moveDir = moveDir.Unit * speed * dt
+            root.CFrame = root.CFrame + moveDir
+        end
+        root.AssemblyLinearVelocity = Vector3.zero
+        for _, part in ipairs(chr:GetDescendants()) do
             if part:IsA("BasePart") then part.CanCollide = false end
         end
+        local hum = chr:FindFirstChildOfClass("Humanoid")
+        if hum then hum.PlatformStand = true end
     end)
-    flyFx[lp] = {connection = nc}
+    flyFx[lp] = {connection = conn}
     notif("Fly+NoClip ON (WASD + Space/LCtrl)", 2)
+end
+
+local function ToggleMicBypass()
+    local lpPlayer = lp
+    if not lpPlayer then return end
+    if voiceFx.active then
+        for _, w in ipairs(voiceFx.saved) do
+            if w.Wire and not w.Wire.Parent then
+                w.Wire.Parent = w.OriginalParent
+            end
+        end
+        if voiceFx.hub and voiceFx.hub.Parent then voiceFx.hub:Destroy() end
+        voiceFx = {}
+        notif("Mic Bypass OFF", 2)
+        return
+    end
+    
+    local ok, enabled = pcall(function()
+        return game:GetService("VoiceChatService"):IsVoiceEnabledForUserIdAsync(lpPlayer.UserId)
+    end)
+    if not ok or not enabled then
+        notif("Voice chat not enabled on your account", 3)
+        return
+    end
+    
+    for i = 1, 3 do
+        pcall(function() game:GetService("VoiceChatService"):joinVoice() end)
+        task.wait(0.1)
+    end
+    
+    local input = lpPlayer:FindFirstChildOfClass("AudioDeviceInput")
+    if not input then
+        notif("Mic not found", 3)
+        return
+    end
+    
+    local saved = {}
+    for _, w in ipairs(lpPlayer:GetDescendants()) do
+        if w:IsA("Wire") and w.SourceInstance == input then
+            table.insert(saved, {Wire = w, OriginalParent = w.Parent})
+            w.Parent = nil
+        end
+    end
+    
+    if lpPlayer.Character and lpPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local root = lpPlayer.Character.HumanoidRootPart
+        local hub = Instance.new("Part")
+        hub.Name = "VoiceHub"
+        hub.Size = Vector3.new(1, 1, 1)
+        hub.Transparency = 1
+        hub.CanCollide = false
+        hub.Anchored = false
+        hub.Parent = root
+        local motor = Instance.new("Motor6D")
+        motor.Part0 = root
+        motor.Part1 = hub
+        motor.C0 = CFrame.new(0, 0, 0)
+        motor.Parent = root
+        
+        local source = input
+        local pitchOk, pitch = pcall(function()
+            local p = Instance.new("AudioPitchShifter")
+            p.Name = "Sa7loulPitch"
+            p.Pitch = 1.4
+            p.Parent = hub
+            return p
+        end)
+        if pitchOk and pitch then
+            local w1 = Instance.new("Wire")
+            w1.Name = "Sa7loulW1"
+            w1.SourceInstance = source
+            w1.TargetInstance = pitch
+            w1.Parent = hub
+            source = pitch
+        end
+        local emitter = Instance.new("AudioEmitter")
+        emitter.Name = "Sa7loulEmitter"
+        emitter.Parent = hub
+        local w2 = Instance.new("Wire")
+        w2.Name = "Sa7loulW2"
+        w2.SourceInstance = source
+        w2.TargetInstance = emitter
+        w2.Parent = hub
+        
+        voiceFx = {hub = hub, saved = saved, active = true}
+        notif("🎤 Mic Bypass ON", 2)
+    else
+        notif("No character — enter a game first", 2)
+    end
 end
 
 local function isKillerNearby(position, radius)
@@ -1829,6 +1921,62 @@ CloseBtn.MouseButton1Click:Connect(function()
     }):Play()
     task.wait(0.3)
     h:Destroy()
+end)
+
+-- MINIMIZE (collapses to a small bar)
+local MiniBar = Instance.new("Frame")
+MiniBar.Parent = h
+MiniBar.AnchorPoint = Vector2.new(1, 0)
+MiniBar.Position = UDim2.new(1, -12, 0, 12)
+MiniBar.Size = UDim2.new(0, 170, 0, 36)
+MiniBar.BackgroundColor3 = BG_PANEL
+MiniBar.BorderSizePixel = 0
+MiniBar.BackgroundTransparency = 0.1
+MiniBar.Visible = false
+Instance.new("UICorner", MiniBar).CornerRadius = UDim.new(0, 10)
+
+local MiniBarBtn = Instance.new("TextButton")
+MiniBarBtn.Parent = MiniBar
+MiniBarBtn.Size = UDim2.new(1, 0, 1, 0)
+MiniBarBtn.BackgroundTransparency = 1
+MiniBarBtn.Font = Enum.Font.GothamBold
+MiniBarBtn.Text = "✦ sa7loul  +"
+MiniBarBtn.TextColor3 = ACCENT
+MiniBarBtn.TextSize = 14
+MiniBarBtn.MouseEnter:Connect(function()
+    TweenService:Create(MiniBarBtn, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+end)
+MiniBarBtn.MouseLeave:Connect(function()
+    TweenService:Create(MiniBarBtn, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {TextColor3 = ACCENT}):Play()
+end)
+MiniBarBtn.MouseButton1Click:Connect(function()
+    MiniBar.Visible = false
+    Main.Visible = true
+end)
+
+local MinimBtn = Instance.new("TextButton")
+MinimBtn.Parent = TopBar
+MinimBtn.BackgroundTransparency = 1
+MinimBtn.Position = UDim2.new(1, -80, 0, 8)
+MinimBtn.Size = UDim2.new(0, 30, 0, 30)
+MinimBtn.Font = Enum.Font.GothamBold
+MinimBtn.Text = "–"
+MinimBtn.TextColor3 = TEXT_SECONDARY
+MinimBtn.TextSize = 18
+MinimBtn.MouseEnter:Connect(function()
+    TweenService:Create(MinimBtn, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {TextColor3 = TEAL}):Play()
+end)
+MinimBtn.MouseLeave:Connect(function()
+    TweenService:Create(MinimBtn, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {TextColor3 = TEXT_SECONDARY}):Play()
+end)
+MinimBtn.MouseButton1Click:Connect(function()
+    TweenService:Create(Main, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        Size = UDim2.new(0, 640, 0, 0),
+        Position = UDim2.new(0.5, -320, 0.3, 0)
+    }):Play()
+    task.wait(0.25)
+    Main.Visible = false
+    MiniBar.Visible = true
 end)
 
 -- LEFT MENU — redesigned with icons and better spacing
@@ -3327,6 +3475,7 @@ function UpdateRightContent()
                 if antiAFKConnection then antiAFKConnection:Disconnect(); antiAFKConnection = nil end
             end
         end)
+        CreateButton(miscSection, "🎤 Mic Bypass", ToggleMicBypass)
         
         local footerFrame = Instance.new("Frame")
         footerFrame.Parent = RightContent
