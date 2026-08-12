@@ -47,6 +47,106 @@ end
 
 
 -- ============================================
+-- STREAM PROOF SYSTEM (DISABLED BY DEFAULT)
+-- ============================================
+
+local StreamProof = {
+    active = false,
+    originalGuiEnabled = true,
+    detectionMethods = {
+        obs = false,
+        nvidia = false,
+        discord = false,
+        generic = false
+    },
+    running = false
+}
+
+local function DetectOBS()
+    return false -- Disabled by default
+end
+
+local function DetectNvidiaOverlay()
+    return false -- Disabled by default
+end
+
+local function DetectDiscordStreaming()
+    return false -- Disabled by default
+end
+
+local function DetectGenericRecording()
+    return false -- Disabled by default
+end
+
+local function UpdateStreamDetection()
+    StreamProof.detectionMethods.obs = DetectOBS()
+    StreamProof.detectionMethods.nvidia = DetectNvidiaOverlay()
+    StreamProof.detectionMethods.discord = DetectDiscordStreaming()
+    StreamProof.detectionMethods.generic = DetectGenericRecording()
+    
+    local anyDetected = StreamProof.detectionMethods.obs or 
+                        StreamProof.detectionMethods.nvidia or 
+                        StreamProof.detectionMethods.discord or 
+                        StreamProof.detection.generic
+    
+    return anyDetected
+end
+
+local function SetGuiVisibility(visible)
+    if StreamProof.originalGuiEnabled ~= visible then
+        StreamProof.originalGuiEnabled = visible
+        
+        local success = pcall(function()
+            local coreGui = game:GetService("CoreGui")
+            local mainGui = coreGui:FindFirstChild("sa7loul_V3")
+            if mainGui then
+                mainGui.Enabled = visible
+            end
+        end)
+    end
+end
+
+local function StartStreamProofDetection()
+    if StreamProof.running then return end
+    StreamProof.running = true
+    
+    spawn(function()
+        while StreamProof.running do
+            local detected = UpdateStreamDetection()
+            
+            if detected and StreamProof.originalGuiEnabled then
+                SetGuiVisibility(false)
+                notif("Stream Proof: GUI Hidden", 2)
+            elseif not detected and not StreamProof.originalGuiEnabled then
+                SetGuiVisibility(true)
+                notif("Stream Proof: GUI Visible", 2)
+            end
+            
+            wait(2)
+        end
+    end)
+end
+
+local function StopStreamProofDetection()
+    StreamProof.running = false
+end
+
+local function ToggleStreamProof()
+    StreamProof.active = not StreamProof.active
+    settings.StreamProof = StreamProof.active
+    
+    if StreamProof.active then
+        StartStreamProofDetection()
+        notif("Stream Proof: Enabled", 2)
+    else
+        StopStreamProofDetection()
+        SetGuiVisibility(true)
+        notif("Stream Proof: Disabled", 2)
+    end
+    return StreamProof.active
+end
+
+-- ============================================
 -- LOGIN GUI SYSTEM
 -- ============================================
 
@@ -242,31 +342,29 @@ local function CreateLoginGui()
     statusLabel.Font = Enum.Font.Gotham
     statusLabel.Parent = mainFrame
     
+    -- Stream Proof Toggle (disabled by default)
+    local streamProofButton = Instance.new("TextButton")
+    streamProofButton.Name = "StreamProofButton"
+    streamProofButton.Size = UDim2.new(1, -40, 0, 35)
+    streamProofButton.Position = UDim2.new(0, 20, 0, 290)
+    streamProofButton.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+    streamProofButton.BorderSizePixel = 0
+    streamProofButton.Text = "Stream Proof: OFF"
+    streamProofButton.TextColor3 = Color3.fromRGB(150, 150, 170)
+    streamProofButton.TextSize = 14
+    streamProofButton.Font = Enum.Font.Gotham
+    streamProofButton.Parent = mainFrame
+    
+    local streamProofCorner = Instance.new("UICorner")
+    streamProofCorner.CornerRadius = UDim.new(0, 8)
+    streamProofCorner.Parent = streamProofButton
+    
     LoginGui.screenGui = screenGui
     LoginGui.mainFrame = mainFrame
     
-    -- Animate in
-    mainFrame.Size = UDim2.new(0, 400, 0, 0)
+    -- Simply show the GUI without complex animations
     mainFrame.Visible = true
-    
-    -- Ensure the GUI is visible
-    spawn(function()
-        wait(0.1)
-        if screenGui and screenGui.Parent then
-            screenGui.Enabled = true
-        end
-        if mainFrame and mainFrame.Parent then
-            mainFrame.Visible = true
-        end
-    end)
-    
-    mainFrame:TweenSize(UDim2.new(0, 400, 0, 350), Enum.EasingDirection.Out, Enum.EasingStyle.Back, 0.5, true, function()
-        -- Ensure it stays visible after animation
-        if mainFrame and mainFrame.Parent then
-            mainFrame.Visible = true
-            mainFrame.Size = UDim2.new(0, 400, 0, 350)
-        end
-    end)
+    screenGui.Enabled = true
     
     -- Load saved credentials
     local savedCredentials = LoadCredentials()
@@ -278,6 +376,12 @@ local function CreateLoginGui()
         rememberCheck.Visible = rememberMe
         if rememberMe then
             rememberButton.BackgroundColor3 = Color3.fromRGB(61, 224, 200)
+        end
+        
+        -- Load stream proof state (but keep it disabled by default)
+        if savedCredentials.streamProof ~= nil then
+            StreamProof.active = false -- Always start disabled
+            settings.StreamProof = false
         end
     end
     
@@ -292,6 +396,27 @@ local function CreateLoginGui()
             TweenService:Create(rememberButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 50)}):Play()
         end
     end)
+    
+    -- Stream proof toggle
+    streamProofButton.MouseButton1Click:Connect(function()
+        local isActive = ToggleStreamProof()
+        if isActive then
+            streamProofButton.Text = "Stream Proof: ON"
+            streamProofButton.TextColor3 = Color3.fromRGB(76, 175, 80)
+            streamProofButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+        else
+            streamProofButton.Text = "Stream Proof: OFF"
+            streamProofButton.TextColor3 = Color3.fromRGB(150, 150, 170)
+            streamProofButton.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+        end
+    end)
+    
+    -- Initialize stream proof button state (disabled by default)
+    if StreamProof.active then
+        streamProofButton.Text = "Stream Proof: ON"
+        streamProofButton.TextColor3 = Color3.fromRGB(76, 175, 80)
+        streamProofButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+    end
     
     -- Login button
     loginButton.MouseButton1Click:Connect(function()
@@ -391,7 +516,8 @@ local function CreateLoginGui()
                 if rememberMe then
                     SaveCredentials({
                         license = license, 
-                        rememberMe = true
+                        rememberMe = true,
+                        streamProof = StreamProof.active
                     })
                 else
                     ClearCredentials()
@@ -450,6 +576,11 @@ local function WaitForAuthentication()
         wait(0.1)
     end
     
+    -- Start stream proof if it was enabled (but keep it disabled by default)
+    if StreamProof.active then
+        StartStreamProofDetection()
+    end
+    
     return LoginGui.session
 end
 
@@ -486,7 +617,8 @@ local defaultSettings = {
     AutoEscape = false,
     AntiAFK = false,
     AntiTrap = false,
-    PanicTP = false
+    PanicTP = false,
+    StreamProof = false
 }
 
 local userScripts = {}
@@ -554,6 +686,9 @@ local settings = {}
 for k, v in pairs(defaultSettings) do
     settings[k] = v
 end
+
+-- Initialize StreamProof from settings (disabled by default)
+StreamProof.active = settings.StreamProof or false
 
 local spinActive = false
 local spinSpeed = 20
@@ -6782,6 +6917,20 @@ function UpdateRightContent()
                     end)
                 else
                     if antiAFKConnection then antiAFKConnection:Disconnect(); antiAFKConnection = nil end
+                end
+            end
+        })
+        ToggleRow(otherSection, {
+            text = "Stream Proof", id = "streamproof", state = settings.StreamProof,
+            onToggle = function(val)
+                settings.StreamProof = val
+                if val then
+                    StartStreamProofDetection()
+                    notif("Stream Proof: Enabled", 2)
+                else
+                    StopStreamProofDetection()
+                    SetGuiVisibility(true)
+                    notif("Stream Proof: Disabled", 2)
                 end
             end
         })
