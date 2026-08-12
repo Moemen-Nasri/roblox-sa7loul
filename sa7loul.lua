@@ -1073,47 +1073,27 @@ local function GiveFlyNoClip()
     local fx = flyFx[lp]
     if fx then
         if fx.connection then fx.connection:Disconnect() end
-        if fx.bv and fx.bv.Parent then fx.bv:Destroy() end
+        settings.Fly = false
+        UpdateFly()
         if lp.Character then
             for _, part in ipairs(lp.Character:GetDescendants()) do
                 if part:IsA("BasePart") then part.CanCollide = true end
             end
-            local hum = lp.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum.PlatformStand = false end
         end
         flyFx[lp] = nil
         notif("Fly+NoClip OFF", 2)
         return
     end
     
-    local root = lp.Character.HumanoidRootPart
-    local bv = Instance.new("BodyVelocity")
-    bv.Name = "Sa7loulFly"
-    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-    bv.Velocity = Vector3.new(0, 0, 0)
-    bv.P = 120000
-    bv.Parent = root
-    local speed = 55
-    local conn = RunService.RenderStepped:Connect(function()
-        if not (lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")) then return end
-        local r = lp.Character.HumanoidRootPart
-        local cam = workspace.CurrentCamera
-        local moveDir = Vector3.new()
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir + Vector3.new(0, -1, 0) end
-        if moveDir.Magnitude > 0 then moveDir = moveDir.Unit * speed end
-        bv.Velocity = moveDir
+    settings.Fly = true
+    UpdateFly()
+    local nc = RunService.RenderStepped:Connect(function()
+        if not lp.Character then return end
         for _, part in ipairs(lp.Character:GetDescendants()) do
             if part:IsA("BasePart") then part.CanCollide = false end
         end
-        local hum = lp.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum.PlatformStand = true end
     end)
-    flyFx[lp] = {bv = bv, connection = conn}
+    flyFx[lp] = {connection = nc}
     notif("Fly+NoClip ON (WASD + Space/LCtrl)", 2)
 end
 
@@ -2353,17 +2333,8 @@ local function CreatePlayerEntry(parent, player)
         end)
         createToggleBtn("🌀", TEAL, Color3.fromRGB(30, 150, 130), function()
             if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-                local root = player.Character.HumanoidRootPart
-                local bp = Instance.new("BodyPosition")
-                bp.Name = "Sa7loulTP"
-                bp.P = 9e9
-                bp.D = 2e4
-                bp.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-                bp.Position = lp.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
-                bp.Parent = root
-                task.wait(0.15)
-                if bp.Parent then bp:Destroy() end
-                notif("Teleported: " .. player.Name, 2)
+                lp.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+                notif("Teleported to: " .. player.Name, 2)
             else
                 notif("Player not found", 2)
             end
