@@ -1959,18 +1959,14 @@ end)
 MinimBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     if minimized then
-        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
-            Size = UDim2.new(0, 230, 0, 40)
-        }):Play()
+        Main.Size = UDim2.new(0, 230, 0, 40)
         LeftMenu.Visible = false
         RightContent.Visible = false
         MinimBtn.Text = "+"
     else
         LeftMenu.Visible = true
         RightContent.Visible = true
-        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 640, 0, 520)
-        }):Play()
+        Main.Size = UDim2.new(0, 640, 0, 520)
         MinimBtn.Text = "–"
     end
 end)
