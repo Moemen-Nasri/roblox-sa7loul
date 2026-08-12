@@ -3309,6 +3309,7 @@ MinimBtn.Font = Enum.Font.GothamBold
 MinimBtn.Text = "–"
 MinimBtn.TextColor3 = TEXT_SECONDARY
 MinimBtn.TextSize = 18
+MinimBtn.ZIndex = 50
 MinimBtn.MouseEnter:Connect(function()
     TweenService:Create(MinimBtn, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {TextColor3 = TEAL}):Play()
 end)
@@ -3316,25 +3317,33 @@ MinimBtn.MouseLeave:Connect(function()
     TweenService:Create(MinimBtn, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {TextColor3 = TEXT_SECONDARY}):Play()
 end)
 MinimBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    if minimized then
-        local absPos = Main.AbsolutePosition
-        local screen = h.AbsoluteSize
-        local minX = math.clamp(absPos.X, 0, screen.X - 230)
-        local minY = math.clamp(absPos.Y, 0, screen.Y - 40)
-        Main.Position = UDim2.fromOffset(minX, minY)
-        Main.Size = UDim2.new(0, 230, 0, 40)
+    if not minimized then
+        -- MINIMIZE: snap to the top-left corner, bar fills the whole window
+        minimized = true
+        Main.Position = UDim2.fromOffset(12, 12)
+        Main.Size = UDim2.new(0, 210, 0, 46)
+        Main.BackgroundTransparency = 0
+        TopBar.Size = UDim2.new(1, 0, 1, 0)
+        CloseBtn.Visible = false
         LeftMenu.Visible = false
         RightContent.Visible = false
-        MinimBtn.Size = UDim2.new(1, 0, 1, 0)
+        MinimBtn.Size = UDim2.new(1, -46, 1, 0)
         MinimBtn.Position = UDim2.new(0, 0, 0, 0)
-        MinimBtn.Text = "✚"
+        MinimBtn.TextXAlignment = Enum.TextXAlignment.Left
+        MinimBtn.Text = "✚  sa7loul | STK V2"
     else
+        -- RESTORE: deterministic size + centered position, everything back
+        minimized = false
+        Main.Size = UDim2.new(0, 640, 0, 520)
+        Main.Position = UDim2.new(0.5, -320, 0.3, 0)
+        Main.BackgroundTransparency = 0
+        TopBar.Size = UDim2.new(1, 0, 0, 48)
+        CloseBtn.Visible = true
         LeftMenu.Visible = true
         RightContent.Visible = true
-        Main.Size = UDim2.new(0, 640, 0, 520)
         MinimBtn.Size = UDim2.new(0, 30, 0, 30)
         MinimBtn.Position = UDim2.new(1, -80, 0, 8)
+        MinimBtn.TextXAlignment = Enum.TextXAlignment.Center
         MinimBtn.Text = "–"
     end
 end)
