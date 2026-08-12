@@ -238,10 +238,11 @@ local function WaitForAuthentication()
 end
 
 -- ============================================
--- AUTHENTICATION CHECK
+-- AUTHENTICATION CHECK (BYPASSED FOR TESTING)
 -- ============================================
 
-local session = WaitForAuthentication()
+local session = {license = "test-0000-0000-0000", username = "TestUser"} 
+-- local session = WaitForAuthentication() -- Disabled temporarily to test menu
 
 -- ============================================
 -- MIC BYPASS (LEGITIMATE ROBLOX AUDIO)
