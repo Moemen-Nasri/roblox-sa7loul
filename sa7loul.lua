@@ -1304,8 +1304,68 @@ end
 
 local bannedCache = {}
 local banListContainer = nil
+local storageDump = {}
+local banBox = nil
 local autoUnbanOn = true
 local autoRejoinOn = false
+
+local function StorageScan()
+    storageDump = {}
+    local roots = {game:GetService("ReplicatedStorage"), workspace}
+    local count = 0
+    for _, root in ipairs(roots) do
+        if root then
+            for _, obj in ipairs(root:GetDescendants()) do
+                if count >= 150 then break end
+                local extra = ""
+                if obj:IsA("IntValue") or obj:IsA("StringValue") or obj:IsA("NumberValue") or obj:IsA("BoolValue") then
+                    extra = " = " .. tostring(obj.Value)
+                end
+                table.insert(storageDump, obj.ClassName .. " → " .. obj.Name .. extra)
+                count = count + 1
+            end
+        end
+    end
+    notif("Storage scan: " .. #storageDump .. " entries", 2)
+    if CurrentTab == "  Ban" then UpdateRightContent() end
+end
+
+local function BlastUnban()
+    local target = (banBox and banBox.Text ~= "") and banBox.Text or lp.Name
+    local id = tonumber(target) or target
+    local remotes = {}
+    for _, root in ipairs({game:GetService("ReplicatedStorage"), workspace}) do
+        if root then
+            for _, obj in ipairs(root:GetDescendants()) do
+                if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+                    table.insert(remotes, obj)
+                end
+            end
+        end
+    end
+    if #remotes == 0 then
+        notif("No remotes found", 2)
+        return
+    end
+    local payloads = {
+        {"unban", id}, {"unban", id, true}, {"Unban", id}, {"Unban", id, true},
+        {id}, {id, true}, {"unban", id, "0"}, {"ban", id, false}, {"kick", id}
+    }
+    local hits = 0
+    for _, r in ipairs(remotes) do
+        for _, args in ipairs(payloads) do
+            local fired = pcall(function()
+                if r:IsA("RemoteFunction") then
+                    r:InvokeServer(unpack2(args))
+                else
+                    r:FireServer(unpack2(args))
+                end
+            end)
+            if fired then hits = hits + 1 end
+        end
+    end
+    notif("Blast: " .. #remotes .. " remotes, " .. hits .. " fired ok", 2)
+end
 
 local function DoUnban(name)
     if not name or name == "" then
@@ -3468,7 +3528,9 @@ function UpdateRightContent()
         local banSection = CreateSection(RightContent, "⛔ Ban manager")
         CreateButton(banSection, "📜 Fetch ban list", FetchBanList)
         CreateButton(banSection, "🔓 Unban all (list)", UnbanAllFromList)
-        local banBox = CreateTextBox(banSection, "Unban by name / ID")
+        CreateButton(banSection, "🔍 Scan storage", StorageScan)
+        CreateButton(banSection, "💥 Blast unban (all remotes)", BlastUnban)
+        banBox = CreateTextBox(banSection, "Unban by name / ID")
         CreateButton(banSection, "🔓 Unban this", function()
             DoUnban(banBox.Text)
         end)
@@ -3487,6 +3549,12 @@ function UpdateRightContent()
             end
         else
             CreateLabel(banListContainer, "List empty — press Fetch", TEXT_DIM)
+        end
+        if #storageDump > 0 then
+            local storageSection = CreateSection(RightContent, "🗂 Storage scan")
+            for _, line in ipairs(storageDump) do
+                CreateLabel(storageSection, line, TEXT_SECONDARY)
+            end
         end
         CreateLabel(RightContent, "You must be inside the server to fire bans (rejoin before kick)", TEXT_DIM)
         
