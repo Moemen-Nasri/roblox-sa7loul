@@ -1814,6 +1814,7 @@ do
         score = 0, judged = 0,
         stats = { Perfect = 0, Great = 0, Good = 0, Miss = 0 },
         best = 0,
+        hb = nil,
     }
     local statusLabel = nil
 
@@ -1822,6 +1823,8 @@ do
         KernelDuration  = 1.5,
         SpawnInterval   = 1.35,
         Countdown       = 3,
+        DecoyDelay      = 0.25,  -- decoy ring shows first, then the real ring (like the game)
+        DecoyDuration   = 0.5,
         PerfectWindow   = 0.08,
         GreatWindow     = 0.20,
         GoodWindow      = 0.40,
@@ -1837,6 +1840,8 @@ do
         target = Color3.fromRGB(240, 240, 245),
         gold   = Color3.fromRGB(255, 215, 0),
         green  = Color3.fromRGB(86, 255, 129),
+        amber  = Color3.fromRGB(255, 214, 90),
+        orange = Color3.fromRGB(255, 150, 60),
         blue   = Color3.fromRGB(77, 148, 255),
         red    = Color3.fromRGB(255, 77, 77),
         text   = Color3.fromRGB(240, 240, 245),
@@ -1895,10 +1900,22 @@ do
     local baseSize = POPCONFIG.CircleSize
     local startSize = baseSize * POPCONFIG.RingStartScale
 
-    local function PopcornRadiusAt(elapsed)
-        local t = math.clamp(elapsed / POPCONFIG.KernelDuration, 0, 1)
+    local function PopcornRingProgress(k, now)
+        return math.clamp((now - k.startTime - POPCONFIG.DecoyDelay) / POPCONFIG.KernelDuration, 0, 1)
+    end
+
+    local function PopcornRadiusAt(k, now)
+        local t = PopcornRingProgress(k, now)
         local size = baseSize + (startSize - baseSize) * (1 - t)
         return size / 2
+    end
+
+    local function PopcornPhaseColor(now, perfectAt)
+        local err = math.abs(now - perfectAt)
+        if err <= POPCONFIG.PerfectWindow then return POPCOLORS.green end
+        if err <= POPCONFIG.GreatWindow then return POPCOLORS.amber end
+        if err <= POPCONFIG.GoodWindow then return POPCOLORS.orange end
+        return POPCOLORS.red
     end
 
     local function PopcornRandomPos()
@@ -1911,37 +1928,101 @@ do
 
     local function PopcornSpawnKernel(data)
         local center = PopcornRandomPos()
-        local target = PopcornMakeCircle(baseSize, 5, POPCOLORS.target)
-        target.Position = UDim2.fromOffset(center.X, center.Y)
-        target.Parent = popcornCfg.canvas
+        local now = os.clock()
+
+        -- the popcorn kernel object the circle "comes on" (like the real game)
+        local kernelObj = Instance.new("Frame")
+        kernelObj.Size = UDim2.fromOffset(56, 56)
+        kernelObj.Position = UDim2.fromOffset(center.X, center.Y)
+        kernelObj.AnchorPoint = Vector2.new(0.5, 0.5)
+        kernelObj.BackgroundColor3 = POPCOLORS.kernel
+        kernelObj.BorderSizePixel = 0
+        kernelObj.ZIndex = 4
+        local kCorner = Instance.new("UICorner")
+        kCorner.CornerRadius = UDim.new(0, 10)
+        kCorner.Parent = kernelObj
+        local fluff = Instance.new("Frame")
+        fluff.Size = UDim2.new(0.52, 0, 0.5, 0)
+        fluff.Position = UDim2.new(0.5, 0, 0.16, 0)
+        fluff.AnchorPoint = Vector2.new(0.5, 0)
+        fluff.BackgroundColor3 = Color3.fromRGB(255, 250, 235)
+        fluff.BorderSizePixel = 0
+        fluff.ZIndex = 5
+        local fCorner = Instance.new("UICorner")
+        fCorner.CornerRadius = UDim.new(1, 0)
+        fCorner.Parent = fluff
+        fluff.Parent = kernelObj
+        kernelObj.Parent = popcornCfg.canvas
+
+        -- decoy ring: appears first, shrinks and fades out (game style)
+        local decoy = PopcornMakeCircle(startSize * 0.85, 4, Color3.fromRGB(220, 220, 235))
+        decoy.Position = UDim2.fromOffset(center.X, center.Y)
+        decoy.Parent = popcornCfg.canvas
+        local decoyStroke = decoy:FindFirstChild("UIStroke")
+        decoyStroke.Transparency = 0.5
+        TweenService:Create(decoy,
+            TweenInfo.new(POPCONFIG.DecoyDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
+                Size = UDim2.fromOffset(baseSize + 6, baseSize + 6),
+            }):Play()
+        TweenService:Create(decoyStroke,
+            TweenInfo.new(POPCONFIG.DecoyDuration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Transparency = 1,
+            }):Play()
+
+        -- real shrinking ring: starts right after the decoy, tightens onto the kernel
         local ring = PopcornMakeCircle(startSize, 8, POPCOLORS.kernel)
         ring.Position = UDim2.fromOffset(center.X, center.Y)
+        ring.Visible = false
         ring.Parent = popcornCfg.canvas
+
         local k = {
-            id = data.id, center = center, target = target, ring = ring,
-            startTime = os.clock(), judged = false,
+            id = data.id, center = center, target = kernelObj, ring = ring,
+            decoy = decoy, startTime = now, judged = false,
+            perfectAt = now + POPCONFIG.DecoyDelay + POPCONFIG.KernelDuration,
         }
         table.insert(popcornCfg.kernels, k)
         popcornCfg.spots[data.id] = center
-        TweenService:Create(ring,
-            TweenInfo.new(POPCONFIG.KernelDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
-                Size = UDim2.fromOffset(baseSize, baseSize),
-            }):Play()
+
+        PopcornSchedule(POPCONFIG.DecoyDelay, function()
+            if not k.judged and ring.Parent then
+                ring.Visible = true
+                TweenService:Create(ring,
+                    TweenInfo.new(POPCONFIG.KernelDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
+                        Size = UDim2.fromOffset(baseSize, baseSize),
+                    }):Play()
+            end
+        end)
+        PopcornSchedule(POPCONFIG.DecoyDuration + 0.15, function()
+            if decoy.Parent then decoy:Destroy() end
+        end)
     end
 
-    local function PopcornPopEffect(center)
-        local burst = PopcornMakeCircle(baseSize * 0.8, 6, POPCOLORS.kernel)
+    local function PopcornPopEffect(k)
+        local center = k.center
+        local burst = PopcornMakeCircle(baseSize * 0.7, 6, POPCOLORS.kernel)
         burst.Position = UDim2.fromOffset(center.X, center.Y)
         burst.Parent = popcornCfg.canvas
-        local stroke = burst:FindFirstChild("UIStroke")
+        local bStroke = burst:FindFirstChild("UIStroke")
         TweenService:Create(burst,
             TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.fromOffset(baseSize * 2.6, baseSize * 2.6),
             }):Play()
-        TweenService:Create(stroke,
+        TweenService:Create(bStroke,
             TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Transparency = 1,
             }):Play()
+        -- the kernel itself pops: swells and turns into white popcorn
+        if k.target and k.target.Parent then
+            local tgt = k.target
+            TweenService:Create(tgt,
+                TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    Size = UDim2.fromOffset(84, 84),
+                    BackgroundColor3 = Color3.fromRGB(255, 246, 224),
+                }):Play()
+            task.delay(0.35, function()
+                if tgt.Parent then tgt:Destroy() end
+            end)
+        end
         if popcornCfg.sfx then
             popcornCfg.sfx:Stop()
             popcornCfg.sfx:Play()
@@ -1953,9 +2034,13 @@ do
         for i, kk in ipairs(popcornCfg.kernels) do
             if kk == k then table.remove(popcornCfg.kernels, i) break end
         end
-        k.target:Destroy()
-        k.ring:Destroy()
-        if not silent then PopcornPopEffect(k.center) end
+        if k.decoy and k.decoy.Parent then k.decoy:Destroy() end
+        if k.ring and k.ring.Parent then k.ring:Destroy() end
+        if silent then
+            if k.target and k.target.Parent then k.target:Destroy() end
+        else
+            PopcornPopEffect(k)
+        end
     end
 
     local function PopcornShowText(text, color, center)
@@ -1983,6 +2068,10 @@ do
 
     local function PopcornFinish()
         popcornCfg.active = false
+        if popcornCfg.hb then
+            popcornCfg.hb:Disconnect()
+            popcornCfg.hb = nil
+        end
         for _, t in ipairs(popcornCfg.tasks) do
             t:Cancel()
         end
@@ -2028,12 +2117,13 @@ do
     local function PopcornClick()
         if not popcornCfg.active then return end
         local m = UserInputService:GetMouseLocation()
+        local now = os.clock()
         for i = #popcornCfg.kernels, 1, -1 do
             local k = popcornCfg.kernels[i]
-            local elapsed = os.clock() - k.startTime
-            if elapsed <= POPCONFIG.KernelDuration + POPCONFIG.ClickBuffer then
-                if (m - k.center).Magnitude <= PopcornRadiusAt(elapsed) then
-                    local error = math.abs(elapsed - POPCONFIG.KernelDuration)
+            if not k.judged and now >= k.startTime + POPCONFIG.DecoyDelay
+                and now <= k.perfectAt + POPCONFIG.GoodWindow + POPCONFIG.ClickBuffer then
+                if (m - k.center).Magnitude <= PopcornRadiusAt(k, now) then
+                    local error = math.abs(now - k.perfectAt)
                     local judgement, points = "Miss", 0
                     if error <= POPCONFIG.PerfectWindow then
                         judgement, points = "Perfect", POPCONFIG.Points.Perfect
@@ -2084,13 +2174,28 @@ do
         popcornCfg.countdown.Visible = false
         if not popcornCfg.active then return end
 
+        if popcornCfg.hb then
+            popcornCfg.hb:Disconnect()
+        end
+        popcornCfg.hb = RunService.Heartbeat:Connect(function()
+            local now = os.clock()
+            for _, k in ipairs(popcornCfg.kernels) do
+                if not k.judged then
+                    local stroke = k.ring:FindFirstChild("UIStroke")
+                    if stroke then
+                        stroke.Color = PopcornPhaseColor(now, k.perfectAt)
+                    end
+                end
+            end
+        end)
+
         for id = 1, POPCONFIG.KernelCount do
             local kernelId = id
             local delay = (id - 1) * POPCONFIG.SpawnInterval
             PopcornSchedule(delay, function()
                 PopcornSpawnKernel({ id = kernelId })
             end)
-            PopcornSchedule(delay + POPCONFIG.KernelDuration + POPCONFIG.GoodWindow + 0.1, function()
+            PopcornSchedule(delay + POPCONFIG.DecoyDelay + POPCONFIG.KernelDuration + POPCONFIG.GoodWindow + 0.1, function()
                 for _, k in ipairs(popcornCfg.kernels) do
                     if k.id == kernelId then
                         PopcornJudged(k, "Miss", 0)
@@ -2103,6 +2208,10 @@ do
 
     local function PopcornStop()
         popcornCfg.active = false
+        if popcornCfg.hb then
+            popcornCfg.hb:Disconnect()
+            popcornCfg.hb = nil
+        end
         for _, t in ipairs(popcornCfg.tasks) do
             t:Cancel()
         end
@@ -4329,8 +4438,8 @@ function UpdateRightContent()
                 PopcornBurstAPI.Stop()
             end
         end)
-        CreateLabel(tsunamiMain, "Click the golden ring exactly when it meets the white target ring!", TEXT_DIM)
-        CreateLabel(tsunamiMain, "Perfect +100 | Great +50 | Good +20 | Miss 0", TEXT_DIM)
+        CreateLabel(tsunamiMain, "Decoy ring first, then the real ring over the corn — click when it goes GREEN!", TEXT_DIM)
+        CreateLabel(tsunamiMain, "Green = Perfect +100 | yellow = Great +50 | orange = Good +20 | red = Miss", TEXT_DIM)
         CreateLabel(tsunamiMain, "12 kernels per round · best score saved to sa7loul_popcorn.json", TEXT_DIM)
         
     elseif CurrentTab == "  More" then
