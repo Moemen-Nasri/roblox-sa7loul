@@ -1884,12 +1884,15 @@ do
     PopcornLoadBest()
 
     -- ===== TABLE BUILD (client-side; replicates to the server) =====
-    local function PopcornBuildTable()
+    local function PopcornBuildTable(buildPos)
         if popcornCfg.tableModel and popcornCfg.tableModel.Parent then return end
 
         local tableModel = Instance.new("Model")
         tableModel.Name = "PopcornTable_" .. lp.Name
         tableModel.Parent = Workspace
+
+        -- build the table AT the player (in front of them) so it's always visible
+        local origin = buildPos or Vector3.new(0, 6, 0)
 
         local function mkPart(name, size, pos, color, material, parent)
             local p = Instance.new("Part")
@@ -1906,13 +1909,13 @@ do
             return p
         end
 
-        local top = mkPart("TableTop", Vector3.new(6, 0.4, 4), Vector3.new(0, 6, 0),
+        local top = mkPart("TableTop", Vector3.new(6, 0.4, 4), origin,
             Color3.fromRGB(120, 82, 48))
-        mkPart("Leg1", Vector3.new(0.3, 4.2, 0.3), Vector3.new(-2.6, 3.8, -1.6), Color3.fromRGB(90, 60, 35), nil, top)
-        mkPart("Leg2", Vector3.new(0.3, 4.2, 0.3), Vector3.new(2.6, 3.8, -1.6), Color3.fromRGB(90, 60, 35), nil, top)
-        mkPart("Leg3", Vector3.new(0.3, 4.2, 0.3), Vector3.new(-2.6, 3.8, 1.6), Color3.fromRGB(90, 60, 35), nil, top)
-        mkPart("Leg4", Vector3.new(0.3, 4.2, 0.3), Vector3.new(2.6, 3.8, 1.6), Color3.fromRGB(90, 60, 35), nil, top)
-        local deco = mkPart("BoardDeco", Vector3.new(3.2, 0.08, 3.6), Vector3.new(0, 6.26, 0),
+        mkPart("Leg1", Vector3.new(0.3, 4.2, 0.3), origin + Vector3.new(-2.6, -2.2, -1.6), Color3.fromRGB(90, 60, 35), nil, top)
+        mkPart("Leg2", Vector3.new(0.3, 4.2, 0.3), origin + Vector3.new(2.6, -2.2, -1.6), Color3.fromRGB(90, 60, 35), nil, top)
+        mkPart("Leg3", Vector3.new(0.3, 4.2, 0.3), origin + Vector3.new(-2.6, -2.2, 1.6), Color3.fromRGB(90, 60, 35), nil, top)
+        mkPart("Leg4", Vector3.new(0.3, 4.2, 0.3), origin + Vector3.new(2.6, -2.2, 1.6), Color3.fromRGB(90, 60, 35), nil, top)
+        local deco = mkPart("BoardDeco", Vector3.new(3.2, 0.08, 3.6), origin + Vector3.new(0, 0.26, 0),
             Color3.fromRGB(255, 200, 60), Enum.Material.Neon, top)
         deco.Transparency = 0.85
 
@@ -1928,8 +1931,8 @@ do
             seat.Parent = tableModel
             return seat
         end
-        popcornCfg.seat1 = mkSeat("Seat1", Vector3.new(-1.6, 6.05, 3.4))
-        popcornCfg.seat2 = mkSeat("Seat2", Vector3.new(1.6, 6.05, 3.4))
+        popcornCfg.seat1 = mkSeat("Seat1", origin + Vector3.new(-1.6, 0.05, 3.4))
+        popcornCfg.seat2 = mkSeat("Seat2", origin + Vector3.new(1.6, 0.05, 3.4))
         popcornCfg.seats = { popcornCfg.seat1, popcornCfg.seat2 }
 
         -- digital score display on the table edge, facing the players
@@ -1968,7 +1971,7 @@ do
         timer.Font = Enum.Font.Gotham
         timer.TextSize = 24
         timer.TextColor3 = Color3.fromRGB(255, 215, 0)
-        timer.Text = "Press E near a seat to play"
+        timer.Text = "Walk into a seat to play (or press E)"
         timer.Parent = scoreGui
 
         local targets = Instance.new("Folder")
@@ -2408,7 +2411,7 @@ do
                 for _, child in ipairs(popcornCfg.kernelTargets:GetChildren()) do
                     child:Destroy()
                 end
-                PopcornSetScore(sMe, sBot, "Press E near a seat to play")
+                PopcornSetScore(sMe, sBot, "Walk into a seat to play (or press E)")
                 PopcornUpdateStatus()
             end)
         end)
@@ -2477,6 +2480,23 @@ do
     end)
 
     -- ===== SIT / STAND (E near a seat) =====
+    -- force-sit with fallback: :Sit() first, then teleport onto the seat
+    local function PopcornTrySit(seat)
+        local char = lp.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hum or not hrp then return false end
+        pcall(function() hum:Sit() end)
+        task.wait(0.4)
+        if hum.Seated and hum.SeatPart == seat then return true end
+        pcall(function()
+            hrp.CFrame = seat.CFrame * CFrame.new(0, 1.3, 0)
+            hum.Sit = true
+        end)
+        task.wait(0.4)
+        return hum.Seated == true
+    end
+
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
         if input.KeyCode ~= Enum.KeyCode.E then return end
@@ -2484,37 +2504,56 @@ do
 
         if popcornCfg.mode == "playing" then
             PopcornCleanupRound()
-            PopcornSetScore(0, 0, "Press E near a seat to play")
+            PopcornSetScore(0, 0, "Walk into a seat to play (or press E)")
             return
         end
 
         local char = lp.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if not hum then return end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        local nearest, best = nil, 6
-        for _, seat in ipairs(popcornCfg.seats) do
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local nearest, best = nil, 8
+        for _, seat in ipairs(popcornCfg.seats or {}) do
             local d = hrp and (hrp.Position - seat.Position).Magnitude or math.huge
             if d < best then best, nearest = d, seat end
         end
         if nearest then
-            hum:Sit()
-            task.wait(0.35)
-            PopcornStartRound()
+            PopcornTrySit(nearest)
+            PopcornStartRound() -- works seated OR standing next to the board
         end
     end)
 
-    -- standing up mid-round = round cancelled
+    -- AUTO-SIT: walking into a seat starts the round (no key needed)
+    task.spawn(function()
+        while true do
+            task.wait(0.3)
+            if popcornCfg.active and popcornCfg.mode == "idle" then
+                local char = lp.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                if hrp and hum and not hum.Seated and popcornCfg.seats then
+                    for _, seat in ipairs(popcornCfg.seats) do
+                        if (hrp.Position - seat.Position).Magnitude <= 2.5 then
+                            PopcornTrySit(seat)
+                            if hum.Seated then PopcornStartRound() end
+                            break
+                        end
+                    end
+                end
+            end
+        end
+    end)
+
+    -- leaving the table area mid-round = round cancelled
     task.spawn(function()
         while true do
             task.wait(0.5)
             if popcornCfg.active and popcornCfg.mode == "playing" then
                 local char = lp.Character
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
-                local seat1, seat2 = popcornCfg.seat1, popcornCfg.seat2
-                if hum and (not hum.Seated or (hum.SeatPart ~= seat1 and hum.SeatPart ~= seat2)) then
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local stillThere = hrp and popcornCfg.tableTop
+                    and (hrp.Position - popcornCfg.tableTop.Position).Magnitude <= 9
+                if not stillThere then
                     PopcornCleanupRound()
-                    PopcornSetScore(0, 0, "Press E near a seat to play")
+                    PopcornSetScore(0, 0, "Walk into a seat to play (or press E)")
                 end
             end
         end
@@ -2525,17 +2564,31 @@ do
         task.wait(0.2)
         if popcornCfg.active and popcornCfg.mode == "playing" then
             PopcornCleanupRound()
-            PopcornSetScore(0, 0, "Press E near a seat to play")
+            PopcornSetScore(0, 0, "Walk into a seat to play (or press E)")
         end
     end)
 
     -- ===== API =====
     local function PopcornStart()
         if popcornCfg.active then return end
-        pcall(PopcornBuildTable)
+        local ok, err = pcall(function()
+            -- build the table IN FRONT OF the player so it's instantly visible
+            local char = lp.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local buildPos = Vector3.new(0, 6, 0)
+            if hrp then
+                buildPos = hrp.Position + hrp.CFrame.LookVector * 12
+                buildPos = Vector3.new(buildPos.X, hrp.Position.Y - 0.2, buildPos.Z)
+            end
+            PopcornBuildTable(buildPos)
+        end)
+        if not ok then
+            notif("🍿 Build error: " .. tostring(err), 6)
+            return
+        end
         popcornCfg.active = true
         popcornCfg.mode = "idle"
-        PopcornSetScore(0, 0, "Press E near a seat to play")
+        PopcornSetScore(0, 0, "Walk into a seat to play (or press E)")
         if not popcornCfg.sfx then
             local sfx = Instance.new("Sound")
             sfx.SoundId = POPCONFIG.PopSfxId
@@ -2544,7 +2597,7 @@ do
             popcornCfg.sfx = sfx
         end
         PopcornUpdateStatus()
-        notif("🍿 Popcorn Burst ON — walk to the table and press E", 3)
+        notif("🍿 Table built in front of you — walk into a seat", 4)
     end
 
     local function PopcornStop()
@@ -4643,10 +4696,9 @@ function UpdateRightContent()
         PopcornBurstAPI.SetStatusLabel(stLabel)
         PopcornBurstAPI.UpdateStatus()
         CreateToggle(tsunamiMain, "🍿 Play Popcorn Burst", PopcornBurstAPI.IsActive(), function(val)
-            if val then
-                PopcornBurstAPI.Start()
-            else
-                PopcornBurstAPI.Stop()
+            local ok, err = pcall(val and PopcornBurstAPI.Start or PopcornBurstAPI.Stop)
+            if not ok then
+                notif("🍿 Error: " .. tostring(err), 6)
             end
         end)
         CreateLabel(tsunamiMain, "3D table builds in-world — walk to it and press E to sit", TEXT_DIM)
