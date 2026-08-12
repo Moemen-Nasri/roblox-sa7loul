@@ -1306,6 +1306,7 @@ local bannedCache = {}
 local banListContainer = nil
 local storageDump = {}
 local banBox = nil
+local customBox = nil
 local autoUnbanOn = true
 local autoRejoinOn = false
 
@@ -1326,8 +1327,55 @@ local function StorageScan()
             end
         end
     end
+    for _, obj in ipairs({game, lp}) do
+        for k, v in pairs(obj:GetAttributes()) do
+            if count < 150 then
+                table.insert(storageDump, "Attr → " .. tostring(k) .. " = " .. tostring(v))
+                count = count + 1
+            end
+        end
+    end
     notif("Storage scan: " .. #storageDump .. " entries", 2)
     if CurrentTab == "  Ban" then UpdateRightContent() end
+end
+
+local function FireCustomRemote()
+    local input = customBox and customBox.Text or ""
+    if input == "" then
+        notif("Write: RemoteName,arg1,arg2", 2)
+        return
+    end
+    local parts = {}
+    for part in string.gmatch(input, "[^,]+") do
+        table.insert(parts, part)
+    end
+    if #parts == 0 then return end
+    local args = {}
+    for i = 2, #parts do
+        if parts[i]:match("^%-?%d+$") then
+            args[i - 1] = tonumber(parts[i])
+        else
+            args[i - 1] = parts[i]
+        end
+    end
+    local remote = nil
+    for _, root in ipairs({game:GetService("ReplicatedStorage"), workspace}) do
+        if root and not remote then
+            remote = root:FindFirstChild(parts[1], true)
+        end
+    end
+    if not remote or not (remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction")) then
+        notif("Remote not found: " .. parts[1], 2)
+        return
+    end
+    local fired = pcall(function()
+        if remote:IsA("RemoteFunction") then
+            remote:InvokeServer(unpack2(args))
+        else
+            remote:FireServer(unpack2(args))
+        end
+    end)
+    notif(fired and ("Fired: " .. parts[1] .. " (" .. #args .. " args)") or "Fire failed", 2)
 end
 
 local function BlastUnban()
@@ -3540,6 +3588,8 @@ function UpdateRightContent()
         CreateToggle(banSection, "🔄 Auto rejoin on kick", autoRejoinOn, function(val)
             autoRejoinOn = val
         end)
+        customBox = CreateTextBox(banSection, "Fire custom: RemoteName,arg1,arg2")
+        CreateButton(banSection, "🔥 Fire custom", FireCustomRemote)
         banListContainer = CreateSection(RightContent, "📋 Banned players")
         if #bannedCache > 0 then
             for _, name in ipairs(bannedCache) do
