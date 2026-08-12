@@ -1128,11 +1128,26 @@ local function ToggleMicBypass()
         task.wait(0.1)
     end
     
-    local input = lpPlayer:FindFirstChildOfClass("AudioDeviceInput")
-    if not input then
-        notif("Mic not found", 3)
-        return
+    local input = nil
+    for _, root in ipairs({lpPlayer, lpPlayer.Character, workspace, game:GetService("CoreGui")}) do
+        if root and not input then
+            input = root:FindFirstChildOfClass("AudioDeviceInput")
+        end
     end
+    if not input then
+        local created
+        created, input = pcall(function()
+            local i = Instance.new("AudioDeviceInput")
+            i.Name = "Sa7loulMic"
+            i.Parent = lpPlayer
+            return i
+        end)
+        if not created or not input then
+            notif("Mic not found (game has no Audio API)", 3)
+            return
+        end
+    end
+    pcall(function() input.Player = lpPlayer end)
     
     local saved = {}
     for _, w in ipairs(lpPlayer:GetDescendants()) do
