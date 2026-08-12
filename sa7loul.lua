@@ -4015,6 +4015,150 @@ local function ClearRightContent()
     end
 end
 
+-- ── CUFF ITEM SPAWNER / GIVER ────────────────────────────────────────────
+local function IsCuffObject(obj)
+    return (obj:IsA("Tool") or obj:IsA("Model") or obj:IsA("BasePart"))
+        and string.lower(obj.Name):find("cuff", 1, true) ~= nil
+end
+
+local function GetAllCuffItemNames()
+    local seen = {}
+    local results = {}
+    local function scan(root)
+        if not root then return end
+        for _, obj in ipairs(root:GetDescendants()) do
+            if IsCuffObject(obj) and not seen[obj.Name] then
+                seen[obj.Name] = true
+                table.insert(results, obj.Name)
+            end
+        end
+    end
+    scan(workspace)
+    scan(game:GetService("ReplicatedStorage"))
+    local players = game:GetService("Players"):GetPlayers()
+    for _, player in ipairs(players) do
+        scan(player:FindFirstChild("Backpack"))
+        local chr = player.Character
+        if chr and chr.Parent then scan(chr) end
+    end
+    return results
+end
+
+local function FindCuffObject(itemName)
+    local function findIn(root)
+        if not root then return nil end
+        return root:FindFirstChild(itemName, true)
+    end
+    local obj = findIn(game:GetService("Players"))
+        or findIn(workspace)
+        or findIn(game:GetService("ReplicatedStorage"))
+    if obj and IsCuffObject(obj) then return obj end
+    return nil
+end
+
+local function PositionItemNearPlayer(item, target)
+    local base = item
+    if item:IsA("Model") then
+        base = item:FindFirstChild("PrimaryPart")
+            or item:FindFirstChildWhichIsA("BasePart")
+    end
+    if not base then return end
+    local targetRoot = target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+    local anchor = targetRoot and targetRoot.CFrame
+        or (lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and lp.Character.HumanoidRootPart.CFrame)
+        or (workspace.CurrentCamera and workspace.CurrentCamera.CFrame)
+        or CFrame.new(0, 50, 0)
+    local ok = pcall(function()
+        if item:IsA("BasePart") then
+            base.CFrame = anchor * CFrame.new(0, 1, 4)
+        else
+            item:PivotTo(anchor * CFrame.new(0, 1, 4))
+        end
+    end)
+    return ok
+end
+
+local function GiveCuffItemToPlayer(itemName, targetPlayer)
+    local target = targetPlayer or lp
+    if not target then
+        notif("No target player", 2)
+        return false
+    end
+    local source = FindCuffObject(itemName)
+    if not source then
+        notif("Cuff item not in game: " .. itemName, 2)
+        return false
+    end
+    local ok = pcall(function()
+        local item = source:Clone()
+        if item:IsA("Tool") then
+            local backpack = target:FindFirstChild("Backpack")
+            if backpack then
+                item.Parent = backpack
+                local hum = target.Character and target.Character:FindFirstChildOfClass("Humanoid")
+                if hum then pcall(function() hum:EquipTool(item) end) end
+            else
+                item.Parent = workspace
+                PositionItemNearPlayer(item, target)
+            end
+        else
+            item.Parent = workspace
+            PositionItemNearPlayer(item, target)
+        end
+    end)
+    if ok then
+        notif("Gave 🔗 " .. itemName .. " ➜ " .. target.Name, 2)
+    else
+        notif("Could not give: " .. itemName, 2)
+    end
+    return ok
+end
+
+local function SpawnCuffItemForMe(itemName)
+    return GiveCuffItemToPlayer(itemName, lp)
+end
+
+local function TakeCuffsFromTarget(target)
+    local targetPlayer = target or lp
+    local taken = 0
+    local function grabFrom(root)
+        if not root then return end
+        for _, obj in ipairs(root:GetChildren()) do
+            if IsCuffObject(obj) then
+                if GiveCuffItemToPlayer(obj.Name, lp) then taken = taken + 1 end
+            end
+        end
+        for _, obj in ipairs(root:GetChildren()) do
+            if obj:IsA("Tool") then grabFrom(obj) end
+        end
+    end
+    if targetPlayer.Character then grabFrom(targetPlayer.Character) end
+    grabFrom(targetPlayer:FindFirstChild("Backpack"))
+    if taken > 0 then
+        notif("Took 🔗 " .. taken .. " cuff item(s) from " .. targetPlayer.Name, 2)
+    else
+        notif("No cuffs found on " .. targetPlayer.Name, 2)
+    end
+    return taken
+end
+
+local function RemoveMyCuffs()
+    local removed = 0
+    local function clearFrom(root)
+        if not root then return end
+        for _, obj in ipairs(root:GetChildren()) do
+            if IsCuffObject(obj) then
+                pcall(function() obj:Destroy() end)
+                removed = removed + 1
+            end
+        end
+    end
+    clearFrom(lp:FindFirstChild("Backpack"))
+    if lp.Character then clearFrom(lp.Character) end
+    notif(removed > 0 and ("Removed 🔗 " .. removed .. " cuff item(s)") or "No cuffs to remove", 2)
+end
+-- ── END CUFF CODE ────────────────────────────────────────────────────────
+
 function UpdateRightContent()
     ClearRightContent()
     
@@ -4696,6 +4840,141 @@ function UpdateRightContent()
                 end
             end
         end)
+        
+        -- 🔗 CUFF ITEMS — spawner / giver
+        local cuffSection = CreateSection(RightContent, "🔗 Cuff items (spawn / give / take)")
+        
+        local cuffStatus = CreateLabel(cuffSection, "Scanning for cuffs...", TEXT_SECONDARY)
+        
+        local cuffRows = Instance.new("Frame")
+        cuffRows.Parent = cuffSection
+        cuffRows.BackgroundTransparency = 1
+        cuffRows.Size = UDim2.new(1, 0, 0, 0)
+        cuffRows.AutomaticSize = Enum.AutomaticSize.Y
+        cuffRows.LayoutOrder = #cuffSection:GetChildren()
+        local cuffListLayout = Instance.new("UIListLayout", cuffRows)
+        cuffListLayout.Padding = UDim.new(0, 6)
+        cuffListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        
+        local function RebuildCuffList()
+            for _, child in ipairs(cuffRows:GetChildren()) do
+                if child:IsA("Frame") or child:IsA("TextLabel") then
+                    child:Destroy()
+                end
+            end
+            local names = GetAllCuffItemNames()
+            if #names == 0 then
+                cuffStatus.Text = "🔗 No cuffs found — start a round & rescan"
+                CreateLabel(cuffRows, "No cuff items in the game right now", TEXT_DIM)
+                return
+            end
+            cuffStatus.Text = "🔗 Found " .. #names .. " cuff item(s)"
+            local selTarget = GetSelectedPlayer()
+            for _, itemName in ipairs(names) do
+                local row = Instance.new("Frame")
+                row.Parent = cuffRows
+                row.BackgroundTransparency = 1
+                row.Size = UDim2.new(1, 0, 0, 34)
+                row.LayoutOrder = #cuffRows:GetChildren()
+                local rowLayout = Instance.new("UIListLayout", row)
+                rowLayout.FillDirection = Enum.FillDirection.Horizontal
+                rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+                rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+                rowLayout.Padding = UDim.new(0, 6)
+                
+                local nameLabel = Instance.new("TextLabel")
+                nameLabel.Parent = row
+                nameLabel.BackgroundTransparency = 1
+                nameLabel.Size = UDim2.new(0.36, 0, 1, 0)
+                nameLabel.Font = Enum.Font.Gotham
+                nameLabel.Text = itemName
+                nameLabel.TextColor3 = TEXT_PRIMARY
+                nameLabel.TextSize = 11
+                nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+                nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+                
+                local spawnBtn = Instance.new("TextButton")
+                spawnBtn.Parent = row
+                spawnBtn.BorderSizePixel = 0
+                spawnBtn.Size = UDim2.new(0.3, 0, 0, 28)
+                spawnBtn.Font = Enum.Font.GothamBold
+                spawnBtn.Text = "🛠 Spawn me"
+                spawnBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                spawnBtn.TextSize = 11
+                spawnBtn.BackgroundColor3 = ACCENT
+                spawnBtn.BackgroundTransparency = 0.3
+                local cuffCorner1 = Instance.new("UICorner", spawnBtn)
+                cuffCorner1.CornerRadius = UDim.new(0, 8)
+                spawnBtn.MouseEnter:Connect(function()
+                    TweenService:Create(spawnBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
+                end)
+                spawnBtn.MouseLeave:Connect(function()
+                    TweenService:Create(spawnBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
+                end)
+                spawnBtn.MouseButton1Click:Connect(function()
+                    SpawnCuffItemForMe(itemName)
+                end)
+                
+                local giveBtn = Instance.new("TextButton")
+                giveBtn.Parent = row
+                giveBtn.BorderSizePixel = 0
+                giveBtn.Size = UDim2.new(0.3, 0, 0, 28)
+                giveBtn.Font = Enum.Font.GothamBold
+                giveBtn.Text = "Give ➜ " .. (selTarget and selTarget.Name or "None")
+                giveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                giveBtn.TextSize = 11
+                giveBtn.BackgroundColor3 = TEAL
+                giveBtn.BackgroundTransparency = 0.3
+                local cuffCorner2 = Instance.new("UICorner", giveBtn)
+                cuffCorner2.CornerRadius = UDim.new(0, 8)
+                giveBtn.MouseEnter:Connect(function()
+                    TweenService:Create(giveBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
+                end)
+                giveBtn.MouseLeave:Connect(function()
+                    TweenService:Create(giveBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
+                end)
+                giveBtn.MouseButton1Click:Connect(function()
+                    local target = GetSelectedPlayer()
+                    if not target then
+                        notif("Select a player first (👤 button)", 2)
+                    else
+                        GiveCuffItemToPlayer(itemName, target)
+                    end
+                end)
+            end
+        end
+        
+        CreateButton(cuffSection, "🔍 Rescan cuffs", RebuildCuffList)
+        
+        local cuffTargetBox = CreateTextBox(cuffSection, "Give to player name (empty = selected)")
+        CreateButton(cuffSection, "🎁 Give every cuff to target", function()
+            local name = cuffTargetBox.Text ~= "" and cuffTargetBox.Text or nil
+            local target = name and GetPlayerByName(name) or GetSelectedPlayer() or lp
+            if not target then
+                notif("Type a name or select a player", 2)
+                return
+            end
+            local names = GetAllCuffItemNames()
+            if #names == 0 then
+                notif("No cuffs found in the game", 2)
+                return
+            end
+            local given = 0
+            for _, itemName in ipairs(names) do
+                if GiveCuffItemToPlayer(itemName, target) then given = given + 1 end
+            end
+            notif("Gave 🔗 " .. given .. " cuff item(s) ➜ " .. target.Name, 2)
+        end)
+        
+        CreateButton(cuffSection, "🛠 Take cuffs from selected player", function()
+            TakeCuffsFromTarget(GetSelectedPlayer())
+        end)
+        
+        CreateButton(cuffSection, "🗑 Remove my cuffs", RemoveMyCuffs)
+        
+        task.defer(RebuildCuffList)
+        
+        CreateLabel(RightContent, "Tip: cuff items are found automatically by name anywhere in the game (backpacks, hands, map). Click 👤 Player above to pick who gets them.", TEXT_DIM)
         
     elseif CurrentTab == "  Ban" then
         local banSection = CreateSection(RightContent, "⛔ Ban manager")
