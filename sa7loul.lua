@@ -1,4 +1,4 @@
--- sa7loul
+-- sa7loul | Survive the Killer V2
 -- Support version v2.31.0
 -- Integrated with Sahloul Auth & Stream Proof
 
@@ -44,214 +44,7 @@ local function ClearCredentials()
     end)
 end
 
--- ============================================
--- STREAM PROOF SYSTEM
--- ============================================
 
-local StreamProof = {
-    active = false,
-    originalGuiEnabled = true,
-    detectionMethods = {
-        obs = false,
-        nvidia = false,
-        discord = false,
-        generic = false
-    },
-    running = false
-}
-
-local function DetectOBS()
-    -- Try to detect OBS by checking for common processes and patterns
-    local success = pcall(function()
-        -- Check for OBS-like behavior patterns
-        local Players = game:GetService("Players")
-        local LocalPlayer = Players.LocalPlayer
-        
-        -- OBS often changes window focus behavior
-        local initialFocused = game:GetService("UserInputService"):IsFocused()
-        wait(0.1)
-        local stillFocused = game:GetService("UserInputService"):IsFocused()
-        
-        -- If focus behavior is unusual, might indicate OBS
-        if initialFocused ~= stillFocused then
-            return true
-        end
-        
-        -- Check for FPS patterns that might indicate recording
-        local fps = game:GetService("Stats").PerformanceStats.FPS
-        if fps and fps.Value < 25 then
-            return true
-        end
-        
-        return false
-    end)
-    return success and false or false
-end
-
-local function DetectNvidiaOverlay()
-    -- Try to detect NVIDIA overlay by checking for specific behaviors
-    local success = pcall(function()
-        -- NVIDIA overlay often causes specific rendering patterns
-        local camera = workspace.CurrentCamera
-        if not camera then return false end
-        
-        -- Check for unusual camera behavior
-        local originalFieldOfView = camera.FieldOfView
-        wait(0.05)
-        local currentFieldOfView = camera.FieldOfView
-        
-        -- NVIDIA overlay might affect FOV
-        if originalFieldOfView ~= currentFieldOfView then
-            return true
-        end
-        
-        -- Check for rendering anomalies
-        local lighting = game:GetService("Lighting")
-        local originalBrightness = lighting.Brightness
-        wait(0.05)
-        local currentBrightness = lighting.Brightness
-        
-        if originalBrightness ~= currentBrightness then
-            return true
-        end
-        
-        return false
-    end)
-    return success and false or false
-end
-
-local function DetectDiscordStreaming()
-    -- Try to detect Discord streaming by checking for audio/video patterns
-    local success = pcall(function()
-        -- Discord streaming often affects audio patterns
-        local VoiceChatService = game:GetService("VoiceChatService")
-        
-        -- Check for unusual voice chat behavior
-        if VoiceChatService then
-            local success = pcall(function()
-                -- Try to access voice chat properties that might be affected
-                local participants = VoiceChatService:GetParticipants()
-                if participants and #participants > 0 then
-                    -- Discord streaming might affect participant count
-                    return true
-                end
-            end)
-        end
-        
-        -- Check for network patterns
-        local NetworkService = game:GetService("NetworkService")
-        if NetworkService then
-            local ping = NetworkService:GetPing()
-            if ping and ping > 200 then
-                -- High ping might indicate streaming
-                return true
-            end
-        end
-        
-        return false
-    end)
-    return success and false or false
-end
-
-local function DetectGenericRecording()
-    -- Generic detection for screen recording
-    local success = pcall(function()
-        -- Check for performance indicators that might suggest recording
-        local stats = game:GetService("Stats")
-        local fps = stats and stats.PerformanceStats and stats.PerformanceStats.FPS
-        
-        if fps and fps.Value < 25 then
-            return true -- Low FPS might indicate recording
-        end
-        
-        -- Check for memory usage patterns
-        local memory = stats and stats.PerformanceStats and stats.PerformanceStats.DataReceiveKbps
-        if memory and memory.Value > 1000 then
-            return true -- High data transfer might indicate recording
-        end
-        
-        -- Check for GPU performance patterns
-        local gpu = stats and stats.PerformanceStats and stats.PerformanceStats.GpuInstanceCount
-        if gpu and gpu.Value > 50 then
-            return true -- High GPU usage might indicate recording
-        end
-        
-        return false
-    end)
-    return success and false or false
-end
-
-local function UpdateStreamDetection()
-    StreamProof.detectionMethods.obs = DetectOBS()
-    StreamProof.detectionMethods.nvidia = DetectNvidiaOverlay()
-    StreamProof.detectionMethods.discord = DetectDiscordStreaming()
-    StreamProof.detectionMethods.generic = DetectGenericRecording()
-    
-    local anyDetected = StreamProof.detectionMethods.obs or 
-                        StreamProof.detectionMethods.nvidia or 
-                        StreamProof.detectionMethods.discord or 
-                        StreamProof.detectionMethods.generic
-    
-    return anyDetected
-end
-
-local function SetGuiVisibility(visible)
-    -- This will be called on the main GUI when it's created
-    if StreamProof.originalGuiEnabled ~= visible then
-        StreamProof.originalGuiEnabled = visible
-        
-        -- Find and toggle the main GUI visibility
-        local success = pcall(function()
-            local coreGui = game:GetService("CoreGui")
-            local mainGui = coreGui:FindFirstChild("sa7loul_V3")
-            if mainGui then
-                mainGui.Enabled = visible
-            end
-        end)
-    end
-end
-
-local function StartStreamProofDetection()
-    if StreamProof.running then return end
-    StreamProof.running = true
-    
-    spawn(function()
-        while StreamProof.running do
-            local detected = UpdateStreamDetection()
-            
-            if detected and StreamProof.originalGuiEnabled then
-                -- Hide GUI when streaming is detected
-                SetGuiVisibility(false)
-                notif("Stream Proof: GUI Hidden", 2)
-            elseif not detected and not StreamProof.originalGuiEnabled then
-                -- Show GUI when streaming stops
-                SetGuiVisibility(true)
-                notif("Stream Proof: GUI Visible", 2)
-            end
-            
-            wait(2) -- Check every 2 seconds
-        end
-    end)
-end
-
-local function StopStreamProofDetection()
-    StreamProof.running = false
-end
-
-local function ToggleStreamProof()
-    StreamProof.active = not StreamProof.active
-    settings.StreamProof = StreamProof.active -- Update settings
-    
-    if StreamProof.active then
-        StartStreamProofDetection()
-        notif("Stream Proof: Enabled", 2)
-    else
-        StopStreamProofDetection()
-        SetGuiVisibility(true)
-        notif("Stream Proof: Disabled", 2)
-    end
-    return StreamProof.active
-end
 
 -- ============================================
 -- LOGIN GUI SYSTEM
@@ -449,23 +242,6 @@ local function CreateLoginGui()
     statusLabel.Font = Enum.Font.Gotham
     statusLabel.Parent = mainFrame
     
-    -- Stream Proof Toggle
-    local streamProofButton = Instance.new("TextButton")
-    streamProofButton.Name = "StreamProofButton"
-    streamProofButton.Size = UDim2.new(1, -40, 0, 35)
-    streamProofButton.Position = UDim2.new(0, 20, 0, 290)
-    streamProofButton.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-    streamProofButton.BorderSizePixel = 0
-    streamProofButton.Text = "Stream Proof: OFF"
-    streamProofButton.TextColor3 = Color3.fromRGB(150, 150, 170)
-    streamProofButton.TextSize = 14
-    streamProofButton.Font = Enum.Font.Gotham
-    streamProofButton.Parent = mainFrame
-    
-    local streamProofCorner = Instance.new("UICorner")
-    streamProofCorner.CornerRadius = UDim.new(0, 8)
-    streamProofCorner.Parent = streamProofButton
-    
     LoginGui.screenGui = screenGui
     LoginGui.mainFrame = mainFrame
     
@@ -503,12 +279,6 @@ local function CreateLoginGui()
         if rememberMe then
             rememberButton.BackgroundColor3 = Color3.fromRGB(61, 224, 200)
         end
-        
-        -- Load stream proof state
-        if savedCredentials.streamProof ~= nil then
-            StreamProof.active = savedCredentials.streamProof
-            settings.StreamProof = savedCredentials.streamProof
-        end
     end
     
     -- Remember me toggle
@@ -522,27 +292,6 @@ local function CreateLoginGui()
             TweenService:Create(rememberButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 50)}):Play()
         end
     end)
-    
-    -- Stream proof toggle
-    streamProofButton.MouseButton1Click:Connect(function()
-        local isActive = ToggleStreamProof()
-        if isActive then
-            streamProofButton.Text = "Stream Proof: ON"
-            streamProofButton.TextColor3 = Color3.fromRGB(76, 175, 80)
-            streamProofButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-        else
-            streamProofButton.Text = "Stream Proof: OFF"
-            streamProofButton.TextColor3 = Color3.fromRGB(150, 150, 170)
-            streamProofButton.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-        end
-    end)
-    
-    -- Initialize stream proof button state
-    if StreamProof.active then
-        streamProofButton.Text = "Stream Proof: ON"
-        streamProofButton.TextColor3 = Color3.fromRGB(76, 175, 80)
-        streamProofButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-    end
     
     -- Login button
     loginButton.MouseButton1Click:Connect(function()
@@ -642,8 +391,7 @@ local function CreateLoginGui()
                 if rememberMe then
                     SaveCredentials({
                         license = license, 
-                        rememberMe = true,
-                        streamProof = StreamProof.active
+                        rememberMe = true
                     })
                 else
                     ClearCredentials()
@@ -702,11 +450,6 @@ local function WaitForAuthentication()
         wait(0.1)
     end
     
-    -- Start stream proof if it was enabled
-    if StreamProof.active then
-        StartStreamProofDetection()
-    end
-    
     return LoginGui.session
 end
 
@@ -743,8 +486,7 @@ local defaultSettings = {
     AutoEscape = false,
     AntiAFK = false,
     AntiTrap = false,
-    PanicTP = false,
-    StreamProof = false
+    PanicTP = false
 }
 
 local userScripts = {}
@@ -812,9 +554,6 @@ local settings = {}
 for k, v in pairs(defaultSettings) do
     settings[k] = v
 end
-
--- Initialize StreamProof from settings
-StreamProof.active = settings.StreamProof or false
 
 local spinActive = false
 local spinSpeed = 20
@@ -7043,20 +6782,6 @@ function UpdateRightContent()
                     end)
                 else
                     if antiAFKConnection then antiAFKConnection:Disconnect(); antiAFKConnection = nil end
-                end
-            end
-        })
-        ToggleRow(otherSection, {
-            text = "Stream Proof", id = "streamproof", state = settings.StreamProof,
-            onToggle = function(val)
-                settings.StreamProof = val
-                if val then
-                    StartStreamProofDetection()
-                    notif("Stream Proof: Enabled", 2)
-                else
-                    StopStreamProofDetection()
-                    SetGuiVisibility(true)
-                    notif("Stream Proof: Disabled", 2)
                 end
             end
         })
