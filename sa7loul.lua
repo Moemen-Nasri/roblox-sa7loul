@@ -1212,16 +1212,29 @@ local function ToggleMicBypass()
     end
 end
 
+local function UnmuteMic()
+    local vc = game:GetService("VoiceChatService")
+    local hits = 0
+    notif("Unmute running (30 reconnects)...", 2)
+    for i = 1, 30 do
+        local ok = pcall(function() vc:joinVoice() end)
+        if ok then hits = hits + 1 end
+        task.wait(2)
+    end
+    notif("Unmute done: " .. hits .. " reconnects", 2)
+end
+
 local function ScanUnbanRemotes()
     local remotes = {}
-    local roots = {game:GetService("ReplicatedStorage"), game:GetService("ServerScriptService"), workspace:FindFirstChild("ServerStorage")}
+    local roots = {game:GetService("ReplicatedStorage"), game:GetService("ServerScriptService"), game:GetService("ServerStorage"), workspace}
     for _, root in ipairs(roots) do
         if root then
             for _, obj in ipairs(root:GetDescendants()) do
                 if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
                     local n = string.lower(obj.Name)
                     if n:match("ban") or n:match("unban") or n:match("kick") or n:match("mod")
-                        or n:match("whitelist") or n:match("admin") or n:match("panel") or n:match("command") then
+                        or n:match("whitelist") or n:match("admin") or n:match("panel") or n:match("command")
+                        or n:match("staff") or n:match("mute") then
                         table.insert(remotes, obj)
                     end
                 end
@@ -1237,12 +1250,15 @@ local function TryUnban()
         notif("No admin/ban remotes found", 2)
         return
     end
+    local uid = tostring(lp.UserId)
     local payloads = {
         {"unban", lp.UserId}, {"unban", lp.Name},
         {"unban", lp.UserId, true}, {"unban", lp.Name, true},
         {"Unban", lp.UserId}, {"Unban", lp.Name},
-        {"unban", lp}, {"whitelist", lp.UserId}, {"whitelist", lp.Name},
-        {"unban", lp.UserId, "0"}
+        {"unbanUser", lp.UserId}, {"unbanByUserId", lp.UserId},
+        {"unban", uid}, {"unban", uid, true},
+        {"whitelist", lp.UserId}, {"whitelist", lp.Name},
+        {"unban", lp}, {"ban", lp.UserId, false}
     }
     local hits = 0
     for _, remote in ipairs(remotes) do
@@ -1256,14 +1272,21 @@ local function TryUnban()
             end)
             if fired then hits = hits + 1 end
         end
-        local raw = pcall(function()
-            if remote:IsA("RemoteFunction") then
-                remote:InvokeServer(lp)
-            else
-                remote:FireServer(lp)
-            end
+        local raw1 = pcall(function()
+            if remote:IsA("RemoteFunction") then remote:InvokeServer(lp)
+            else remote:FireServer(lp) end
         end)
-        if raw then hits = hits + 1 end
+        local raw2 = pcall(function()
+            if remote:IsA("RemoteFunction") then remote:InvokeServer(lp.UserId)
+            else remote:FireServer(lp.UserId) end
+        end)
+        local raw3 = pcall(function()
+            if remote:IsA("RemoteFunction") then remote:InvokeServer(lp.UserId, true)
+            else remote:FireServer(lp.UserId, true) end
+        end)
+        if raw1 then hits = hits + 1 end
+        if raw2 then hits = hits + 1 end
+        if raw3 then hits = hits + 1 end
     end
     notif("Unban attempts fired: " .. hits, 2)
 end
@@ -3564,7 +3587,7 @@ function UpdateRightContent()
         local unbanSection = CreateSection(RightContent, "🛡️ Unban")
         CreateButton(unbanSection, "🛡️ Try Unban", TryUnban)
         CreateButton(unbanSection, "🔁 Rejoin fresh", RejoinFresh)
-        CreateLabel(unbanSection, "DataStore (permanent) bans can't be removed by any script", TEXT_DIM)
+        CreateLabel(unbanSection, "Only works vs remote-based bans; DataStore bans need dev tools", TEXT_DIM)
         
         local miscSection = CreateSection(RightContent, "🔧 Other")
         CreateToggle(miscSection, "Anti-AFK", settings.AntiAFK, function(val)
@@ -3585,6 +3608,7 @@ function UpdateRightContent()
             end
         end)
         CreateButton(miscSection, "🎤 Mic Bypass", ToggleMicBypass)
+        CreateButton(miscSection, "🔓 Unmute mic", UnmuteMic)
         
         local footerFrame = Instance.new("Frame")
         footerFrame.Parent = RightContent
