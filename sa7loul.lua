@@ -534,9 +534,9 @@ function UpdateESPExits()
                             if color and color.Keypoints then
                                 for _, keypoint in ipairs(color.Keypoints) do
                                     local c = keypoint.Value
-                                    local r = math.round(c.R * 10) / 10
-                                    local g = math.round(c.G * 10) / 10
-                                    local b = math.round(c.B * 10) / 10
+                                    local r = math.floor(c.R * 10 + 0.5) / 10
+                                    local g = math.floor(c.G * 10 + 0.5) / 10
+                                    local b = math.floor(c.B * 10 + 0.5) / 10
                                     if not (r == 0 and g == 0 and b == 0) then
                                         isTimerActive = true
                                         break
@@ -744,9 +744,9 @@ function CheckTimerColors()
     if color.Keypoints then
         for _, keypoint in ipairs(color.Keypoints) do
             local c = keypoint.Value
-            local r = math.round(c.R * 10) / 10
-            local g = math.round(c.G * 10) / 10
-            local b = math.round(c.B * 10) / 10
+            local r = math.floor(c.R * 10 + 0.5) / 10
+            local g = math.floor(c.G * 10 + 0.5) / 10
+            local b = math.floor(c.B * 10 + 0.5) / 10
             if not (r == 0 and g == 0 and b == 0) then
                 return true
             end
@@ -2034,7 +2034,7 @@ do
             local targetCF = PopcornBoardView()
             local t0 = os.clock()
             while popcornCfg.cameraBusy do
-                local t = math.clamp((os.clock() - t0) / POPCONFIG.Camera.Duration, 0, 1)
+                local t = math.max(0, math.min(1, (os.clock() - t0) / POPCONFIG.Camera.Duration))
                 local eased = 1 - (1 - t) * (1 - t)
                 cam.CFrame = startCF:Lerp(targetCF, eased)
                 if t >= 1 then break end
@@ -2449,7 +2449,7 @@ do
 
     -- ===== CLICK DETECTION (3D raycast on the board plane) =====
     local function PopcornCurrentRadius(k)
-        local t = math.clamp((os.clock() - k.spawnTime) / POPCONFIG.KernelDuration, 0, 1)
+        local t = math.max(0, math.min(1, (os.clock() - k.spawnTime) / POPCONFIG.KernelDuration))
         return k.startRadius + (k.targetRadius - k.startRadius) * t
     end
 
@@ -3574,11 +3574,13 @@ minimizeBtn.MouseButton1Click:Connect(function()
         Sidebar.Visible = false
         ContentScroll.Visible = false
         SearchBar.Visible = false
+        statusBar.Visible = false
     else
         minimized = false
         Sidebar.Visible = true
         ContentScroll.Visible = true
         SearchBar.Visible = true
+        statusBar.Visible = true
         TweenService:Create(Window, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
             Size = UDim2.new(0, 720, 0, 540),
             AnchorPoint = Vector2.new(0.5, 0.5),
@@ -3777,7 +3779,7 @@ ContentScroll.BackgroundColor3 = UITheme.BG
 ContentScroll.BackgroundTransparency = 0.6
 ContentScroll.BorderSizePixel = 0
 ContentScroll.Position = UDim2.new(0, 182, 0, 108)
-ContentScroll.Size = UDim2.new(1, -194, 1, -122)
+ContentScroll.Size = UDim2.new(1, -194, 1, -154)
 ContentScroll.ScrollBarThickness = 4
 ContentScroll.ScrollBarImageColor3 = UITheme.Accent
 ContentScroll.ScrollBarImageTransparency = 0.4
@@ -3788,6 +3790,44 @@ Instance.new("UIPadding", ContentScroll).PaddingTop = UDim.new(0, 8)
 local contentLayout = Instance.new("UIListLayout", ContentScroll)
 contentLayout.Padding = UDim.new(0, 16)
 contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- ────────────────────────── STATUS BAR ──────────────────────────
+local statusBar = Instance.new("Frame")
+statusBar.Parent = Window
+statusBar.BackgroundColor3 = UITheme.PANEL
+statusBar.BackgroundTransparency = 0.35
+statusBar.BorderSizePixel = 0
+statusBar.Position = UDim2.new(0, 182, 1, -26)
+statusBar.Size = UDim2.new(1, -194, 0, 26)
+Instance.new("UICorner", statusBar).CornerRadius = UDim.new(0, 8)
+Instance.new("UIPadding", statusBar).PaddingLeft = UDim.new(0, 10)
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Parent = statusBar
+statusLabel.BackgroundTransparency = 1
+statusLabel.Size = UDim2.new(1, 0, 1, 0)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.Text = "FPS: --  |  Ping: --ms  |  Players: --  |  RightShift = hide UI"
+statusLabel.TextColor3 = UITheme.SUBTEXT
+statusLabel.TextSize = 10
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.TextYAlignment = Enum.TextYAlignment.Center
+UITheme:RegisterAccent(function(c) statusLabel.TextColor3 = c end)
+
+task.spawn(function()
+    while statusLabel and statusLabel.Parent do
+        local ping = 0
+        pcall(function()
+            ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+        end)
+        local activeCount = 0
+        for _, v in pairs(settings) do
+            if v == true then activeCount = activeCount + 1 end
+        end
+        statusLabel.Text = "FPS: " .. math.floor(fpsMeter) .. "  |  Ping: " .. ping .. "ms  |  Players: " .. #PlayersSvc:GetPlayers() .. "  |  Active toggles: " .. activeCount .. "  |  RightShift = hide UI"
+        task.wait(1)
+    end
+end)
 
 -- ────────────────────────── COMPONENTS ──────────────────────────
 local activeRows = {}
@@ -3819,15 +3859,31 @@ end
 local function Section(parent, title, icon)
     local section = Instance.new("Frame")
     section.Parent = parent
-    section.BackgroundTransparency = 1
+    section.BackgroundColor3 = UITheme.PANEL
+    section.BackgroundTransparency = 0.5
+    section.BorderSizePixel = 0
     section.Size = UDim2.new(1, 0, 0, 0)
     section.AutomaticSize = Enum.AutomaticSize.Y
     section.LayoutOrder = #parent:GetChildren()
+    Instance.new("UICorner", section).CornerRadius = UDim.new(0, 12)
+    local secStroke = Instance.new("UIStroke", section)
+    secStroke.Thickness = 1
+    secStroke.Color = UITheme.BORDER
+    secStroke.Transparency = 0.5
+    UITheme:RegisterAccent(function(c)
+        secStroke.Color = c
+        secStroke.Transparency = 0.25
+    end)
+    local secPad = Instance.new("UIPadding", section)
+    secPad.PaddingLeft = UDim.new(0, 12)
+    secPad.PaddingRight = UDim.new(0, 12)
+    secPad.PaddingTop = UDim.new(0, 8)
+    secPad.PaddingBottom = UDim.new(0, 10)
 
     local head = Instance.new("Frame")
     head.Parent = section
     head.BackgroundTransparency = 1
-    head.Size = UDim2.new(1, 0, 0, 26)
+    head.Size = UDim2.new(1, -24, 0, 26)
 
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Parent = head
@@ -4042,7 +4098,7 @@ local function Slider(parent, opts)
     local function update(x)
         local x0 = track.AbsolutePosition.X
         local w = track.AbsoluteSize.X
-        local t = math.clamp((x - x0) / w, 0, 1)
+        local t = math.max(0, math.min(1, (x - x0) / w))
         current = min + (max - min) * t
         if decimals == 0 then
             current = math.floor(current)
@@ -5104,7 +5160,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 local function RefreshTrollTargetOptions()
-    table.clear(trollTargetOptions)
+    for i = #trollTargetOptions, 1, -1 do table.remove(trollTargetOptions, i) end
     for _, p in ipairs(PlayersSvc:GetPlayers()) do
         if p ~= lp then
             table.insert(trollTargetOptions, { text = p.Name, value = p })
@@ -5581,16 +5637,20 @@ function UpdateRightContent()
         local quick = Section(ContentScroll, "Quick access", "⚡")
         Button(quick, "☄ Player features", function() SwitchTab("  Player") end)
         Button(quick, "☠ Troll features", function() SwitchTab("  Troll") end)
+        Button(quick, "🔧 Item spawner", function() SwitchTab("  Spawner") end)
         Button(quick, "☰ Player list", function() SwitchTab("  Players") end)
         Button(quick, "⚙ Settings", function() SwitchTab("  Settings") end)
 
         local info = Section(ContentScroll, "Changelog V3", "📋")
         local changelog = {
-            "✦ V3 — Full premium redesign (Nova UI)",
-            "✦ Global keybind system for every toggle",
-            "✦ NEW: Troll tab (fling, annoy, fake admin, jumpcare,",
-            "  ghost mode, sneaky seat, earrape, click-TP)",
-            "✦ RGB mode, search bar, draggable header",
+            "✦ V3.1 — Premium polish pass",
+            "✦ NEW: Spawner tab (Ring Box / Sèche-cheveux / Cuffs / Lockers)",
+            "✦ NEW: Jump Power, FOV, Fly+NoClip, TP to downed, random loot TP",
+            "✦ NEW: TP to target · Copy tools · Attack target (Fun tab)",
+            "✦ NEW: Live status bar (FPS / Ping / Players / Active toggles)",
+            "✦ Redesigned section cards, fixed compatibility (old executors)",
+            "✦ RGB mode, search bar, draggable header, keybinds for every toggle",
+            "✦ Troll tab (fling, annoy, fake admin, ghost, earrape, click-TP)",
             "✦ All V2 logic preserved & merged",
         }
         for _, line in ipairs(changelog) do
@@ -5725,6 +5785,39 @@ function UpdateRightContent()
             onChanged = function(val) settings.killAuraRadius = val end
         })
 
+        local powers = Section(ContentScroll, "Powers", "⚡")
+        Slider(powers, {
+            text = "Jump Power", min = 20, max = 160, def = 50,
+            onChanged = function(val)
+                pcall(function()
+                    if lp.Character then
+                        local hum = lp.Character:FindFirstChildOfClass("Humanoid")
+                        if hum then
+                            hum.UseJumpPower = true
+                            hum.JumpPower = val
+                        end
+                    end
+                end)
+            end
+        })
+        local flyRow = Instance.new("Frame")
+        flyRow.Parent = powers
+        flyRow.BackgroundTransparency = 1
+        flyRow.Size = UDim2.new(1, 0, 0, 34)
+        local flyLay = Instance.new("UIListLayout", flyRow)
+        flyLay.FillDirection = Enum.FillDirection.Horizontal
+        flyLay.Padding = UDim.new(0, 6)
+        Button(flyRow, { text = "🦅 Fly + NoClip", size = UDim2.new(0.48, 0, 0, 30), accent = true, callback = GiveFlyNoClip })
+        Button(flyRow, { text = "🔄 Reset jump", size = UDim2.new(0.48, 0, 0, 30), callback = function()
+            pcall(function()
+                if lp.Character then
+                    local hum = lp.Character:FindFirstChildOfClass("Humanoid")
+                    if hum then hum.JumpPower = 50 end
+                    notif("Jump power reset to 50", 2)
+                end
+            end)
+        end })
+
     -- ═══════════ WORLD ═══════════
     elseif CurrentTab == "  World" then
         local visuals = Section(ContentScroll, "Visuals", "✺")
@@ -5829,6 +5922,55 @@ function UpdateRightContent()
                     end
                 end
             end
+        end)
+
+        local camera = Section(ContentScroll, "Camera", "📷")
+        Slider(camera, {
+            text = "Field of View", min = 55, max = 120, def = 70,
+            onChanged = function(val)
+                pcall(function() workspace.CurrentCamera.FieldOfView = val end)
+            end
+        })
+        Button(camera, "↺ Reset FOV (70)", function()
+            pcall(function() workspace.CurrentCamera.FieldOfView = 70 end)
+            notif("FOV reset to 70", 2)
+        end)
+
+        local quickTP = Section(ContentScroll, "Quick teleports", "📡")
+        Button(quickTP, "🧍 Nearest downed player", function()
+            local best, bestDist = nil, math.huge
+            for _, p in ipairs(PlayersSvc:GetPlayers()) do
+                if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and IsPlayerDowned(p) then
+                    local d = (p.Character.HumanoidRootPart.Position - lp.Character.HumanoidRootPart.Position).Magnitude
+                    if d < bestDist then best, bestDist = p, d end
+                end
+            end
+            if best and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                lp.Character.HumanoidRootPart.CFrame = best.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 3)
+                notif("TP to downed: " .. best.Name, 2)
+            else
+                notif("No downed players found", 2)
+            end
+        end)
+        Button(quickTP, "🎲 Random loot spot", function()
+            if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then return end
+            local loot = {}
+            local map = nil
+            for _, child in ipairs(workspace:GetChildren()) do
+                if child:FindFirstChild("LootSpawns") then map = child break end
+            end
+            if map and map:FindFirstChild("LootSpawns") then
+                for _, spot in ipairs(map.LootSpawns:GetChildren()) do
+                    if spot:IsA("BasePart") then table.insert(loot, spot.Position) end
+                end
+            end
+            if #loot == 0 then
+                notif("No loot spots found", 2)
+                return
+            end
+            local pos = loot[math.random(1, #loot)]
+            lp.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+            notif("TP to random loot!", 2)
         end)
 
     -- ═══════════ PLAYERS ═══════════
@@ -6014,6 +6156,67 @@ function UpdateRightContent()
         Button(row5, { text = "🔗 Bring All", size = UDim2.new(0.31, 0, 0, 32), callback = StartBringAll })
         Button(row5, { text = "🔙 Unbring", size = UDim2.new(0.31, 0, 0, 32), callback = UnbringSelected })
         Button(row5, { text = "⏹ Stop", size = UDim2.new(0.31, 0, 0, 32), callback = StopBringAll })
+
+        local row6 = Instance.new("Frame")
+        row6.Parent = actions
+        row6.BackgroundTransparency = 1
+        row6.Size = UDim2.new(1, 0, 0, 34)
+        local lay6 = Instance.new("UIListLayout", row6)
+        lay6.FillDirection = Enum.FillDirection.Horizontal
+        lay6.Padding = UDim.new(0, 6)
+        Button(row6, { text = "🌀 TP to target", size = UDim2.new(0.31, 0, 0, 32), callback = function()
+            local target = GetSelectedPlayer()
+            if not target then notif("Select a player first", 2) return end
+            if target.Character and target.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                lp.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 3)
+                notif("TP to: " .. target.Name, 2)
+            else
+                notif("Player not found", 2)
+            end
+        end })
+        Button(row6, { text = "🪞 Copy tools", size = UDim2.new(0.31, 0, 0, 32), callback = function()
+            local target = GetSelectedPlayer()
+            if not target then notif("Select a player first", 2) return end
+            local copied = 0
+            local backpack = target:FindFirstChild("Backpack")
+            if backpack then
+                for _, tool in ipairs(backpack:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        pcall(function()
+                            tool:Clone().Parent = lp:FindFirstChild("Backpack")
+                            copied = copied + 1
+                        end)
+                    end
+                end
+            end
+            if target.Character then
+                for _, tool in ipairs(target.Character:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        pcall(function()
+                            tool:Clone().Parent = lp:FindFirstChild("Backpack")
+                            copied = copied + 1
+                        end)
+                    end
+                end
+            end
+            notif(copied > 0 and ("Copied " .. copied .. " tool(s) from " .. target.Name) or "No tools found on " .. target.Name, 2)
+        end })
+        Button(row6, { text = "⚡ Attack target", size = UDim2.new(0.31, 0, 0, 32), callback = function()
+            local target = GetSelectedPlayer()
+            if not target then notif("Select a player first", 2) return end
+            if target.Character and target.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                local forward = lp.Character.HumanoidRootPart.CFrame.LookVector
+                target.Character.HumanoidRootPart.CFrame = lp.Character.HumanoidRootPart.CFrame + (forward * 3)
+                task.wait(0.05)
+                local vim = game:GetService("VirtualInputManager")
+                vim:SendMouseButtonEvent(0, 0, 0, true, Enum.UserInputType.MouseButton1, 0)
+                task.wait()
+                vim:SendMouseButtonEvent(0, 0, 0, false, Enum.UserInputType.MouseButton1, 0)
+                notif("Attack: " .. target.Name, 2)
+            else
+                notif("Player not found", 2)
+            end
+        end })
 
         local spinSection = Section(ContentScroll, "Party", "🌀")
         local spinHandle = ToggleRow(spinSection, {
