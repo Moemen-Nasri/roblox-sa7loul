@@ -1,611 +1,10 @@
--- ABSOLUTE MINIMAL TEST
-warn("SA7LOUL SCRIPT STARTED") -- warn() appears in console differently
-
--- Change character color to prove script runs
-spawn(function()
-    local player = game:GetService("Players").LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    local humanoid = character:WaitForChild("Humanoid")
-    
-    if humanoid then
-        humanoid.HealthDisplayDistance = 0
-        humanoid.NameDisplayDistance = 0
-        warn("Character modified - script is running!")
-    end
-end)
-
--- Try to show a message in chat
-spawn(function()
-    local chat = game:GetService("Chat")
-    pcall(function()
-        -- This might not work in all games, but worth trying
-        game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("SayMessageRequest"):FireServer("SA7LOUL SCRIPT LOADED", "All")
-    end)
-end)
-
-warn("SA7LOUL SCRIPT END")
+-- sa7loul | Survive the Killer V2
+-- Support version v2.31.0
 
 local configs = {
     savedConfigs = {},
     currentConfigName = "Default"
 }
-
--- ============================================
--- SAHLOUL AUTH SYSTEM
--- ============================================
-
-local Players = game:GetService("Players")
-local HttpService = game:GetService("HttpService")
-
-local SaveFileName = "sahloul_auth_data.json"
-
-local function SaveCredentials(data)
-    local success = pcall(function()
-        writefile(SaveFileName, HttpService:JSONEncode(data))
-    end)
-    return success
-end
-
-local function LoadCredentials()
-    local success, data = pcall(function()
-        if isfile(SaveFileName) then
-            return HttpService:JSONDecode(readfile(SaveFileName))
-        end
-        return nil
-    end)
-    if success and data then
-        return data
-    end
-    return nil
-end
-
-local function ClearCredentials()
-    pcall(function()
-        if isfile(SaveFileName) then
-            delfile(SaveFileName)
-        end
-    end)
-end
-
-
-
--- ============================================
--- STREAM PROOF SYSTEM (DISABLED BY DEFAULT)
--- ============================================
-
-local StreamProof = {
-    active = false,
-    originalGuiEnabled = true,
-    detectionMethods = {
-        obs = false,
-        nvidia = false,
-        discord = false,
-        generic = false
-    },
-    running = false
-}
-
-local function DetectOBS()
-    return false -- Disabled by default
-end
-
-local function DetectNvidiaOverlay()
-    return false -- Disabled by default
-end
-
-local function DetectDiscordStreaming()
-    return false -- Disabled by default
-end
-
-local function DetectGenericRecording()
-    return false -- Disabled by default
-end
-
-local function UpdateStreamDetection()
-    StreamProof.detectionMethods.obs = DetectOBS()
-    StreamProof.detectionMethods.nvidia = DetectNvidiaOverlay()
-    StreamProof.detectionMethods.discord = DetectDiscordStreaming()
-    StreamProof.detectionMethods.generic = DetectGenericRecording()
-    
-    local anyDetected = StreamProof.detectionMethods.obs or 
-                        StreamProof.detectionMethods.nvidia or 
-                        StreamProof.detectionMethods.discord or 
-                        StreamProof.detection.generic
-    
-    return anyDetected
-end
-
-local function SetGuiVisibility(visible)
-    if StreamProof.originalGuiEnabled ~= visible then
-        StreamProof.originalGuiEnabled = visible
-        
-        local success = pcall(function()
-            local coreGui = game:GetService("CoreGui")
-            local mainGui = coreGui:FindFirstChild("sa7loul_V3")
-            if mainGui then
-                mainGui.Enabled = visible
-            end
-        end)
-    end
-end
-
-local function StartStreamProofDetection()
-    if StreamProof.running then return end
-    StreamProof.running = true
-    
-    spawn(function()
-        while StreamProof.running do
-            local detected = UpdateStreamDetection()
-            
-            if detected and StreamProof.originalGuiEnabled then
-                SetGuiVisibility(false)
-                notif("Stream Proof: GUI Hidden", 2)
-            elseif not detected and not StreamProof.originalGuiEnabled then
-                SetGuiVisibility(true)
-                notif("Stream Proof: GUI Visible", 2)
-            end
-            
-            wait(2)
-        end
-    end)
-end
-
-local function StopStreamProofDetection()
-    StreamProof.running = false
-end
-
-local function ToggleStreamProof()
-    StreamProof.active = not StreamProof.active
-    settings.StreamProof = StreamProof.active
-    
-    if StreamProof.active then
-        StartStreamProofDetection()
-        notif("Stream Proof: Enabled", 2)
-    else
-        StopStreamProofDetection()
-        SetGuiVisibility(true)
-        notif("Stream Proof: Disabled", 2)
-    end
-    return StreamProof.active
-end
-
--- ============================================
--- LOGIN GUI SYSTEM
--- ============================================
-
-local LoginGui = {
-    screenGui = nil,
-    mainFrame = nil,
-    authenticated = false,
-    session = nil
-}
-
-local function CreateLoginGui()
-    local CoreGui = game:GetService("CoreGui")
-    
-    -- Remove existing login GUI if present
-    local existingGui = CoreGui:FindFirstChild("SahloulAuthGUI")
-    if existingGui then
-        existingGui:Destroy()
-    end
-    
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "SahloulAuthGUI"
-    screenGui.ResetOnSpawn = false
-    screenGui.IgnoreGuiInset = true
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    screenGui.Parent = CoreGui
-    
-    -- Main Container
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Name = "MainFrame"
-    mainFrame.Size = UDim2.new(0, 400, 0, 350)
-    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -175)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Visible = true
-    mainFrame.Parent = screenGui
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 15)
-    corner.Parent = mainFrame
-    
-    -- Header
-    local header = Instance.new("Frame")
-    header.Name = "Header"
-    header.Size = UDim2.new(1, 0, 0, 60)
-    header.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-    header.BorderSizePixel = 0
-    header.Parent = mainFrame
-    
-    local headerCorner = Instance.new("UICorner")
-    headerCorner.CornerRadius = UDim.new(0, 15)
-    headerCorner.Parent = header
-    
-    local title = Instance.new("TextLabel")
-    title.Name = "Title"
-    title.Size = UDim2.new(1, 0, 1, 0)
-    title.BackgroundTransparency = 1
-    title.Text = "sa7loul Auth"
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextSize = 24
-    title.Font = Enum.Font.GothamBold
-    title.TextXAlignment = Enum.TextXAlignment.Center
-    title.TextYAlignment = Enum.TextYAlignment.Center
-    title.Font = Enum.Font.GothamBold
-    title.Parent = header
-    
-    -- License Input
-    local licenseLabel = Instance.new("TextLabel")
-    licenseLabel.Name = "LicenseLabel"
-    licenseLabel.Size = UDim2.new(1, -40, 0, 25)
-    licenseLabel.Position = UDim2.new(0, 20, 0, 80)
-    licenseLabel.BackgroundTransparency = 1
-    licenseLabel.Text = "License Key"
-    licenseLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
-    licenseLabel.TextSize = 14
-    licenseLabel.Font = Enum.Font.Gotham
-    licenseLabel.TextXAlignment = Enum.TextXAlignment.Left
-    licenseLabel.Parent = mainFrame
-    
-    local licenseBox = Instance.new("TextBox")
-    licenseBox.Name = "LicenseBox"
-    licenseBox.Size = UDim2.new(1, -40, 0, 40)
-    licenseBox.Position = UDim2.new(0, 20, 0, 105)
-    licenseBox.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-    licenseBox.BorderSizePixel = 0
-    licenseBox.Text = ""
-    licenseBox.PlaceholderText = "XXXX-XXXX-XXXX-XXXX"
-    licenseBox.PlaceholderColor3 = Color3.fromRGB(95, 98, 125)
-    licenseBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    licenseBox.TextSize = 16
-    licenseBox.Font = Enum.Font.Gotham
-    licenseBox.Parent = mainFrame
-    
-    local licenseCorner = Instance.new("UICorner")
-    licenseCorner.CornerRadius = UDim.new(0, 8)
-    licenseCorner.Parent = licenseBox
-    
-    local licensePadding = Instance.new("UIPadding")
-    licensePadding.PaddingLeft = UDim.new(0, 15)
-    licensePadding.PaddingRight = UDim.new(0, 15)
-    licensePadding.Parent = licenseBox
-    
-    -- Remember Me
-    local rememberContainer = Instance.new("Frame")
-    rememberContainer.Name = "RememberContainer"
-    rememberContainer.Size = UDim2.new(1, -40, 0, 25)
-    rememberContainer.Position = UDim2.new(0, 20, 0, 155)
-    rememberContainer.BackgroundTransparency = 1
-    rememberContainer.Parent = mainFrame
-    
-    local rememberButton = Instance.new("TextButton")
-    rememberButton.Name = "RememberButton"
-    rememberButton.Size = UDim2.new(0, 20, 0, 20)
-    rememberButton.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-    rememberButton.BorderSizePixel = 0
-    rememberButton.Text = ""
-    rememberButton.Parent = rememberContainer
-    
-    local rememberCorner = Instance.new("UICorner")
-    rememberCorner.CornerRadius = UDim.new(0, 4)
-    rememberCorner.Parent = rememberButton
-    
-    local rememberCheck = Instance.new("Frame")
-    rememberCheck.Name = "RememberCheck"
-    rememberCheck.Size = UDim2.new(0, 12, 0, 12)
-    rememberCheck.Position = UDim2.new(0, 4, 0, 4)
-    rememberCheck.BackgroundColor3 = Color3.fromRGB(61, 224, 200)
-    rememberCheck.BorderSizePixel = 0
-    rememberCheck.Visible = false
-    rememberCheck.Parent = rememberButton
-    
-    local rememberCheckCorner = Instance.new("UICorner")
-    rememberCheckCorner.CornerRadius = UDim.new(0, 2)
-    rememberCheckCorner.Parent = rememberCheck
-    
-    local rememberLabel = Instance.new("TextLabel")
-    rememberLabel.Name = "RememberLabel"
-    rememberLabel.Size = UDim2.new(1, -30, 1, 0)
-    rememberLabel.Position = UDim2.new(0, 30, 0, 0)
-    rememberLabel.BackgroundTransparency = 1
-    rememberLabel.Text = "Remember me"
-    rememberLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
-    rememberLabel.TextSize = 14
-    rememberLabel.Font = Enum.Font.Gotham
-    rememberLabel.TextXAlignment = Enum.TextXAlignment.Left
-    rememberLabel.Parent = rememberContainer
-    
-    -- Login Button
-    local loginButton = Instance.new("TextButton")
-    loginButton.Name = "LoginButton"
-    loginButton.Size = UDim2.new(1, -40, 0, 45)
-    loginButton.Position = UDim2.new(0, 20, 0, 190)
-    loginButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-    loginButton.BorderSizePixel = 0
-    loginButton.Text = "Login"
-    loginButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    loginButton.TextSize = 18
-    loginButton.Font = Enum.Font.GothamBold
-    loginButton.Parent = mainFrame
-    
-    local loginCorner = Instance.new("UICorner")
-    loginCorner.CornerRadius = UDim.new(0, 10)
-    loginCorner.Parent = loginButton
-    
-    -- Status Label
-    local statusLabel = Instance.new("TextLabel")
-    statusLabel.Name = "StatusLabel"
-    statusLabel.Size = UDim2.new(1, -40, 0, 30)
-    statusLabel.Position = UDim2.new(0, 20, 0, 245)
-    statusLabel.BackgroundTransparency = 1
-    statusLabel.Text = ""
-    statusLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
-    statusLabel.TextSize = 14
-    statusLabel.Font = Enum.Font.Gotham
-    statusLabel.Parent = mainFrame
-    
-    -- Stream Proof Toggle (disabled by default)
-    local streamProofButton = Instance.new("TextButton")
-    streamProofButton.Name = "StreamProofButton"
-    streamProofButton.Size = UDim2.new(1, -40, 0, 35)
-    streamProofButton.Position = UDim2.new(0, 20, 0, 290)
-    streamProofButton.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-    streamProofButton.BorderSizePixel = 0
-    streamProofButton.Text = "Stream Proof: OFF"
-    streamProofButton.TextColor3 = Color3.fromRGB(150, 150, 170)
-    streamProofButton.TextSize = 14
-    streamProofButton.Font = Enum.Font.Gotham
-    streamProofButton.Parent = mainFrame
-    
-    local streamProofCorner = Instance.new("UICorner")
-    streamProofCorner.CornerRadius = UDim.new(0, 8)
-    streamProofCorner.Parent = streamProofButton
-    
-    LoginGui.screenGui = screenGui
-    LoginGui.mainFrame = mainFrame
-    
-    -- Force the GUI to be visible
-    screenGui.Enabled = true
-    mainFrame.Visible = true
-    
-    -- Wait a moment and ensure visibility
-    spawn(function()
-        wait(0.1)
-        if screenGui and screenGui.Parent then
-            screenGui.Enabled = true
-        end
-        if mainFrame and mainFrame.Parent then
-            mainFrame.Visible = true
-        end
-    end)
-    
-    -- Load saved credentials
-    local savedCredentials = LoadCredentials()
-    local rememberMe = false
-    
-    if savedCredentials then
-        licenseBox.Text = savedCredentials.license or ""
-        rememberMe = savedCredentials.rememberMe or false
-        rememberCheck.Visible = rememberMe
-        if rememberMe then
-            rememberButton.BackgroundColor3 = Color3.fromRGB(61, 224, 200)
-        end
-        
-        -- Load stream proof state (but keep it disabled by default)
-        if savedCredentials.streamProof ~= nil then
-            StreamProof.active = false -- Always start disabled
-            settings.StreamProof = false
-        end
-    end
-    
-    -- Remember me toggle
-    rememberButton.MouseButton1Click:Connect(function()
-        rememberMe = not rememberMe
-        rememberCheck.Visible = rememberMe
-        
-        if rememberMe then
-            TweenService:Create(rememberButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(61, 224, 200)}):Play()
-        else
-            TweenService:Create(rememberButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 50)}):Play()
-        end
-    end)
-    
-    -- Stream proof toggle
-    streamProofButton.MouseButton1Click:Connect(function()
-        local isActive = ToggleStreamProof()
-        if isActive then
-            streamProofButton.Text = "Stream Proof: ON"
-            streamProofButton.TextColor3 = Color3.fromRGB(76, 175, 80)
-            streamProofButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-        else
-            streamProofButton.Text = "Stream Proof: OFF"
-            streamProofButton.TextColor3 = Color3.fromRGB(150, 150, 170)
-            streamProofButton.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-        end
-    end)
-    
-    -- Initialize stream proof button state (disabled by default)
-    if StreamProof.active then
-        streamProofButton.Text = "Stream Proof: ON"
-        streamProofButton.TextColor3 = Color3.fromRGB(76, 175, 80)
-        streamProofButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-    end
-    
-    -- Login button
-    loginButton.MouseButton1Click:Connect(function()
-        local license = licenseBox.Text
-        
-        if license == "" then
-            statusLabel.Text = "Error: Please enter a license key"
-            statusLabel.TextColor3 = Color3.fromRGB(244, 67, 54)
-            return
-        end
-        
-        statusLabel.Text = "Loading..."
-        statusLabel.TextColor3 = Color3.fromRGB(61, 224, 200)
-        
-        -- Real Sahloul Auth integration
-        spawn(function()
-            local APP_NAME = "s7roblox"
-            local APP_SECRET = "5UQZZajX4YOrEnjTS9GwHKFNhM7rQ7tQ"
-            
-            -- Generate HWID
-            local hwid = game:GetService("Players").LocalPlayer.UserId .. "_" .. tick()
-            
-            -- Make HTTP request to Sahloul Auth API
-            local success, result = pcall(function()
-                local url = "https://auth.sahloul.dev/api/v1/liclogin"
-                local data = {
-                    appname = APP_NAME,
-                    license = license,
-                    hwid = hwid
-                }
-                
-                -- Try multiple methods for HTTP request
-                local response = nil
-                
-                -- Method 1: HttpService:RequestAsync
-                local method1Success = pcall(function()
-                    response = HttpService:RequestAsync({
-                        Url = url,
-                        Method = "POST",
-                        Headers = {
-                            ["Content-Type"] = "application/json",
-                            ["X-Sahloul-App"] = APP_NAME,
-                            ["X-Sahloul-Secret"] = APP_SECRET
-                        },
-                        Body = HttpService:JSONEncode(data)
-                    })
-                end)
-                
-                -- Method 2: game:HttpPost (fallback)
-                if not method1Success or not response then
-                    local method2Success = pcall(function()
-                        local body = game:HttpPost(url, HttpService:JSONEncode(data), false, {
-                            ["Content-Type"] = "application/json",
-                            ["X-Sahloul-App"] = APP_NAME,
-                            ["X-Sahloul-Secret"] = APP_SECRET
-                        })
-                        if body then
-                            response = {Success = true, Body = body}
-                        end
-                    end)
-                end
-                
-                -- Method 3: Fallback to license format validation if HTTP fails
-                if not response or not response.Success then
-                    -- Fallback: Accept any valid license format for testing
-                    if license:match("^%w%w%w%w%-%w%w%w%w%-%w%w%w%w%-%w%w%w%w$") then
-                        return {license = license, username = "User", fallback = true}
-                    else
-                        return nil, "Invalid license format (fallback mode)"
-                    end
-                end
-                
-                if response and response.Success then
-                    local decodeSuccess, responseData = pcall(function()
-                        return HttpService:JSONDecode(response.Body)
-                    end)
-                    
-                    if decodeSuccess and responseData then
-                        if responseData.success then
-                            return responseData.data
-                        else
-                            return nil, responseData.message or "Authentication failed"
-                        end
-                    else
-                        return nil, "Invalid response format"
-                    end
-                else
-                    return nil, "Network error: " .. (response and response.StatusCode or "connection failed")
-                end
-            end)
-            
-            if success and result then
-                LoginGui.authenticated = true
-                LoginGui.session = result
-                
-                -- Save credentials if remember me is enabled
-                if rememberMe then
-                    SaveCredentials({
-                        license = license, 
-                        rememberMe = true,
-                        streamProof = StreamProof.active
-                    })
-                else
-                    ClearCredentials()
-                end
-                
-                statusLabel.Text = "Success! Welcome, " .. (result.username or "User")
-                statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
-                
-                wait(1)
-                
-                -- Animate out and destroy
-                mainFrame:TweenSize(UDim2.new(0, 400, 0, 0), Enum.EasingDirection.In, Enum.EasingStyle.Back, 0.4, true, function()
-                    screenGui:Destroy()
-                    LoginGui.screenGui = nil
-                    LoginGui.mainFrame = nil
-                end)
-            else
-                local errorMsg = result or "Unknown error"
-                statusLabel.Text = "Error: " .. errorMsg
-                statusLabel.TextColor3 = Color3.fromRGB(244, 67, 54)
-                
-                -- Shake animation for error using TweenService
-                local originalPos = mainFrame.Position
-                local shakeLeft = TweenService:Create(mainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = originalPos + UDim2.new(0, -10, 0, 0)})
-                local shakeRight = TweenService:Create(mainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = originalPos + UDim2.new(0, 10, 0, 0)})
-                local shakeBack = TweenService:Create(mainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = originalPos})
-                
-                shakeLeft:Play()
-                shakeLeft.Completed:Connect(function()
-                    shakeRight:Play()
-                    shakeRight.Completed:Connect(function()
-                        shakeBack:Play()
-                    end)
-                end)
-            end
-        end)
-    end)
-    
-    -- Enter key support
-    licenseBox.FocusLost:Connect(function(enterPressed)
-        if enterPressed then
-            loginButton.MouseButton1Click:Fire()
-        end
-    end)
-end
-
-local function WaitForAuthentication()
-    CreateLoginGui()
-    
-    -- Wait for authentication
-    while not LoginGui.authenticated do
-        if not LoginGui.screenGui or not LoginGui.screenGui.Parent then
-            -- GUI was destroyed, recreate it
-            CreateLoginGui()
-        end
-        wait(0.1)
-    end
-    
-    -- Start stream proof if it was enabled (but keep it disabled by default)
-    if StreamProof.active then
-        StartStreamProofDetection()
-    end
-    
-    return LoginGui.session
-end
-
--- ============================================
--- AUTHENTICATION CHECK (TEMPORARY BYPASS FOR TESTING)
--- ============================================
-
-print("Starting script...")
-local session = {license = "test-0000-0000-0000", username = "TestUser"} 
-print("Session created:", session.username)
--- local session = WaitForAuthentication() -- Disabled temporarily
 
 local defaultSettings = {
     Speed = 16, 
@@ -613,7 +12,6 @@ local defaultSettings = {
     speedDisableOnDown = true,
     Fly = false, 
     flySpeed = 50,
-    flyVertical = 1,
     Noclip = false,
     DoubleJump = false,
     KillerChanceX3 = false,
@@ -634,8 +32,7 @@ local defaultSettings = {
     AutoEscape = false,
     AntiAFK = false,
     AntiTrap = false,
-    PanicTP = false,
-    StreamProof = false
+    PanicTP = false
 }
 
 local userScripts = {}
@@ -676,7 +73,7 @@ local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 
--- DESIGN COLORS  soft rose & teal palette
+-- DESIGN COLORS â€” soft rose & teal palette
 local ACCENT = Color3.fromRGB(255, 94, 148)      -- soft rose
 local ACCENT_DARK = Color3.fromRGB(196, 60, 106)
 local TEAL = Color3.fromRGB(61, 224, 200)
@@ -692,7 +89,7 @@ local BORDER_COLOR = Color3.fromRGB(40, 42, 62)
 local function notif(str, dur)
     pcall(function()
         StarterGui:SetCore("SendNotification", {
-            Title = " sa7loul V2",
+            Title = "â¤ sa7loul V2",
             Text = str,
             Duration = dur or 3
         })
@@ -703,9 +100,6 @@ local settings = {}
 for k, v in pairs(defaultSettings) do
     settings[k] = v
 end
-
--- Initialize StreamProof from settings (disabled by default)
-StreamProof.active = settings.StreamProof or false
 
 local spinActive = false
 local spinSpeed = 20
@@ -772,9 +166,9 @@ function SetSelectedPlayer(player)
     selectedPlayer = player
     if selectedPlayerLabel then
         if GetSelectedPlayer() then
-            selectedPlayerLabel.Text = "Player: " .. selectedPlayer.Name
+            selectedPlayerLabel.Text = "ðŸ‘¤ Player: " .. selectedPlayer.Name
         else
-            selectedPlayerLabel.Text = "Player: None"
+            selectedPlayerLabel.Text = "ðŸ‘¤ Player: None"
         end
     end
 end
@@ -1018,17 +412,14 @@ function UpdateFly()
     if settings.Fly then
         if flyConnection then flyConnection:Disconnect() end
         flyConnection = RunService.RenderStepped:Connect(function()
-            if not settings.Fly then return end
-            local char = lp.Character
-            if not char then return end
-            local root = char:FindFirstChild("HumanoidRootPart")
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if not root or not hum or hum.Health <= 0 then return end
+            if not settings.Fly or not lp.Character then return end
+            local root = lp.Character.HumanoidRootPart
+            if not root then return end
             local bg = root:FindFirstChild("BodyGyro") or Instance.new("BodyGyro")
             local bv = root:FindFirstChild("BodyVelocity") or Instance.new("BodyVelocity")
             bg.P = 9e4; bg.Parent = root; bg.MaxTorque = Vector3.new(9e9,9e9,9e9); bg.CFrame = root.CFrame
-            bv.Parent = root; bv.MaxForce = Vector3.new(9e9,9e9,9e9)
-            hum.PlatformStand = true
+            bv.Parent = root; bv.MaxForce = Vector3.new(9e9,9e9,9e9); bv.Velocity = Vector3.new(0,0,0)
+            lp.Character.Humanoid.PlatformStand = true
             local moveDir = Vector3.new()
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + Vector3.new(0,0,1) end
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir + Vector3.new(0,0,-1) end
@@ -1038,7 +429,7 @@ function UpdateFly()
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir + Vector3.new(0,-1,0) end
             if moveDir.Magnitude > 0 then moveDir = moveDir.Unit end
             local cam = workspace.CurrentCamera
-            bv.Velocity = (cam.CFrame.LookVector * moveDir.Z + cam.CFrame.RightVector * moveDir.X + cam.CFrame.UpVector * moveDir.Y * (settings.flyVertical or 1)) * settings.flySpeed
+            bv.Velocity = (cam.CFrame.LookVector * moveDir.Z + cam.CFrame.RightVector * moveDir.X + cam.CFrame.UpVector * moveDir.Y) * settings.flySpeed
             bg.CFrame = cam.CFrame
         end)
     else
@@ -1047,34 +438,9 @@ function UpdateFly()
             local root = lp.Character.HumanoidRootPart
             local bg = root:FindFirstChild("BodyGyro"); if bg then bg:Destroy() end
             local bv = root:FindFirstChild("BodyVelocity"); if bv then bv:Destroy() end
-            local hum = lp.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum.PlatformStand = false end
+            lp.Character.Humanoid.PlatformStand = false
         end
     end
-end
-
-local function NoclipApply()
-    local char = lp.Character
-    if not char then return end
-    for _, part in pairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then part.CanCollide = false end
-    end
-end
-
-local function NoclipEnable()
-    if noclipConnection then noclipConnection:Disconnect() end
-    noclipConnection = RunService.Stepped:Connect(function()
-        if settings.Noclip then NoclipApply() end
-    end)
-    NoclipApply()
-end
-
-local function NoclipDisable()
-    if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
-end
-
-function UpdateNoclip()
-    if settings.Noclip then NoclipEnable() else NoclipDisable() end
 end
 
 function UpdateESP()
@@ -1843,9 +1209,9 @@ function ToggleMicBypass()
         w2.Parent = hub
         
         voiceFx = {hub = hub, saved = saved, active = true}
-        notif(" Mic Bypass ON", 2)
+        notif("ðŸŽ¤ Mic Bypass ON", 2)
     else
-        notif("No character  enter a game first", 2)
+        notif("No character â€” enter a game first", 2)
     end
 end
 
@@ -1959,7 +1325,7 @@ function StorageScan()
                 if obj:IsA("IntValue") or obj:IsA("StringValue") or obj:IsA("NumberValue") or obj:IsA("BoolValue") then
                     extra = " = " .. tostring(obj.Value)
                 end
-                table.insert(storageDump, obj.ClassName .. " ' " .. obj.Name .. extra)
+                table.insert(storageDump, obj.ClassName .. " â†’ " .. obj.Name .. extra)
                 count = count + 1
             end
         end
@@ -1967,7 +1333,7 @@ function StorageScan()
     for _, obj in ipairs({game, lp}) do
         for k, v in pairs(obj:GetAttributes()) do
             if count < 150 then
-                table.insert(storageDump, "Attr ' " .. tostring(k) .. " = " .. tostring(v))
+                table.insert(storageDump, "Attr â†’ " .. tostring(k) .. " = " .. tostring(v))
                 count = count + 1
             end
         end
@@ -2172,7 +1538,7 @@ end
 
 function UnbanAllFromList()
     if #bannedCache == 0 then
-        notif("Ban list empty  fetch first", 2)
+        notif("Ban list empty â€” fetch first", 2)
         return
     end
     for _, name in ipairs(bannedCache) do
@@ -2244,7 +1610,7 @@ function AutoReviveLegitLoop()
         local wasFlying = settings.Fly
         local wasNoclip = settings.Noclip
         if wasFlying then settings.Fly = false; UpdateFly() end
-        if wasNoclip then settings.Noclip = false; UpdateNoclip() end
+        if wasNoclip then settings.Noclip = false; if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end end
         
         local forward = closest.rootPart.CFrame.LookVector
         lp.Character.HumanoidRootPart.CFrame = closest.rootPart.CFrame + (forward * 2)
@@ -2270,7 +1636,16 @@ function AutoReviveLegitLoop()
         end
         
         if wasFlying then settings.Fly = true; UpdateFly() end
-        if wasNoclip then settings.Noclip = true; UpdateNoclip() end
+        if wasNoclip then settings.Noclip = true; 
+            if noclipConnection then noclipConnection:Disconnect() end
+            noclipConnection = RunService.Stepped:Connect(function()
+                if settings.Noclip and lp.Character then
+                    for _, part in pairs(lp.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then part.CanCollide = false end
+                    end
+                end
+            end)
+        end
         
         isReviving = false
     end
@@ -2351,7 +1726,7 @@ function AutoReviveRiskyOneUse()
     if wasFlying then settings.Fly = false; UpdateFly() end
     if wasNoclip then 
         settings.Noclip = false
-        UpdateNoclip()
+        if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
     end
     
     local forward = closest.rootPart.CFrame.LookVector
@@ -2388,7 +1763,14 @@ function AutoReviveRiskyOneUse()
     if wasFlying then settings.Fly = true; UpdateFly() end
     if wasNoclip then 
         settings.Noclip = true
-        UpdateNoclip()
+        if noclipConnection then noclipConnection:Disconnect() end
+        noclipConnection = RunService.Stepped:Connect(function()
+            if settings.Noclip and lp.Character then
+                for _, part in pairs(lp.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
+            end
+        end)
     end
     
     isReviving = false
@@ -2669,7 +2051,19 @@ function UpdateAllFeatures()
     end
     
     UpdateFly()
-    UpdateNoclip()
+    
+    if settings.Noclip then
+        if noclipConnection then noclipConnection:Disconnect() end
+        noclipConnection = RunService.Stepped:Connect(function()
+            if settings.Noclip and lp.Character then
+                for _, part in pairs(lp.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
+            end
+        end)
+    else
+        if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
+    end
     
     UpdateDoubleJump()
     UpdateKillerChance()
@@ -2801,17 +2195,17 @@ function PeriodicESPUpdate()
 end
 
 -- =====================================================================
--- -----------------------------------------------------------------------
---  NOVA UI FRAMEWORK  sa7loul V3 PREMIUM REDESIGN
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+--  NOVA UI FRAMEWORK â€” sa7loul V3 PREMIUM REDESIGN
 --  Dark mode + neon accents | RGB mode | rounded corners | glow
 --  Draggable header | search | fluid tab navigation
--- -----------------------------------------------------------------------
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 local CoreGui    = game:GetService("CoreGui")
 local GuiService = game:GetService("GuiService")
 local SoundService = game:GetService("SoundService")
 local PlayersSvc = game:GetService("Players")
 
---  THEME 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ THEME â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local UITheme = {
     BG        = Color3.fromRGB(7, 8, 13),
     BG_DEEP   = Color3.fromRGB(10, 12, 19),
@@ -2859,55 +2253,22 @@ function UITheme:Tick(dt)
     end
 end
 
---  ROOT 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ROOT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local NovaUI = Instance.new("ScreenGui")
 NovaUI.Name = "sa7loul_V3"
 NovaUI.ResetOnSpawn = false
 NovaUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-NovaUI.Enabled = true
-NovaUI.IgnoreGuiInset = true
 NovaUI.Parent = CoreGui
-
-print("NovaUI created and parented to CoreGui")
 
 local Window = Instance.new("Frame")
 Window.Name = "Window"
 Window.Parent = NovaUI
 Window.BackgroundColor3 = UITheme.BG
-Window.BackgroundTransparency = 0
+Window.BackgroundTransparency = 1
 Window.BorderSizePixel = 0
 Window.AnchorPoint = Vector2.new(0.5, 0.5)
 Window.Position = UDim2.fromScale(0.5, 0.5)
 Window.Size = UDim2.new(0, 720, 0, 540)
-Window.Visible = true
-
-print("Window created and configured")
-
--- Add a test label to verify GUI is working
-local testLabel = Instance.new("TextLabel")
-testLabel.Name = "TestLabel"
-testLabel.Size = UDim2.new(0, 200, 0, 50)
-testLabel.Position = UDim2.new(0.5, -100, 0.5, -25)
-testLabel.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-testLabel.Text = "TEST GUI WORKING"
-testLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-testLabel.TextSize = 20
-testLabel.Font = Enum.Font.GothamBold
-testLabel.Parent = NovaUI
-print("Test label added")
-
--- Force visibility after a short delay
-spawn(function()
-    wait(0.5)
-    if NovaUI and NovaUI.Parent then
-        NovaUI.Enabled = true
-        print("NovaUI.Enabled forced to true")
-    end
-    if Window and Window.Parent then
-        Window.Visible = true
-        print("Window.Visible forced to true")
-    end
-end)
 local windowCorner = Instance.new("UICorner", Window)
 windowCorner.CornerRadius = UDim.new(0, 16)
 local windowStroke = Instance.new("UIStroke", Window)
@@ -2958,12 +2319,13 @@ UITheme:RegisterAccent(function(c)
     })
 end, true)
 
--- opening animation (simplified)
-Window.BackgroundTransparency = 0
-Window.Size = UDim2.new(0, 720, 0, 540)
-print("Window animation completed")
+-- opening animation
+TweenService:Create(Window, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    BackgroundTransparency = 0,
+    Size = UDim2.new(0, 720, 0, 540)
+}):Play()
 
---  HEADER 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local Header = Instance.new("Frame")
 Header.Name = "Header"
 Header.Parent = Window
@@ -2987,45 +2349,20 @@ headerBottom.BorderSizePixel = 0
 headerBottom.Size = UDim2.new(1, 0, 0, 1)
 headerBottom.Position = UDim2.new(0, 0, 1, 0)
 
--- logo badge (pure UI, renders on every client)
-local logoBox = Instance.new("Frame")
-logoBox.Parent = Header
-logoBox.BackgroundTransparency = 1
-logoBox.BorderSizePixel = 0
-logoBox.Size = UDim2.new(0, 34, 0, 34)
-logoBox.Position = UDim2.new(0, 12, 0.5, -17)
-local logoBadge = Instance.new("Frame")
-logoBadge.Parent = logoBox
-logoBadge.AnchorPoint = Vector2.new(0.5, 0.5)
-logoBadge.Position = UDim2.new(0.5, 0, 0.5, 0)
-logoBadge.Size = UDim2.new(1, 0, 1, 0)
-logoBadge.BackgroundColor3 = UITheme.BG_DEEP
-logoBadge.BorderSizePixel = 0
-Instance.new("UICorner", logoBadge).CornerRadius = UDim.new(0.32, 0)
-local logoGradient = Instance.new("UIGradient", logoBadge)
-logoGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, UITheme.PURPLE),
-    ColorSequenceKeypoint.new(1, UITheme.Accent)
-})
-logoGradient.Rotation = 135
-local logoStroke = Instance.new("UIStroke", logoBadge)
-logoStroke.Thickness = 2
+-- logo dot
+local logoDot = Instance.new("Frame")
+logoDot.Parent = Header
+logoDot.BackgroundColor3 = UITheme.Accent
+logoDot.BorderSizePixel = 0
+logoDot.Size = UDim2.new(0, 10, 0, 10)
+logoDot.Position = UDim2.new(0, 18, 0.5, -5)
+Instance.new("UICorner", logoDot).CornerRadius = UDim.new(1, 0)
+local logoStroke = Instance.new("UIStroke", logoDot)
+logoStroke.Thickness = 3
 logoStroke.Color = UITheme.Accent
-logoStroke.Transparency = 0.25
-local logoLetter = Instance.new("TextLabel")
-logoLetter.Parent = logoBadge
-logoLetter.BackgroundTransparency = 1
-logoLetter.Size = UDim2.new(1, 0, 1, 0)
-logoLetter.Font = Enum.Font.GothamBlack
-logoLetter.Text = "s7"
-logoLetter.TextColor3 = Color3.fromRGB(255, 255, 255)
-logoLetter.TextSize = 15
-logoLetter.TextYAlignment = Enum.TextYAlignment.Center
+logoStroke.Transparency = 0.7
 UITheme:RegisterAccent(function(c)
-    logoGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, UITheme.PURPLE),
-        ColorSequenceKeypoint.new(1, c)
-    })
+    logoDot.BackgroundColor3 = c
     logoStroke.Color = c
 end, true)
 
@@ -3037,7 +2374,7 @@ titleLabel.Text = "sa7loul"
 titleLabel.TextColor3 = UITheme.TEXT
 titleLabel.TextSize = 19
 titleLabel.Size = UDim2.new(0, 120, 0, 20)
-titleLabel.Position = UDim2.new(0, 56, 0, 8)
+titleLabel.Position = UDim2.new(0, 36, 0, 8)
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 local titleAccent = Instance.new("TextLabel")
 titleAccent.Parent = Header
@@ -3046,8 +2383,8 @@ titleAccent.Font = Enum.Font.GothamBold
 titleAccent.Text = "V3"
 titleAccent.TextColor3 = UITheme.Accent
 titleAccent.TextSize = 14
-titleAccent.Size = UDim2.new(0, 34, 0, 18)
-titleAccent.Position = UDim2.new(0, 148, 0, 9)
+titleAccent.Size = UDim2.new(0, 30, 0, 18)
+titleAccent.Position = UDim2.new(0, 128, 0, 9)
 titleAccent.TextXAlignment = Enum.TextXAlignment.Left
 UITheme:RegisterAccent(function(c) titleAccent.TextColor3 = c end, true)
 
@@ -3055,11 +2392,11 @@ local headerSub = Instance.new("TextLabel")
 headerSub.Parent = Header
 headerSub.BackgroundTransparency = 1
 headerSub.Font = Enum.Font.Gotham
-headerSub.Text = "Survive the Killer  Premium"
+headerSub.Text = "Survive the Killer â€¢ Premium"
 headerSub.TextColor3 = UITheme.SUBTEXT
 headerSub.TextSize = 11
 headerSub.Size = UDim2.new(0, 260, 0, 16)
-headerSub.Position = UDim2.new(0, 56, 0, 30)
+headerSub.Position = UDim2.new(0, 36, 0, 30)
 headerSub.TextXAlignment = Enum.TextXAlignment.Left
 
 -- header buttons (minimize / close)
@@ -3103,16 +2440,16 @@ menuKeyChip.TextSize = 10
 menuKeyChip.ZIndex = 6
 Instance.new("UICorner", menuKeyChip).CornerRadius = UDim.new(0, 7)
 
-local minimizeBtn = headerIconButton("-", UITheme.GREEN)
+local minimizeBtn = headerIconButton("â€“", UITheme.GREEN)
 minimizeBtn.Position = UDim2.new(1, -104, 0.5, -13)
-local closeBtn = headerIconButton("x", UITheme.RED)
+local closeBtn = headerIconButton("âœ•", UITheme.RED)
 closeBtn.Position = UDim2.new(1, -72, 0.5, -13)
 
 local minimizedHint = Instance.new("TextLabel")
 minimizedHint.Parent = Header
 minimizedHint.BackgroundTransparency = 1
 minimizedHint.Font = Enum.Font.Gotham
-minimizedHint.Text = "minimized -  click  to restore full menu"
+minimizedHint.Text = "minimized Â·  click âœš to restore full menu"
 minimizedHint.TextColor3 = UITheme.SUBTEXT
 minimizedHint.TextSize = 10
 minimizedHint.Size = UDim2.new(0, 220, 0, 16)
@@ -3120,7 +2457,7 @@ minimizedHint.Position = UDim2.new(0, 36, 0, 32)
 minimizedHint.TextXAlignment = Enum.TextXAlignment.Left
 minimizedHint.Visible = false
 
---  DRAG 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DRAG â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local minimized = false
 local dragging = false
 local pendingDrag = false
@@ -3230,7 +2567,7 @@ end)
 -- minimize / restore
 function ApplyMinimized(state)
     minimized = state
-    minimizeBtn.Text = state and "" or ""
+    minimizeBtn.Text = state and "âœš" or "â€“"
     headerSub.Visible = not state
     menuKeyChip.Visible = not state
     minimizedHint.Visible = state
@@ -3292,7 +2629,7 @@ closeBtn.MouseButton1Click:Connect(function()
     if GlowBlur then pcall(function() GlowBlur:Destroy() end) end
 end)
 
---  SEARCH BAR 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SEARCH BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local SearchBar = Instance.new("Frame")
 SearchBar.Parent = Window
 SearchBar.BackgroundTransparency = 1
@@ -3303,7 +2640,7 @@ local searchIcon = Instance.new("TextLabel")
 searchIcon.Parent = SearchBar
 searchIcon.BackgroundTransparency = 1
 searchIcon.Font = Enum.Font.Gotham
-searchIcon.Text = "-"
+searchIcon.Text = "âŒ•"
 searchIcon.TextColor3 = UITheme.SUBTEXT
 searchIcon.TextSize = 18
 searchIcon.Size = UDim2.new(0, 30, 1, 0)
@@ -3337,7 +2674,7 @@ SearchBox.FocusLost:Connect(function()
     TweenService:Create(searchStroke, TweenInfo.new(0.15), {Color = UITheme.BORDER, Transparency = 0.4}):Play()
 end)
 
---  SIDEBAR 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local Sidebar = Instance.new("Frame")
 Sidebar.Parent = Window
 Sidebar.BackgroundColor3 = UITheme.PANEL
@@ -3374,143 +2711,26 @@ sidebarTitle.BackgroundTransparency = 1
 sidebarTitle.LayoutOrder = -1
 sidebarTitle.Size = UDim2.new(1, -24, 0, 24)
 sidebarTitle.Font = Enum.Font.GothamBold
-sidebarTitle.Text = "MENU"
+sidebarTitle.Text = "â˜°  MENU"
 sidebarTitle.TextColor3 = UITheme.Accent
 sidebarTitle.TextSize = 12
 sidebarTitle.TextXAlignment = Enum.TextXAlignment.Left
 sidebarTitle.TextYAlignment = Enum.TextYAlignment.Center
 UITheme:RegisterAccent(function(c) sidebarTitle.TextColor3 = c end, true)
 
--- verified icon assets (lucide decals on Roblox CDN)
-local ICON_ASSETS = {
-    home = "rbxassetid://7733960981",
-    user = "rbxassetid://7743875962",
-    person = "rbxassetid://7743871002",
-    heart = "rbxassetid://7733956134",
-    globe = "rbxassetid://7733954760",
-    users = "rbxassetid://7743876054",
-    smile = "rbxassetid://7734059095",
-    box = "rbxassetid://7733917120",
-    skull = "rbxassetid://7734058599",
-    userx = "rbxassetid://7743875879",
-    more = "rbxassetid://7734006080",
-    gear = "rbxassetid://7734053495",
-    compass = "rbxassetid://7733924216",
-    eye = "rbxassetid://7733774602",
-    zap = "rbxassetid://7733771628",
-    target = "rbxassetid://7743872758",
-    shield = "rbxassetid://7734056608",
-    plane = "rbxassetid://7734037723",
-    info = "rbxassetid://7733964719",
-    clock = "rbxassetid://7733734848",
-    search = "rbxassetid://7734052925",
-    arrow_right = "rbxassetid://7733673345",
-    wrench = "rbxassetid://7743878358",
-    map = "rbxassetid://7733992829",
-    key = "rbxassetid://7733965118",
-    music = "rbxassetid://7734020554",
-    mic = "rbxassetid://7743869805",
-    volume = "rbxassetid://7743877487",
-    star = "rbxassetid://7734068321",
-    flame = "rbxassetid://7733798747",
-    hammer = "rbxassetid://7733955511",
-    crosshair = "rbxassetid://7733765307",
-    lock = "rbxassetid://7733992528",
-    radio = "rbxassetid://7743871662",
-    scissors = "rbxassetid://7734052570",
-    ghost = "rbxassetid://7743868000",
-    alert = "rbxassetid://7733658504",
-    check = "rbxassetid://7733715400",
-    folder = "rbxassetid://7733799185",
-    book = "rbxassetid://7733914390",
-    paperclip = "rbxassetid://7734021680",
-    refresh = "rbxassetid://7734051052",
-    download = "rbxassetid://7733770755",
-    trash = "rbxassetid://7743873871",
-    plus = "rbxassetid://7734042071",
-    save = "rbxassetid://7734052335",
-    send = "rbxassetid://7734053039",
-    navigation = "rbxassetid://7734020989",
-    activity = "rbxassetid://7733655755",
-    gauge = "rbxassetid://7733799969",
-    database = "rbxassetid://7743866778",
-    server = "rbxassetid://7734053426",
-    package = "rbxassetid://7734021469",
-    gift = "rbxassetid://7733946818",
-    gamepad = "rbxassetid://7733799901",
-    headphones = "rbxassetid://7733956063",
-    camera = "rbxassetid://7733708692",
-    video = "rbxassetid://7743876610",
-    battery = "rbxassetid://7733674820",
-    wifi = "rbxassetid://7743878148",
-    palette = "rbxassetid://7734021595",
-    wand = "rbxassetid://8997388430",
-    gem = "rbxassetid://7733942651",
-    award = "rbxassetid://7733673987",
-    crown = "rbxassetid://7733765398",
-    snow = "rbxassetid://7734059180",
-    layers = "rbxassetid://7743868936",
-    beaker = "rbxassetid://7733674922",
-    terminal = "rbxassetid://7743872929",
-    code = "rbxassetid://7733749837",
-    history = "rbxassetid://7733960880",
-}
-
-local SECTION_ICONS = {
-    ["Welcome back"] = "home",
-    ["Quick access"] = "zap",
-    ["Changelog V3"] = "history",
-    ["Movement"] = "activity",
-    ["Flight & NoClip"] = "plane",
-    ["Bypass"] = "shield",
-    ["Combat"] = "target",
-    ["Powers"] = "zap",
-    ["Visuals"] = "eye",
-    ["Auto Loot"] = "gem",
-    ["Teleport"] = "navigation",
-    ["Camera"] = "camera",
-    ["Quick teleports"] = "map",
-    ["Player list"] = "users",
-    ["Revive modes"] = "heart",
-    ["Self revive"] = "heart",
-    ["Target"] = "crosshair",
-    ["Actions"] = "send",
-    ["Party"] = "music",
-    ["Cuff Items  Spawn / Give / Take"] = "box",
-    ["Custom search"] = "search",
-    ["Take from target"] = "user",
-    ["Troll Target"] = "skull",
-    ["Annoy & Fling"] = "flame",
-    ["Fake Admin / System Chat"] = "terminal",
-    ["Fake Admin (remotes)"] = "key",
-    ["Ghost & Tools"] = "ghost",
-    ["Screen Chaos"] = "gauge",
-    ["Earrape Audio"] = "volume",
-    ["Ban Manager"] = "userx",
-    ["Banned players"] = "trash",
-    ["Storage scan"] = "database",
-    ["External scripts"] = "code",
-    ["Your scripts"] = "folder",
-    ["Keybinds"] = "key",
-    ["Theme"] = "palette",
-    ["Configs"] = "gear",
-    ["Saved configs"] = "save",
-    ["Account"] = "shield",
-    ["Other"] = "more",
-}
-
 local TabItems = {
-    { key = "  Home",       icon = "home", label = "Home" },
-    { key = "  Player",     icon = "person", label = "Player" },
-    { key = "  Revive",     icon = "heart", label = "Revive" },
-    { key = "  World",      icon = "globe", label = "World" },
-    { key = "  Players",    icon = "users", label = "Players" },
-    { key = "  Fun",        icon = "smile", label = "Fun" },
-    { key = "  Spawner",    icon = "box", label = "Spawner" },
-    { key = "  Troll",      icon = "skull", label = "Troll" },
-    { key = "  Ban",        icon = "userx", label = "Ban" },
-    { key = "  Extras",     icon = "more", label = "Extras" },
-    { key = "  Settings",   icon = "gear", label = "Settings" },
+    { key = "  Home",       icon = "âŒ‚", label = "Home" },
+    { key = "  Player",     icon = "â˜„", label = "Player" },
+    { key = "  Revive",     icon = "âœš", label = "Revive" },
+    { key = "  World",      icon = "âœº", label = "World" },
+    { key = "  Players",    icon = "â˜°", label = "Players" },
+    { key = "  Fun",        icon = "âœ¿", label = "Fun" },
+    { key = "  Spawner",    icon = "ðŸ”§", label = "Spawner" },
+    { key = "  Troll",      icon = "â˜ ", label = "Troll" },
+    { key = "  Ban",        icon = "â›”", label = "Ban" },
+    { key = "  Tsunami",    icon = "ðŸŒŠ", label = "Tsunami" },
+    { key = "  Extras",     icon = "â–¤", label = "Extras" },
+    { key = "  Settings",   icon = "âš™", label = "Settings" },
 }
 local TabButtons = {}
 
@@ -3528,7 +2748,7 @@ rgbQuick.BorderSizePixel = 0
 rgbQuick.Size = UDim2.new(1, -24, 0, 28)
 rgbQuick.Position = UDim2.new(0, 12, 0, 4)
 rgbQuick.Font = Enum.Font.GothamBold
-rgbQuick.Text = "RGB Mode: OFF"
+rgbQuick.Text = "âš¡ RGB Mode: OFF"
 rgbQuick.TextColor3 = UITheme.SUBTEXT
 rgbQuick.TextSize = 10
 Instance.new("UICorner", rgbQuick).CornerRadius = UDim.new(0, 7)
@@ -3545,25 +2765,14 @@ function BuildSidebar()
         btn.Position = UDim2.new(0, 6, 0, 0)
         btn.LayoutOrder = #SidebarScroll:GetChildren()
         btn.Font = Enum.Font.GothamBold
-        btn.Text = "  " .. item.label
+        btn.Text = item.icon .. "  " .. item.label
         btn.TextColor3 = UITheme.SUBTEXT
         btn.TextSize = 12
         btn.TextXAlignment = Enum.TextXAlignment.Left
         btn.TextYAlignment = Enum.TextYAlignment.Center
         btn.AutoButtonColor = false
-        Instance.new("UIPadding", btn).PaddingLeft = UDim.new(0, 34)
+        Instance.new("UIPadding", btn).PaddingLeft = UDim.new(0, 6)
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-
-        local iconImg = Instance.new("ImageLabel")
-        iconImg.Parent = btn
-        iconImg.BackgroundTransparency = 1
-        iconImg.BorderSizePixel = 0
-        iconImg.Size = UDim2.new(0, 17, 0, 17)
-        iconImg.Position = UDim2.new(0, 10, 0.5, -8.5)
-        iconImg.Image = ICON_ASSETS[item.icon] or ICON_ASSETS.more
-        iconImg.ImageColor3 = UITheme.SUBTEXT
-        iconImg.ScaleType = Enum.ScaleType.Fit
-        UITheme:RegisterAccent(function(c) iconImg.ImageColor3 = c end)
 
         local glowBar = Instance.new("Frame")
         glowBar.Parent = btn
@@ -3589,8 +2798,8 @@ function BuildSidebar()
         btn.MouseButton1Click:Connect(function()
             SwitchTab(item.key)
         end)
-        TabButtons[item.key] = { btn = btn, glow = glowBar, icon = iconImg }
-        tabVisuals[item.key] = { btn = btn, glow = glowBar, icon = iconImg }
+        TabButtons[item.key] = { btn = btn, glow = glowBar }
+        tabVisuals[item.key] = { btn = btn, glow = glowBar }
     end
 end
 function RefreshTabVisuals()
@@ -3603,15 +2812,10 @@ function RefreshTabVisuals()
         TweenService:Create(vis.glow, TweenInfo.new(0.18), {
             BackgroundTransparency = active and 0 or 1
         }):Play()
-        if vis.icon then
-            TweenService:Create(vis.icon, TweenInfo.new(0.18), {
-                ImageColor3 = active and UITheme.Accent or UITheme.SUBTEXT
-            }):Play()
-        end
     end
 end
 
---  CONTENT 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CONTENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local ContentScroll = Instance.new("ScrollingFrame")
 ContentScroll.Parent = Window
 ContentScroll.BackgroundColor3 = UITheme.BG
@@ -3630,7 +2834,7 @@ local contentLayout = Instance.new("UIListLayout", ContentScroll)
 contentLayout.Padding = UDim.new(0, 16)
 contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
---  STATUS BAR 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ STATUS BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local statusBar = Instance.new("Frame")
 statusBar.Parent = Window
 statusBar.BackgroundColor3 = UITheme.PANEL
@@ -3674,7 +2878,7 @@ task.spawn(function()
     end
 end)
 
---  COMPONENTS 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ COMPONENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local activeRows = {}
 
 function ClearContent()
@@ -3731,35 +2935,16 @@ local function Section(parent, title, icon)
     head.BackgroundTransparency = 1
     head.Size = UDim2.new(1, -24, 0, 26)
 
-    local headIcon = nil
-    local iconKey = (icon and type(icon) == "string" and (ICON_ASSETS[icon] or SECTION_ICONS[title])) or SECTION_ICONS[title]
-    if iconKey then
-        headIcon = Instance.new("ImageLabel")
-        headIcon.Parent = head
-        headIcon.BackgroundTransparency = 1
-        headIcon.BorderSizePixel = 0
-        headIcon.Size = UDim2.new(0, 16, 0, 16)
-        headIcon.Position = UDim2.new(0, 0, 0.5, -8)
-        headIcon.Image = (type(iconKey) == "string" and ICON_ASSETS[iconKey]) or iconKey
-        headIcon.ImageColor3 = UITheme.SUBTEXT
-        headIcon.ScaleType = Enum.ScaleType.Fit
-        UITheme:RegisterAccent(function(c) if headIcon and headIcon.Parent then headIcon.ImageColor3 = c end end)
-    end
-
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Parent = head
     titleLabel.BackgroundTransparency = 1
     titleLabel.Size = UDim2.new(1, -90, 1, 0)
     titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.Text = title
+    titleLabel.Text = (icon and icon .. "  " or "") .. title
     titleLabel.TextColor3 = UITheme.TEXT
     titleLabel.TextSize = 13
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.TextYAlignment = Enum.TextYAlignment.Center
-    if headIcon then
-        titleLabel.Position = UDim2.new(0, 24, 0, 0)
-        titleLabel.Size = UDim2.new(1, -114, 1, 0)
-    end
     UITheme:RegisterAccent(function(c) titleLabel.TextColor3 = c end)
 
     local line = Instance.new("Frame")
@@ -4116,7 +3301,7 @@ local function Dropdown(parent, opts)
     return { SetIndex = function(i) currentIdx = i; setLabel() end }
 end
 
---  TOGGLE + KEYBIND CHIP 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TOGGLE + KEYBIND CHIP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local function ToggleRow(parent, opts)
     opts = opts or {}
     local row = Instance.new("Frame")
@@ -4266,12 +3451,12 @@ local function ToggleRow(parent, opts)
     return handle
 end
 -- =====================================================================
--- 
---  PART 2  KEYBIND MANAGER - SCREEN FX - TROLL ENGINE
--- 
+-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+--  PART 2 Ã¢â‚¬â€ KEYBIND MANAGER Ã‚Â· SCREEN FX Ã‚Â· TROLL ENGINE
+-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
---  KEYBIND MANAGER 
--- Every toggle gets a clickable keybind chip. Click chip   "Press Key..."
+-- Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ KEYBIND MANAGER Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+-- Every toggle gets a clickable keybind chip. Click chip Ã¢â€ â€™ "Press Key..."
 -- Backspace/Delete unbinds. Bound key toggles the feature (gameProcessed-safe).
 local KeybindsLib = {
     map = {},    -- id -> { set, get, chip, name, key }
@@ -4390,14 +3575,14 @@ function KeybindsLib:ResetAll()
     self:Save()
 end
 
--- load saved keybinds from disk (pcall  safe on executors without file io)
+-- load saved keybinds from disk (pcall Ã¢â‚¬â€ safe on executors without file io)
 local function KeybindsLoadFromDisk()
     local ok, data = pcall(function()
         return HttpService:JSONDecode(readfile(keybindFile))
     end)
     if ok and type(data) == "table" then
         KeybindsLib:Restore(data)
-        notif("' Keybinds restored", 2)
+        notif("Ã¢Å’Â¨ Keybinds restored", 2)
     end
 end
 
@@ -4435,7 +3620,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
---  SCREEN FX ENGINE 
+-- Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ SCREEN FX ENGINE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 local ScreenFx = {
     blurOn = false,
     fovOn = false,
@@ -4563,7 +3748,7 @@ local function SfxSet(flag, on)
     SfxRebuild()
 end
 
---  JUMPSCARE BURST  flash + FOV punch + shake + sound
+-- Ã°Å¸ËœÂ± JUMPSCARE BURST Ã¢â‚¬â€ flash + FOV punch + shake + sound
 local jumpScareActive = false
 local function JumpScareBurst()
     if jumpScareActive then return end
@@ -4627,7 +3812,7 @@ local function JumpScareBurst()
     end)
 end
 
---  TROLL ENGINE 
+-- Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ TROLL ENGINE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 local TrollTargetSel = nil
 -- Emoji-free mapping: keep players dropdown synced
 local trollTargetDropdown = nil
@@ -4682,7 +3867,7 @@ local function TrollMyRoot()
     return nil
 end
 
---  1) FLING TARGET (physics-based: angular velocity + random linear yeet)
+-- Ã°Å¸Å¡â‚¬ 1) FLING TARGET (physics-based: angular velocity + random linear yeet)
 local function TrollFlingStart()
     TrollCfg.fling = true
     if TrollState.flingConn then TrollState.flingConn:Disconnect() end
@@ -4733,7 +3918,7 @@ local function TrollFlingStart()
             end
         end
     end)
-    notif(" Troll Fling: ON", 2)
+    notif("Ã°Å¸â€ºÂ¸ Troll Fling: ON", 2)
 end
 
 local function TrollFlingStop()
@@ -4747,10 +3932,10 @@ local function TrollFlingStop()
         local hum = tRoot.Parent:FindFirstChildOfClass("Humanoid")
         if hum then pcall(function() hum.PlatformStand = false end) end
     end
-    notif(" Troll Fling: OFF", 2)
+    notif("Ã°Å¸â€ºÂ¸ Troll Fling: OFF", 2)
 end
 
--- ' 2) ANNOY LOOP  teleport spam around the target
+-- Ã°Å¸Å’â‚¬ 2) ANNOY LOOP Ã¢â‚¬â€ teleport spam around the target
 local function TrollAnnoyStart()
     TrollCfg.annoy = true
     if TrollState.annoyConn then TrollState.annoyConn:Disconnect() end
@@ -4776,17 +3961,17 @@ local function TrollAnnoyStart()
             myRoot.CFrame = CFrame.new(tRoot.Position + offset)
         end
     end)
-    notif("' Annoy Loop: ON (hops around " .. (TrollGetTarget() and TrollGetTarget().Name or "target") .. ")", 2)
+    notif("Ã°Å¸Å’â‚¬ Annoy Loop: ON (hops around " .. (TrollGetTarget() and TrollGetTarget().Name or "target") .. ")", 2)
 end
 
 local function TrollAnnoyStop()
     TrollCfg.annoy = false
     if TrollHandles and TrollHandles.annoy then pcall(function() TrollHandles.annoy:Set(false, true) end) end
     if TrollState.annoyConn then TrollState.annoyConn:Disconnect(); TrollState.annoyConn = nil end
-    notif("' Annoy Loop: OFF", 2)
+    notif("Ã°Å¸Å’â‚¬ Annoy Loop: OFF", 2)
 end
 
---  3) GHOST MODE (client-side invisibility)
+-- Ã°Å¸â€˜Â» 3) GHOST MODE (client-side invisibility)
 local function TrollInvisStart()
     TrollCfg.invis = true
     if TrollState.invisConn then TrollState.invisConn:Disconnect() end
@@ -4803,7 +3988,7 @@ local function TrollInvisStart()
         end
     end
     TrollState.invisConn = RunService.RenderStepped:Connect(hide)
-    notif(" Ghost Mode: ON", 2)
+    notif("Ã°Å¸â€˜Â» Ghost Mode: ON", 2)
 end
 
 local function TrollInvisStop()
@@ -4817,10 +4002,10 @@ local function TrollInvisStop()
         end
     end
     TrollState.invisSaved = {}
-    notif(" Ghost Mode: OFF", 2)
+    notif("Ã°Å¸â€˜Â» Ghost Mode: OFF", 2)
 end
 
---  4) SNEAKY SEAT  invisible seat + hide while seated
+-- Ã°Å¸Âªâ€˜ 4) SNEAKY SEAT Ã¢â‚¬â€ invisible seat + hide while seated
 local function TrollSneakySeatStart()
     TrollCfg.sneakySeat = true
     local root = TrollMyRoot()
@@ -4864,7 +4049,7 @@ local function TrollSneakySeatStart()
             end)
         end
     end
-    notif(" Sneaky Seat spawned  you're invisible while seated", 3)
+    notif("Ã°Å¸Âªâ€˜ Sneaky Seat spawned Ã¢â‚¬â€ you're invisible while seated", 3)
 end
 
 local function TrollSneakySeatStop()
@@ -4881,10 +4066,10 @@ local function TrollSneakySeatStop()
         end
     end
     TrollState.sneakySaved = {}
-    notif(" Sneaky Seat: OFF", 2)
+    notif("Ã°Å¸Âªâ€˜ Sneaky Seat: OFF", 2)
 end
 
---  5) CLICK-TO-TELEPORT TOOL
+-- Ã°Å¸â€“Â± 5) CLICK-TO-TELEPORT TOOL
 local function TrollClickTPFire()
     if os.clock() - TrollState.clickTPLast < 0.45 then return end
     local root = TrollMyRoot()
@@ -4915,21 +4100,21 @@ local function TrollClickTPFire()
         if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
             root.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3.5)
             TrollState.clickTPLast = os.clock()
-            notif(" Teleported to: " .. target.Name, 1)
+            notif("Ã°Å¸â€“Â± Teleported to: " .. target.Name, 1)
         end
     end
 end
 
 local function TrollClickTPStart()
     TrollCfg.clickTP = true
-    notif(" Click TP: ON  click any player to teleport", 2)
+    notif("Ã°Å¸â€“Â± Click TP: ON Ã¢â‚¬â€ click any player to teleport", 2)
 end
 local function TrollClickTPStop()
     TrollCfg.clickTP = false
-    notif(" Click TP: OFF", 2)
+    notif("Ã°Å¸â€“Â± Click TP: OFF", 2)
 end
 
---  6) EARRAPE AUDIO SPAM (local sounds)
+-- Ã°Å¸â€â€¡ 6) EARRAPE AUDIO SPAM (local sounds)
 local function TrollEarrapeStart()
     TrollCfg.earrape = true
     local choice = TROLL_SOUNDS[TrollCfg.earrapeChoice] or TROLL_SOUNDS[1]
@@ -4964,7 +4149,7 @@ local function TrollEarrapeStart()
             end)
         end
     end)
-    notif("  Earrape: ON (" .. choice.name .. ")", 2)
+    notif("Ã°Å¸â€Å  Earrape: ON (" .. choice.name .. ")", 2)
 end
 
 local function TrollEarrapeStop()
@@ -4975,10 +4160,10 @@ local function TrollEarrapeStop()
         pcall(function() TrollState.earrapeSound:Destroy() end)
         TrollState.earrapeSound = nil
     end
-    notif("  Earrape: OFF", 2)
+    notif("Ã°Å¸â€Å  Earrape: OFF", 2)
 end
 
---  FAKE ADMIN / SYSTEM MESSAGES (client chat only)
+-- Ã°Å¸â€™Â¬ FAKE ADMIN / SYSTEM MESSAGES (client chat only)
 local function FakeSystemMessage(text, color)
     pcall(function()
         StarterGui:SetCore("ChatMakeSystemMessage", {
@@ -5000,7 +4185,7 @@ local function FakeNotification(title, text, duration)
     end)
 end
 
---  FAKE ADMIN SCRIPT SPOOF  fires "admin" remotes with a fake server title
+-- Ã°Å¸Â¤â€“ FAKE ADMIN SCRIPT SPOOF Ã¢â‚¬â€ fires "admin" remotes with a fake server title
 local function FakeAdminCommand(cmd, targetName)
     local remotes = ScanAdminRemotes()
     local fired = 0
@@ -5018,9 +4203,9 @@ local function FakeAdminCommand(cmd, targetName)
     return fired
 end
 -- =====================================================================
--- -----------------------------------------------------------------------
---  PART 3  TAB CONTENTS - EVENTS - INIT
--- -----------------------------------------------------------------------
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+--  PART 3 â€” TAB CONTENTS Â· EVENTS Â· INIT
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 local TrollHandles = {}
 local trollTargetOptions = {}
@@ -5059,7 +4244,7 @@ local function RefreshTrollTargetOptions()
     end
 end
 
---  TAB SWITCHING 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TAB SWITCHING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SwitchTab(key)
     CurrentTab = key
     RefreshTabVisuals()
@@ -5068,7 +4253,7 @@ function SwitchTab(key)
     UpdateRightContent()
 end
 
---  PLAYERS TAB 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PLAYERS TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CreatePlayerEntry(parent, player)
     local frame = Instance.new("Frame")
     frame.Parent = parent
@@ -5120,16 +4305,16 @@ function CreatePlayerEntry(parent, player)
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.TextYAlignment = Enum.TextYAlignment.Center
     if player == lp then
-        statusLabel.Text = " You"
+        statusLabel.Text = "âœ¦ You"
         statusLabel.TextColor3 = UITheme.Accent
     elseif IsPlayerDowned(player) then
-        statusLabel.Text = "' Down"
+        statusLabel.Text = "ðŸ’€ Down"
         statusLabel.TextColor3 = UITheme.RED
     elseif IsPlayerInLobby(player) then
-        statusLabel.Text = " Lobby"
+        statusLabel.Text = "ðŸŸ¤ Lobby"
         statusLabel.TextColor3 = UITheme.DIM
     else
-        statusLabel.Text = "-"
+        statusLabel.Text = "â—"
     end
 
     -- action buttons
@@ -5166,14 +4351,14 @@ function CreatePlayerEntry(parent, player)
             end)
             return btn
         end
-        actionBtn("-", UITheme.CYAN, function()
+        actionBtn("ðŸ”—", UITheme.CYAN, function()
             if bringActive then
                 StopBring()
             else
                 StartBring(player.Name)
             end
         end)
-        actionBtn("", UITheme.PURPLE, function()
+        actionBtn("ðŸŒ€", UITheme.PURPLE, function()
             if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
                 lp.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
                 notif("Teleported to: " .. player.Name, 2)
@@ -5181,17 +4366,17 @@ function CreatePlayerEntry(parent, player)
                 notif("Player not found", 2)
             end
         end)
-        actionBtn("", UITheme.GREEN, function()
+        actionBtn("ðŸ¦…", UITheme.GREEN, function()
             GiveFlyNoClip()
         end)
-        actionBtn("'", UITheme.AMBER, function()
+        actionBtn("ðŸ‘", UITheme.AMBER, function()
             if viewing == player then
                 StopView()
             else
                 StartView(player.Name)
             end
         end)
-        actionBtn("", Color3.fromRGB(80, 170, 255), function()
+        actionBtn("â„", Color3.fromRGB(80, 170, 255), function()
             FreezePlayer(player.Name)
         end)
     end
@@ -5237,7 +4422,7 @@ function RefreshPlayerSideTab()
     if trollTargetDD then RefreshTrollTargetOptions() end
 end
 
---  CUFF ITEM SPAWNER / GIVER 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CUFF ITEM SPAWNER / GIVER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function IsCuffObject(obj)
     return (obj:IsA("Tool") or obj:IsA("Model") or obj:IsA("BasePart"))
         and string.lower(obj.Name):find("cuff", 1, true) ~= nil
@@ -5333,7 +4518,7 @@ function GiveCuffItemToPlayer(itemName, targetPlayer)
         end
     end)
     if ok then
-        notif("Gave - " .. itemName .. "  " .. target.Name, 2)
+        notif("Gave ðŸ”— " .. itemName .. " âžœ " .. target.Name, 2)
     else
         notif("Could not give: " .. itemName, 2)
     end
@@ -5361,7 +4546,7 @@ function TakeCuffsFromTarget(target)
     if targetPlayer.Character then grabFrom(targetPlayer.Character) end
     grabFrom(targetPlayer:FindFirstChild("Backpack"))
     if taken > 0 then
-        notif("Took - " .. taken .. " cuff item(s) from " .. targetPlayer.Name, 2)
+        notif("Took ðŸ”— " .. taken .. " cuff item(s) from " .. targetPlayer.Name, 2)
     else
         notif("No cuffs found on " .. targetPlayer.Name, 2)
     end
@@ -5381,43 +4566,43 @@ function RemoveMyCuffs()
     end
     clearFrom(lp:FindFirstChild("Backpack"))
     if lp.Character then clearFrom(lp.Character) end
-    notif(removed > 0 and ("Removed - " .. removed .. " cuff item(s)") or "No cuffs to remove", 2)
+    notif(removed > 0 and ("Removed ðŸ”— " .. removed .. " cuff item(s)") or "No cuffs to remove", 2)
 end
---  END CUFF CODE 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ END CUFF CODE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
---  SPAWNER ENGINE (generic items) 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SPAWNER ENGINE (generic items) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Normalize(s)
-    return string.lower((s or ""):gsub("[ ]", "a"):gsub("[]", "e"):gsub("[]", "i"):gsub("[]", "o"):gsub("[]", "u"):gsub("", "c"):gsub("", "n"):gsub("%s+", " "))
+    return string.lower((s or ""):gsub("[Ã Ã¡Ã¢Ã¤Ã£Ã¥]", "a"):gsub("[Ã¨Ã©ÃªÃ«]", "e"):gsub("[Ã¬Ã­Ã®Ã¯]", "i"):gsub("[Ã²Ã³Ã´Ã¶Ãµ]", "o"):gsub("[Ã¹ÃºÃ»Ã¼]", "u"):gsub("Ã§", "c"):gsub("Ã±", "n"):gsub("%s+", " "))
 end
 
 function ItemIcon(name)
     local n = Normalize(name)
     local map = {
-        { {"knife", "couteau", "cutter", "machete", "cleaver", "dart", "kunai", "stab"}, "" },
-        { {"gun", "pistol", "pistolet", "rifle", "fusil", "shotgun", "bazooka"}, "" },
-        { {"axe", "hache", "hatchet", "hachoir"}, "" },
-        { {"hammer", "marteau", "mallet"}, "" },
-        { {"sword", "epee", "katana", "saber"}, "" },
-        { {"bat", "batte", "club", "cricket"}, "" },
-        { {"ring", "alliance"}, "'" },
-        { {"dryer", "seche", "cheveux"}, "" },
-        { {"cuff", "menotte"}, "-" },
-        { {"locker", "casier", "armoire"}, "-" },
-        { {"glove", "gant"}, "" },
-        { {"box", "boite"}, "" },
-        { {"key", "cle"}, "-" },
-        { {"candle", "bougie"}, "-" },
-        { {"soap", "savon"}, "" },
-        { {"coin", "cash", "money", "loot"}, "'" },
-        { {"med", "firstaid", "bandage", "kit", "soin"}, "" },
-        { {"armor", "armure", "vest", "gilet"}, "" },
+        { {"knife", "couteau", "cutter", "machete", "cleaver", "dart", "kunai", "stab"}, "ðŸ”ª" },
+        { {"gun", "pistol", "pistolet", "rifle", "fusil", "shotgun", "bazooka"}, "ðŸ”«" },
+        { {"axe", "hache", "hatchet", "hachoir"}, "ðŸª“" },
+        { {"hammer", "marteau", "mallet"}, "ðŸ”¨" },
+        { {"sword", "epee", "katana", "saber"}, "âš”ï¸" },
+        { {"bat", "batte", "club", "cricket"}, "ðŸ" },
+        { {"ring", "alliance"}, "ðŸ’" },
+        { {"dryer", "seche", "cheveux"}, "ðŸŒ¬ï¸" },
+        { {"cuff", "menotte"}, "ðŸ”—" },
+        { {"locker", "casier", "armoire"}, "ðŸ—„ï¸" },
+        { {"glove", "gant"}, "ðŸ§¤" },
+        { {"box", "boite"}, "ðŸ“¦" },
+        { {"key", "cle"}, "ðŸ—ï¸" },
+        { {"candle", "bougie"}, "ðŸ•¯ï¸" },
+        { {"soap", "savon"}, "ðŸ§¼" },
+        { {"coin", "cash", "money", "loot"}, "ðŸ’°" },
+        { {"med", "firstaid", "bandage", "kit", "soin"}, "ðŸ©¹" },
+        { {"armor", "armure", "vest", "gilet"}, "ðŸ¦º" },
     }
     for _, e in ipairs(map) do
         for _, t in ipairs(e[1]) do
             if n:find(t, 1, true) then return e[2] end
         end
     end
-    return ""
+    return "ðŸ“¦"
 end
 
 function ScanItemsByKeyword(keyword)
@@ -5507,7 +4692,7 @@ function GiveSpawnItemToPlayer(itemName, targetPlayer)
         end
     end)
     if ok then
-        notif("Spawned  " .. itemName .. "  " .. target.Name, 2)
+        notif("Spawned ðŸ“¦ " .. itemName .. " âžœ " .. target.Name, 2)
     else
         notif("Could not spawn: " .. itemName, 2)
     end
@@ -5537,25 +4722,25 @@ function TakeSpawnItemsFromTarget(target, keyword)
     if targetPlayer.Character then grabFrom(targetPlayer.Character) end
     grabFrom(targetPlayer:FindFirstChild("Backpack"))
     if taken > 0 then
-        notif("Took  " .. taken .. " item(s) from " .. targetPlayer.Name, 2)
+        notif("Took ðŸ“¦ " .. taken .. " item(s) from " .. targetPlayer.Name, 2)
     else
         notif("No matching items on " .. targetPlayer.Name, 2)
     end
     return taken
 end
 
---  ITEM CATALOG + SNAPSHOT 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ITEM CATALOG + SNAPSHOT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- Live scan finds items currently in the server; the catalog fills in the
 -- known STK items so the spawner always shows a full list.
 local KNOWN_CATALOG = {
-    "Sche-Cheveux", "Seche-Cheveux", "Hair Dryer", "Hairdryer",
+    "SÃ¨che-Cheveux", "Seche-Cheveux", "Hair Dryer", "Hairdryer",
     "Coupe-Cheveux", "Hair Cutter", "Rasoir", "Razor",
     "Cuffs", "Cuff", "Menottes", "Menotte", "Handcuffs", "Handcuff",
     "Couteau", "Couteaux", "Knife", "Butcher Knife", "Batte", "Bat", "Hache", "Axe",
-    "Pistolet", "Gun", "Pistol", "Marteau", "Hammer", "pe", "Epee", "Sword", "Sabre", "Dague", "Dagger",
+    "Pistolet", "Gun", "Pistol", "Marteau", "Hammer", "Ã‰pÃ©e", "Epee", "Sword", "Sabre", "Dague", "Dagger",
     "Casier", "Casiers", "Locker", "Lockers",
     "Gants", "Gant", "Gloves", "Boxing Gloves",
-    "Alliance", "Bougie", "Candle", "Savon", "Soap", "Cl", "Cle", "Key",
+    "Alliance", "Bougie", "Candle", "Savon", "Soap", "ClÃ©", "Cle", "Key",
 }
 local spawnerItemCache = {}
 function CollectItemSnapshot()
@@ -5621,18 +4806,458 @@ function FindItemsByKeyword(keyword, includeCatalog)
     end
     return results
 end
---  END SPAWNER ENGINE 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ END SPAWNER ENGINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
---  CONTENT BUILDER 
+-- =====================================================================
+--  TSUNAMI ENGINE - auto helpers + Popcorn Burst minigame (world & GUI)
+-- =====================================================================
+local TsunamiVim = game:GetService("VirtualInputManager")
+
+tsunamiCfg = {
+    on = false,          -- auto collect coins/cash/loot
+    clicker = false,     -- auto clicker at mouse position
+    popcorn = false,     -- popcorn GUI auto-click
+    god = false,         -- god mode (health & stamina)
+    autojump = false,    -- auto jump
+    safe = false,        -- safe TP (back to grounded spot)
+    mgBot = false,       -- minigame bot (fish/cast/reel/play)
+    c4 = false,          -- C4 clicker (col/cell/slot/connect)
+    collectDelay = 0.35,
+    popCooldown = 0.35,
+    safeDelay = 2,
+    mgBotDelay = 0.8,
+    c4Delay = 1.2,
+    c4Col = 0,
+}
+tsunamiStatusLabel = nil
+local tsunamiConn = nil
+local tsunamiTimers = {}
+local tsunamiSafeSpot = nil
+
+local function TsunamiClickAt(x, y)
+    pcall(function()
+        TsunamiVim:SendMouseButtonEvent(x, y, 0, true, Enum.UserInputType.MouseButton1, 0)
+        TsunamiVim:SendMouseButtonEvent(x, y, 0, false, Enum.UserInputType.MouseButton1, 0)
+    end)
+end
+
+local function TsunamiGuiButtons()
+    local out = {}
+    local roots = { lp:FindFirstChild("PlayerGui"), CoreGui }
+    for _, root in ipairs(roots) do
+        if root then
+            pcall(function()
+                for _, obj in ipairs(root:GetDescendants()) do
+                    if obj:IsA("TextButton") and obj.Visible and obj.AbsoluteSize.X > 10 and obj.AbsoluteSize.Y > 10
+                        and NovaUI and not obj:IsDescendantOf(NovaUI) then
+                        table.insert(out, obj)
+                    end
+                end
+            end)
+        end
+    end
+    return out
+end
+
+function UpdateTsunamiStatus()
+    if not tsunamiStatusLabel or not tsunamiStatusLabel.Parent then return end
+    local parts = {}
+    if tsunamiCfg.on then table.insert(parts, "Collect") end
+    if tsunamiCfg.clicker then table.insert(parts, "Clicker") end
+    if tsunamiCfg.popcorn then table.insert(parts, "PopcornGUI") end
+    if tsunamiCfg.god then table.insert(parts, "God") end
+    if tsunamiCfg.autojump then table.insert(parts, "Jump") end
+    if tsunamiCfg.safe then table.insert(parts, "SafeTP") end
+    if tsunamiCfg.mgBot then table.insert(parts, "MG-Bot") end
+    if tsunamiCfg.c4 then table.insert(parts, "C4") end
+    tsunamiStatusLabel.Text = #parts > 0 and ("Active: " .. table.concat(parts, " | ")) or "All OFF"
+end
+
+local function TsunamiHeartbeat(dt)
+    local c = tsunamiCfg
+
+    if c.on then
+        tsunamiTimers.collect = (tsunamiTimers.collect or 0) + dt
+        if tsunamiTimers.collect >= c.collectDelay then
+            tsunamiTimers.collect = 0
+            local myRoot = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+            if myRoot then
+                local best, bestD = nil, math.huge
+                pcall(function()
+                    for _, obj in ipairs(workspace:GetDescendants()) do
+                        if obj:IsA("BasePart") and obj:IsDescendantOf(workspace) and not obj.Anchored and obj.Transparency < 0.8 then
+                            local n = string.lower(obj.Name)
+                            if n:find("coin") or n:find("cash") or n:find("loot") or n:find("token") or n:find("star") or n:find("money") then
+                                local d = (obj.Position - myRoot.Position).Magnitude
+                                if d < bestD then best, bestD = obj, d end
+                            end
+                        end
+                    end
+                end)
+                if best then
+                    myRoot.CFrame = CFrame.new(best.Position + Vector3.new(0, 3, 0))
+                end
+            end
+        end
+    end
+
+    if c.clicker then
+        tsunamiTimers.clicker = (tsunamiTimers.clicker or 0) + dt
+        if tsunamiTimers.clicker >= 0.06 then
+            tsunamiTimers.clicker = 0
+            local m = UserInputService:GetMouseLocation()
+            TsunamiClickAt(m.X, m.Y)
+        end
+    end
+
+    if c.popcorn then
+        tsunamiTimers.popcorn = (tsunamiTimers.popcorn or 0) + dt
+        if tsunamiTimers.popcorn >= c.popCooldown then
+            tsunamiTimers.popcorn = 0
+            for _, b in ipairs(TsunamiGuiButtons()) do
+                local n = string.lower(b.Name)
+                if n:find("pop") or n:find("ring") or n:find("circle") or n:find("grain") or n:find("corn") or n:find("kernel") then
+                    local p, s = b.AbsolutePosition, b.AbsoluteSize
+                    TsunamiClickAt(p.X + s.X / 2, p.Y + s.Y / 2)
+                    break
+                end
+            end
+        end
+    end
+
+    if c.god then
+        tsunamiTimers.god = (tsunamiTimers.god or 0) + dt
+        if tsunamiTimers.god >= 0.25 then
+            tsunamiTimers.god = 0
+            local chr = lp.Character
+            if chr then
+                local hum = chr:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health < hum.MaxHealth then pcall(function() hum.Health = hum.MaxHealth end) end
+                for _, v in ipairs(chr:GetDescendants()) do
+                    if v:IsA("IntValue") or v:IsA("NumberValue") then
+                        local n = string.lower(v.Name)
+                        if n:find("stamina") or n:find("energy") or n:find("thirst") or n:find("hunger") then
+                            pcall(function()
+                                if v:IsA("IntValue") then v.Value = 100 else v.Value = v.Value + 50 end
+                            end)
+                        end
+                    end
+                end
+                for k, _ in pairs(chr:GetAttributes()) do
+                    local n = string.lower(tostring(k))
+                    if n:find("stamina") or n:find("energy") or n:find("thirst") or n:find("hunger") then
+                        pcall(function() chr:SetAttribute(k, 100) end)
+                    end
+                end
+            end
+        end
+    end
+
+    if c.autojump then
+        tsunamiTimers.jump = (tsunamiTimers.jump or 0) + dt
+        if tsunamiTimers.jump >= 0.6 then
+            tsunamiTimers.jump = 0
+            pcall(function()
+                TsunamiVim:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                TsunamiVim:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+            end)
+        end
+    end
+
+    if c.safe then
+        local chr = lp.Character
+        if chr then
+            local hum = chr:FindFirstChildOfClass("Humanoid")
+            local rp = chr:FindFirstChild("HumanoidRootPart")
+            if hum and rp and hum.FloorMaterial ~= Enum.Material.Air then
+                tsunamiSafeSpot = rp.Position
+            end
+        end
+        tsunamiTimers.safe = (tsunamiTimers.safe or 0) + dt
+        if tsunamiTimers.safe >= c.safeDelay then
+            tsunamiTimers.safe = 0
+            if tsunamiSafeSpot and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                pcall(function()
+                    lp.Character.HumanoidRootPart.CFrame = CFrame.new(tsunamiSafeSpot + Vector3.new(0, 2, 0))
+                end)
+            end
+        end
+    end
+
+    if c.mgBot then
+        tsunamiTimers.mg = (tsunamiTimers.mg or 0) + dt
+        if tsunamiTimers.mg >= c.mgBotDelay then
+            tsunamiTimers.mg = 0
+            for _, b in ipairs(TsunamiGuiButtons()) do
+                local n = string.lower(b.Name)
+                if n:find("fish") or n:find("cast") or n:find("reel") or n:find("play") or n:find("next") or n:find("claim") then
+                    local p, s = b.AbsolutePosition, b.AbsoluteSize
+                    TsunamiClickAt(p.X + s.X / 2, p.Y + s.Y / 2)
+                    break
+                end
+            end
+        end
+    end
+
+    if c.c4 then
+        tsunamiTimers.c4 = (tsunamiTimers.c4 or 0) + dt
+        if tsunamiTimers.c4 >= c.c4Delay then
+            tsunamiTimers.c4 = 0
+            for _, b in ipairs(TsunamiGuiButtons()) do
+                local n = string.lower(b.Name)
+                if n:find("col") or n:find("cell") or n:find("slot") or n:find("connect") or n:find("bomb") then
+                    if c.c4Col <= 0 or n:find(tostring(c.c4Col), 1, true) then
+                        local p, s = b.AbsolutePosition, b.AbsoluteSize
+                        TsunamiClickAt(p.X + s.X / 2, p.Y + s.Y / 2)
+                        break
+                    end
+                end
+            end
+        end
+    end
+end
+
+function RebuildTsunami()
+    local any = tsunamiCfg.on or tsunamiCfg.clicker or tsunamiCfg.popcorn or tsunamiCfg.god
+        or tsunamiCfg.autojump or tsunamiCfg.safe or tsunamiCfg.mgBot or tsunamiCfg.c4
+    if any then
+        if not tsunamiConn then
+            tsunamiConn = RunService.Heartbeat:Connect(TsunamiHeartbeat)
+        end
+    else
+        if tsunamiConn then tsunamiConn:Disconnect(); tsunamiConn = nil end
+    end
+    UpdateTsunamiStatus()
+end
+
+-- -------------------------------------------------------------
+-- Popcorn Burst minigame (world table + kernel clicking)
+-- -------------------------------------------------------------
+PopcornBurstAPI = {
+    active = false, statusLabel = nil, conn = nil,
+    root = nil, center = Vector3.zero,
+    kernels = {}, indicator = nil, seat = nil,
+    throwCount = 0, myScore = 0, botScore = 0, tokens = 0,
+    roundLen = 10,
+}
+
+function PopcornBurstAPI.SetStatusLabel(label)
+    PopcornBurstAPI.statusLabel = label
+end
+
+function PopcornBurstAPI.IsActive()
+    return PopcornBurstAPI.active
+end
+
+function PopcornBurstAPI.UpdateStatus()
+    local api = PopcornBurstAPI
+    if not api.statusLabel or not api.statusLabel.Parent then return end
+    if api.active then
+        api.statusLabel.Text = "Popcorn Burst: ON | You: " .. api.myScore .. " | Bot: " .. api.botScore .. " | Tokens: " .. api.tokens
+    else
+        api.statusLabel.Text = "Popcorn Burst: OFF"
+    end
+end
+
+function PopcornBurstAPI.Start()
+    local api = PopcornBurstAPI
+    if api.active then return end
+    local myRoot = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then
+        notif("Need a character first", 2)
+        return
+    end
+    if api.root and api.root.Parent then pcall(function() api.root:Destroy() end) end
+    api.root = nil
+    api.kernels = {}
+    api.throwCount = 0
+    api.myScore = 0
+    api.botScore = 0
+
+    local model = Instance.new("Model")
+    model.Name = "PopcornTable"
+    model.Parent = workspace
+
+    local center = myRoot.Position + myRoot.CFrame.LookVector * 8
+    api.center = center
+
+    local top = Instance.new("Part")
+    top.Name = "TableTop"
+    top.Size = Vector3.new(12, 0.6, 12)
+    top.Position = center
+    top.Anchored = true
+    top.CanCollide = false
+    top.Material = Enum.Material.SmoothPlastic
+    top.Color = Color3.fromRGB(35, 38, 56)
+    top.Transparency = 0.15
+    top.Parent = model
+
+    local function makePart(name, size, pos, color)
+        local p = Instance.new("Part")
+        p.Name = name
+        p.Size = size
+        p.Position = pos
+        p.Anchored = true
+        p.CanCollide = false
+        p.Material = Enum.Material.Neon
+        p.Color = color
+        p.Transparency = 0.15
+        p.Parent = model
+        return p
+    end
+
+    for i = 1, 4 do
+        local ang = (i - 1) / 4 * math.pi * 2
+        local legPos = center + Vector3.new(math.cos(ang) * 5, -2.4, math.sin(ang) * 5)
+        makePart("Leg" .. i, Vector3.new(0.7, 4.2, 0.7), legPos, Color3.fromRGB(60, 64, 92))
+    end
+
+    local plate = makePart("Plate", Vector3.new(0.2, 10.8, 10.8), center + Vector3.new(0, 1.1, 0), Color3.fromRGB(28, 30, 44))
+    plate.Shape = Enum.PartType.Cylinder
+    plate.Orientation = Vector3.new(0, 0, 90)
+    plate.Transparency = 0.85
+
+    for i = 0, 15 do
+        local ang = i / 16 * math.pi * 2
+        makePart("RingBox", Vector3.new(0.45, 0.45, 0.45), center + Vector3.new(math.cos(ang) * 5, 1.35, math.sin(ang) * 5), Color3.fromRGB(0, 200, 255))
+    end
+
+    local kernelPositions = {
+        { math.cos(0) * 4.2, math.sin(0) * 4.2 },
+        { math.cos(math.pi / 2) * 4.2, math.sin(math.pi / 2) * 4.2 },
+        { math.cos(math.pi) * 4.2, math.sin(math.pi) * 4.2 },
+        { math.cos(math.pi * 1.5) * 4.2, math.sin(math.pi * 1.5) * 4.2 },
+    }
+    for i, kp in ipairs(kernelPositions) do
+        local kernel = makePart("Kernel" .. i, Vector3.new(1.4, 1.4, 1.4), center + Vector3.new(kp[1], 1.4, kp[2]), Color3.fromRGB(255, 200, 80))
+        kernel.Shape = Enum.PartType.Ball
+        api.kernels[i] = kernel
+    end
+
+    api.indicator = makePart("Indicator", Vector3.new(0.9, 0.9, 0.9), center + Vector3.new(4.5, 1.4, 0), Color3.fromRGB(255, 84, 108))
+    api.indicator.Shape = Enum.PartType.Ball
+
+    local seat = Instance.new("Part")
+    seat.Name = "PopcornSeat"
+    seat.Size = Vector3.new(6, 0.5, 6)
+    seat.Position = center - myRoot.CFrame.LookVector * 2 + Vector3.new(0, 0.2, 0)
+    seat.Anchored = true
+    seat.CanCollide = false
+    seat.Transparency = 1
+    seat.Parent = model
+    api.seat = seat
+
+    api.root = model
+    api.active = true
+    local lastStatus = 0
+    api.conn = RunService.RenderStepped:Connect(function()
+        if api.indicator and api.indicator.Parent and api.active then
+            local ang = tick() * 1.3
+            api.indicator.CFrame = CFrame.new(center + Vector3.new(math.cos(ang) * 4.5, 1.4, math.sin(ang) * 4.5))
+        end
+        if tick() - lastStatus > 0.5 then
+            lastStatus = tick()
+            api:UpdateStatus()
+        end
+    end)
+    notif("Popcorn Burst: ON - click kernels when the ring meets them (E = sit)", 4)
+    api:UpdateStatus()
+end
+
+function PopcornBurstAPI.TryHit(part)
+    local api = PopcornBurstAPI
+    if not api.active or not part then return false end
+    for i, k in ipairs(api.kernels) do
+        if k == part then
+            api:RegisterThrow(i)
+            return true
+        end
+    end
+    return false
+end
+
+function PopcornBurstAPI.TrySit()
+    local api = PopcornBurstAPI
+    if not api.active then return end
+    local myRoot = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+    local hum = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+    if myRoot and hum and api.seat and api.seat.Parent then
+        if (myRoot.Position - api.seat.Position).Magnitude < 12 then
+            pcall(function() hum:Sit(api.seat) end)
+        end
+    end
+end
+
+function PopcornBurstAPI.RegisterThrow(kernelIndex)
+    local api = PopcornBurstAPI
+    local kernel = api.kernels[kernelIndex]
+    local ind = api.indicator
+    if not (kernel and ind and ind.Parent) then return end
+    local vK = (kernel.Position - api.center).Unit
+    local vI = (ind.Position - api.center).Unit
+    local dot = math.clamp(vK:Dot(vI), -1, 1)
+    local deg = math.deg(math.acos(dot))
+    local score, tag = 0, "MISS"
+    if deg <= 8 then score, tag = 100, "PERFECT"
+    elseif deg <= 20 then score, tag = 50, "GREAT"
+    elseif deg <= 40 then score, tag = 20, "GOOD"
+    end
+    api.myScore = api.myScore + score
+    api.throwCount = api.throwCount + 1
+    api.botScore = api.botScore + math.random(0, 70)
+    notif("Popcorn: " .. tag .. " +" .. score .. " | you: " .. api.myScore .. " | bot: " .. api.botScore, 1.5)
+    pcall(function()
+        TweenService:Create(kernel, TweenInfo.new(0.3), {
+            Color = score >= 50 and Color3.fromRGB(64, 233, 142) or (score > 0 and Color3.fromRGB(255, 190, 62) or Color3.fromRGB(255, 84, 108)),
+            Transparency = 0,
+        }):Play()
+    end)
+    if api.throwCount >= api.roundLen then
+        local gain = api.myScore > api.botScore and 10 or (api.myScore == api.botScore and 5 or 2)
+        api.tokens = api.tokens + gain
+        notif("Popcorn round over | you: " .. api.myScore .. " | bot: " .. api.botScore .. " | +" .. gain .. " tokens", 3)
+        api.throwCount = 0
+        api.myScore = 0
+        api.botScore = 0
+        for _, k in ipairs(api.kernels) do
+            if k and k.Parent then
+                pcall(function()
+                    TweenService:Create(k, TweenInfo.new(0.3), { Color = Color3.fromRGB(255, 200, 80) }):Play()
+                end)
+            end
+        end
+    end
+    api:UpdateStatus()
+end
+
+function PopcornBurstAPI.Stop()
+    local api = PopcornBurstAPI
+    if not api.active then return end
+    api.active = false
+    if api.conn then api.conn:Disconnect(); api.conn = nil end
+    if api.root and api.root.Parent then pcall(function() api.root:Destroy() end) end
+    api.root = nil
+    api.kernels = {}
+    api.indicator = nil
+    api.seat = nil
+    if lp.Character then
+        local hum = lp.Character:FindFirstChildOfClass("Humanoid")
+        if hum and hum.Seated then pcall(function() hum.Sit = false end) end
+    end
+    api:UpdateStatus()
+    notif("Popcorn Burst: OFF", 2)
+end
+
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CONTENT BUILDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function UpdateRightContent()
     ClearContent()
 
-    -- ----------- HOME -----------
+    -- â•â•â•â•â•â•â•â•â•â•â• HOME â•â•â•â•â•â•â•â•â•â•â•
     if CurrentTab == "  Home" then
-        local hero = Section(ContentScroll, "Welcome back", "")
-        local greet = Label(hero, "sa7loul V3  Premium redesign", UITheme.TEXT, 17)
+        local hero = Section(ContentScroll, "Welcome back", "âŒ‚")
+        local greet = Label(hero, "sa7loul V3 â€” Premium redesign", UITheme.TEXT, 17)
         greet.Font = Enum.Font.GothamBold
-        Label(hero, "Survive the Killer  full feature suite  press RightShift to hide UI", UITheme.SUBTEXT, 11)
+        Label(hero, "Survive the Killer â€¢ full feature suite â€¢ press RightShift to hide UI", UITheme.SUBTEXT, 11)
         Label(hero, "", UITheme.DIM, 5)
         local statsLabel = Label(hero, "FPS: --  |  Ping: --ms  |  Players: --", UITheme.CYAN, 12)
         UITheme:RegisterAccent(function(c) statsLabel.TextColor3 = c end)
@@ -5647,35 +5272,35 @@ function UpdateRightContent()
             end
         end)
 
-        local quick = Section(ContentScroll, "Quick access", "")
-        Button(quick, " Player features", function() SwitchTab("  Player") end)
-        Button(quick, "  Troll features", function() SwitchTab("  Troll") end)
-        Button(quick, " Item spawner", function() SwitchTab("  Spawner") end)
-        Button(quick, " Player list", function() SwitchTab("  Players") end)
-        Button(quick, " Settings", function() SwitchTab("  Settings") end)
+        local quick = Section(ContentScroll, "Quick access", "âš¡")
+        Button(quick, "â˜„ Player features", function() SwitchTab("  Player") end)
+        Button(quick, "â˜  Troll features", function() SwitchTab("  Troll") end)
+        Button(quick, "ðŸ”§ Item spawner", function() SwitchTab("  Spawner") end)
+        Button(quick, "â˜° Player list", function() SwitchTab("  Players") end)
+        Button(quick, "âš™ Settings", function() SwitchTab("  Settings") end)
 
-        local info = Section(ContentScroll, "Changelog V3", "")
+        local info = Section(ContentScroll, "Changelog V3", "ðŸ“‹")
         local changelog = {
-            " V3.2  Design rework & stability",
-            " FIXED: full UI not building on some executors (load error)",
-            " Reordered tabs: Home - Player - Revive - World - Players",
-            " Minimize: small bar stays with  restore button",
-            " NEW: Spawner tab (Ring Box / Sche-cheveux / Cuffs / Lockers)",
-            " NEW: Jump Power, FOV, Fly+NoClip, TP to downed, random loot TP",
-            " NEW: TP to target - Copy tools - Attack target",
-            " Redesigned section cards + live status bar (FPS/Ping)",
-            " Keybinds on every toggle - RGB mode - search bar",
-            " Troll tab (fling, annoy, fake admin, ghost, earrape, click-TP)",
+            "âœ¦ V3.2 â€” Design rework & stability",
+            "âœ¦ FIXED: full UI not building on some executors (load error)",
+            "âœ¦ Reordered tabs: Home Â· Player Â· Revive Â· World Â· Players",
+            "âœ¦ Minimize: small bar stays with âœš restore button",
+            "âœ¦ NEW: Spawner tab (Ring Box / SÃ¨che-cheveux / Cuffs / Lockers)",
+            "âœ¦ NEW: Jump Power, FOV, Fly+NoClip, TP to downed, random loot TP",
+            "âœ¦ NEW: TP to target Â· Copy tools Â· Attack target",
+            "âœ¦ Redesigned section cards + live status bar (FPS/Ping)",
+            "âœ¦ Keybinds on every toggle Â· RGB mode Â· search bar",
+            "âœ¦ Troll tab (fling, annoy, fake admin, ghost, earrape, click-TP)",
         }
         for _, line in ipairs(changelog) do
             Label(info, line, UITheme.SUBTEXT, 11)
         end
         Label(hero, "", UITheme.DIM, 5)
-        Label(hero, "Developer: sa7loul    Tailored for STK v2.31.0", UITheme.DIM, 10)
+        Label(hero, "Developer: sa7loul  â€¢  Tailored for STK v2.31.0", UITheme.DIM, 10)
 
-    -- ----------- PLAYER -----------
+    -- â•â•â•â•â•â•â•â•â•â•â• PLAYER â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Player" then
-        local movement = Section(ContentScroll, "Movement", "")
+        local movement = Section(ContentScroll, "Movement", "â˜„")
         local speedHandle = ToggleRow(movement, {
             text = "Speed Boost", id = "speed",
             state = settings.speedEnabled,
@@ -5702,8 +5327,7 @@ function UpdateRightContent()
             state = settings.speedDisableOnDown,
             onToggle = function(val) settings.speedDisableOnDown = val end
         })
-        local flight = Section(ContentScroll, "Flight & NoClip", "plane")
-        ToggleRow(flight, {
+        ToggleRow(movement, {
             text = "Flight", id = "fly", state = settings.Fly,
             desc = "WASD + Space / Left-Control",
             onToggle = function(val)
@@ -5711,23 +5335,28 @@ function UpdateRightContent()
                 UpdateFly()
             end
         })
-        Slider(flight, {
+        Slider(movement, {
             text = "Flight speed", min = 20, max = 200, def = settings.flySpeed,
             onChanged = function(val) settings.flySpeed = val end
         })
-        Slider(flight, {
-            text = "Vertical speed", min = 50, max = 300, def = 100,
-            onChanged = function(val) settings.flyVertical = val / 100 end
-        })
-        ToggleRow(flight, {
+        ToggleRow(movement, {
             text = "Noclip", id = "noclip", state = settings.Noclip,
-            desc = "Walk through walls, pairs with Flight",
             onToggle = function(val)
                 settings.Noclip = val
-                UpdateNoclip()
+                if val then
+                    if noclipConnection then noclipConnection:Disconnect() end
+                    noclipConnection = RunService.Stepped:Connect(function()
+                        if settings.Noclip and lp.Character then
+                            for _, part in pairs(lp.Character:GetDescendants()) do
+                                if part:IsA("BasePart") then part.CanCollide = false end
+                            end
+                        end
+                    end)
+                else
+                    if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
+                end
             end
         })
-        Note(flight, "Fly + Noclip work together. Hold Left-Control to dive.")
         Slider(movement, {
             text = "Gravity", min = 0, max = 196.2, def = 196.2, decimals = 1,
             onChanged = function(val)
@@ -5745,7 +5374,7 @@ function UpdateRightContent()
                 end)
             end
         })
-        Button(movement, " Reset gravity (196.2)", function()
+        Button(movement, "â†º Reset gravity (196.2)", function()
             pcall(function() workspace.Gravity = 196.2 end)
             notif("Gravity reset", 2)
         end)
@@ -5778,7 +5407,7 @@ function UpdateRightContent()
             end
         })
 
-        local bypass = Section(ContentScroll, "Bypass", "")
+        local bypass = Section(ContentScroll, "Bypass", "ðŸŽ«")
         ToggleRow(bypass, {
             text = "Double Jump", id = "dbljump", state = settings.DoubleJump,
             onToggle = function(val)
@@ -5794,7 +5423,7 @@ function UpdateRightContent()
             end
         })
 
-        local combat = Section(ContentScroll, "Combat", "")
+        local combat = Section(ContentScroll, "Combat", "âš”")
         local killauraHandle = ToggleRow(combat, {
             text = "Kill Aura", id = "killaura", state = settings.KillAura,
             onToggle = function(val)
@@ -5816,7 +5445,7 @@ function UpdateRightContent()
             onChanged = function(val) settings.killAuraRadius = val end
         })
 
-        local powers = Section(ContentScroll, "Powers", "")
+        local powers = Section(ContentScroll, "Powers", "âš¡")
         Slider(powers, {
             text = "Jump Power", min = 20, max = 160, def = 50,
             onChanged = function(val)
@@ -5838,8 +5467,8 @@ function UpdateRightContent()
         local flyLay = Instance.new("UIListLayout", flyRow)
         flyLay.FillDirection = Enum.FillDirection.Horizontal
         flyLay.Padding = UDim.new(0, 6)
-        Button(flyRow, { text = " Fly + NoClip", size = UDim2.new(0.48, 0, 0, 30), accent = true, callback = GiveFlyNoClip })
-        Button(flyRow, { text = " Reset jump", size = UDim2.new(0.48, 0, 0, 30), callback = function()
+        Button(flyRow, { text = "ðŸ¦… Fly + NoClip", size = UDim2.new(0.48, 0, 0, 30), accent = true, callback = GiveFlyNoClip })
+        Button(flyRow, { text = "ðŸ”„ Reset jump", size = UDim2.new(0.48, 0, 0, 30), callback = function()
             pcall(function()
                 if lp.Character then
                     local hum = lp.Character:FindFirstChildOfClass("Humanoid")
@@ -5849,9 +5478,9 @@ function UpdateRightContent()
             end)
         end })
 
-    -- ----------- WORLD -----------
+    -- â•â•â•â•â•â•â•â•â•â•â• WORLD â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  World" then
-        local visuals = Section(ContentScroll, "Visuals", "")
+        local visuals = Section(ContentScroll, "Visuals", "âœº")
         ToggleRow(visuals, {
             text = "Player ESP", id = "esp", state = settings.ESP,
             onToggle = function(val)
@@ -5914,7 +5543,7 @@ function UpdateRightContent()
             end
         })
 
-        local loot = Section(ContentScroll, "Auto Loot", "")
+        local loot = Section(ContentScroll, "Auto Loot", "ðŸ“¦")
         ToggleRow(loot, {
             text = "Auto collect loot", id = "loot", state = settings.AutoLoot,
             onToggle = function(val)
@@ -5939,7 +5568,7 @@ function UpdateRightContent()
             onToggle = function(val) settings.returnHomeAfterLoot = val end
         })
 
-        local tp = Section(ContentScroll, "Teleport", "")
+        local tp = Section(ContentScroll, "Teleport", "ðŸŒ€")
         Button(tp, "Teleport to exit", TeleportToExit)
         Button(tp, "Teleport to lobby", function()
             local lobby = workspace:FindFirstChild("_Lobby")
@@ -5955,20 +5584,20 @@ function UpdateRightContent()
             end
         end)
 
-        local camera = Section(ContentScroll, "Camera", "-")
+        local camera = Section(ContentScroll, "Camera", "ðŸ“·")
         Slider(camera, {
             text = "Field of View", min = 55, max = 120, def = 70,
             onChanged = function(val)
                 pcall(function() workspace.CurrentCamera.FieldOfView = val end)
             end
         })
-        Button(camera, " Reset FOV (70)", function()
+        Button(camera, "â†º Reset FOV (70)", function()
             pcall(function() workspace.CurrentCamera.FieldOfView = 70 end)
             notif("FOV reset to 70", 2)
         end)
 
-        local quickTP = Section(ContentScroll, "Quick teleports", "")
-        Button(quickTP, " Nearest downed player", function()
+        local quickTP = Section(ContentScroll, "Quick teleports", "ðŸ“¡")
+        Button(quickTP, "ðŸ§ Nearest downed player", function()
             local best, bestDist = nil, math.huge
             for _, p in ipairs(PlayersSvc:GetPlayers()) do
                 if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and IsPlayerDowned(p) then
@@ -5983,7 +5612,7 @@ function UpdateRightContent()
                 notif("No downed players found", 2)
             end
         end)
-        Button(quickTP, " Random loot spot", function()
+        Button(quickTP, "ðŸŽ² Random loot spot", function()
             if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then return end
             local loot = {}
             local map = nil
@@ -6004,10 +5633,10 @@ function UpdateRightContent()
             notif("TP to random loot!", 2)
         end)
 
-    -- ----------- PLAYERS -----------
+    -- â•â•â•â•â•â•â•â•â•â•â• PLAYERS â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Players" then
-        playerListContainer = Section(ContentScroll, "Player list", "")
-        Note(playerListContainer, "Click a row to select - - bring -  TP -  fly - ' view -  freeze")
+        playerListContainer = Section(ContentScroll, "Player list", "â˜°")
+        Note(playerListContainer, "Click a row to select Â· ðŸ”— bring Â· ðŸŒ€ TP Â· ðŸ¦… fly Â· ðŸ‘ view Â· â„ freeze")
         local row = Instance.new("Frame")
         row.Parent = ContentScroll
         row.BackgroundTransparency = 1
@@ -6015,8 +5644,8 @@ function UpdateRightContent()
         local rowLay = Instance.new("UIListLayout", row)
         rowLay.FillDirection = Enum.FillDirection.Horizontal
         rowLay.Padding = UDim.new(0, 6)
-        Button(row, { text = " Refresh", size = UDim2.new(0.48, 0, 0, 30), callback = UpdatePlayerList })
-        Button(row, { text = " Stop all", size = UDim2.new(0.48, 0, 0, 30), callback = function()
+        Button(row, { text = "ðŸ”„ Refresh", size = UDim2.new(0.48, 0, 0, 30), callback = UpdatePlayerList })
+        Button(row, { text = "â¹ Stop all", size = UDim2.new(0.48, 0, 0, 30), callback = function()
             StopView()
             StopBring()
             StopBringAll()
@@ -6024,9 +5653,9 @@ function UpdateRightContent()
         end })
         UpdatePlayerList()
 
-    -- ----------- REVIVE -----------
+    -- â•â•â•â•â•â•â•â•â•â•â• REVIVE â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Revive" then
-        local revive = Section(ContentScroll, "Revive modes", "")
+        local revive = Section(ContentScroll, "Revive modes", "âœš")
         ToggleRow(revive, {
             text = "Auto revive (Safe)", id = "autoRevive", state = settings.AutoReviveLegit,
             desc = "Revives the nearest downed survivor when safe",
@@ -6040,9 +5669,9 @@ function UpdateRightContent()
                 end
             end
         })
-        Button(revive, " Risky revive (one-time)", function() AutoReviveRiskyOneUse() end)
+        Button(revive, "âš¡ Risky revive (one-time)", function() AutoReviveRiskyOneUse() end)
 
-        local selfRevive = Section(ContentScroll, "Self revive", "")
+        local selfRevive = Section(ContentScroll, "Self revive", "ðŸ”„")
         ToggleRow(selfRevive, {
             text = "Auto self revive", id = "selfRevive", state = settings.AutoReviveSelf,
             desc = "Teleports you to a survivor while downed",
@@ -6067,24 +5696,24 @@ function UpdateRightContent()
         local modeLay = Instance.new("UIListLayout", modeRow)
         modeLay.FillDirection = Enum.FillDirection.Horizontal
         modeLay.Padding = UDim.new(0, 6)
-        Button(modeRow, { text = " Random", size = UDim2.new(0.48, 0, 0, 30), callback = function()
+        Button(modeRow, { text = "ðŸ”„ Random", size = UDim2.new(0.48, 0, 0, 30), callback = function()
             settings.selfReviveMode = "Random"
             notif("Revive mode: Random", 2)
         end })
-        Button(modeRow, { text = " Farthest", size = UDim2.new(0.48, 0, 0, 30), callback = function()
+        Button(modeRow, { text = "ðŸ“ Farthest", size = UDim2.new(0.48, 0, 0, 30), callback = function()
             settings.selfReviveMode = "Farthest"
             notif("Revive mode: Farthest", 2)
         end })
 
-    -- ----------- FUN -----------
+    -- â•â•â•â•â•â•â•â•â•â•â• FUN â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Fun" then
-        local fun = Section(ContentScroll, "Target", "")
+        local fun = Section(ContentScroll, "Target", "ðŸŽ¯")
         selectedPlayerLabel = Instance.new("TextButton")
         selectedPlayerLabel.Parent = fun
         selectedPlayerLabel.BorderSizePixel = 0
         selectedPlayerLabel.Size = UDim2.new(1, 0, 0, 32)
         selectedPlayerLabel.Font = Enum.Font.GothamBold
-        selectedPlayerLabel.Text = "Player: None"
+        selectedPlayerLabel.Text = "ðŸ‘¤ Player: None"
         selectedPlayerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         selectedPlayerLabel.TextSize = 12
         selectedPlayerLabel.BackgroundColor3 = UITheme.Accent
@@ -6096,7 +5725,7 @@ function UpdateRightContent()
         AddPressAnim(selectedPlayerLabel)
         if not GetSelectedPlayer() then CyclePlayer() end
 
-        local actions = Section(ContentScroll, "Actions", "")
+        local actions = Section(ContentScroll, "Actions", "âœ¿")
         local row1 = Instance.new("Frame")
         row1.Parent = actions
         row1.BackgroundTransparency = 1
@@ -6104,7 +5733,7 @@ function UpdateRightContent()
         local lay1 = Instance.new("UIListLayout", row1)
         lay1.FillDirection = Enum.FillDirection.Horizontal
         lay1.Padding = UDim.new(0, 6)
-        Button(row1, { text = " Fling", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row1, { text = "ðŸš€ Fling", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if not target then notif("Select a player first", 2) return end
             if FlingActive then notif("Fling already active", 2) return end
@@ -6126,7 +5755,7 @@ function UpdateRightContent()
                 FlingActive = false
             end)()
         end })
-        Button(row1, { text = " Stop fling", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row1, { text = "â¹ Stop fling", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             FlingActive = false
             if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
                 local thrust = lp.Character.HumanoidRootPart:FindFirstChild("YeetForce")
@@ -6142,11 +5771,11 @@ function UpdateRightContent()
         local lay2 = Instance.new("UIListLayout", row2)
         lay2.FillDirection = Enum.FillDirection.Horizontal
         lay2.Padding = UDim.new(0, 6)
-        Button(row2, { text = " Freeze", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row2, { text = "â„ Freeze", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if target then FreezePlayer(target.Name) else notif("Select a player first", 2) end
         end })
-        Button(row2, { text = " Unfreeze", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row2, { text = "ðŸ”¥ Unfreeze", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if target then ThawPlayer(target.Name) else notif("Select a player first", 2) end
         end })
@@ -6158,11 +5787,11 @@ function UpdateRightContent()
         local lay3 = Instance.new("UIListLayout", row3)
         lay3.FillDirection = Enum.FillDirection.Horizontal
         lay3.Padding = UDim.new(0, 6)
-        Button(row3, { text = "' View", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row3, { text = "ðŸ‘ View", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if target then StartView(target.Name) else notif("Select a player first", 2) end
         end })
-        Button(row3, { text = " Stop view", size = UDim2.new(0.48, 0, 0, 32), callback = StopView })
+        Button(row3, { text = "â¹ Stop view", size = UDim2.new(0.48, 0, 0, 32), callback = StopView })
 
         local row4 = Instance.new("Frame")
         row4.Parent = actions
@@ -6171,11 +5800,11 @@ function UpdateRightContent()
         local lay4 = Instance.new("UIListLayout", row4)
         lay4.FillDirection = Enum.FillDirection.Horizontal
         lay4.Padding = UDim.new(0, 6)
-        Button(row4, { text = "- Bring", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row4, { text = "ðŸ”— Bring", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if target then StartBring(target.Name) else notif("Select a player first", 2) end
         end })
-        Button(row4, { text = " Stop bring", size = UDim2.new(0.48, 0, 0, 32), callback = StopBring })
+        Button(row4, { text = "â¹ Stop bring", size = UDim2.new(0.48, 0, 0, 32), callback = StopBring })
 
         local row5 = Instance.new("Frame")
         row5.Parent = actions
@@ -6184,9 +5813,9 @@ function UpdateRightContent()
         local lay5 = Instance.new("UIListLayout", row5)
         lay5.FillDirection = Enum.FillDirection.Horizontal
         lay5.Padding = UDim.new(0, 6)
-        Button(row5, { text = "- Bring All", size = UDim2.new(0.31, 0, 0, 32), callback = StartBringAll })
-        Button(row5, { text = " Unbring", size = UDim2.new(0.31, 0, 0, 32), callback = UnbringSelected })
-        Button(row5, { text = " Stop", size = UDim2.new(0.31, 0, 0, 32), callback = StopBringAll })
+        Button(row5, { text = "ðŸ”— Bring All", size = UDim2.new(0.31, 0, 0, 32), callback = StartBringAll })
+        Button(row5, { text = "ðŸ”™ Unbring", size = UDim2.new(0.31, 0, 0, 32), callback = UnbringSelected })
+        Button(row5, { text = "â¹ Stop", size = UDim2.new(0.31, 0, 0, 32), callback = StopBringAll })
 
         local row6 = Instance.new("Frame")
         row6.Parent = actions
@@ -6195,7 +5824,7 @@ function UpdateRightContent()
         local lay6 = Instance.new("UIListLayout", row6)
         lay6.FillDirection = Enum.FillDirection.Horizontal
         lay6.Padding = UDim.new(0, 6)
-        Button(row6, { text = " TP to target", size = UDim2.new(0.31, 0, 0, 32), callback = function()
+        Button(row6, { text = "ðŸŒ€ TP to target", size = UDim2.new(0.31, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if not target then notif("Select a player first", 2) return end
             if target.Character and target.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
@@ -6205,7 +5834,7 @@ function UpdateRightContent()
                 notif("Player not found", 2)
             end
         end })
-        Button(row6, { text = " Copy tools", size = UDim2.new(0.31, 0, 0, 32), callback = function()
+        Button(row6, { text = "ðŸªž Copy tools", size = UDim2.new(0.31, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if not target then notif("Select a player first", 2) return end
             local copied = 0
@@ -6232,7 +5861,7 @@ function UpdateRightContent()
             end
             notif(copied > 0 and ("Copied " .. copied .. " tool(s) from " .. target.Name) or "No tools found on " .. target.Name, 2)
         end })
-        Button(row6, { text = " Attack target", size = UDim2.new(0.31, 0, 0, 32), callback = function()
+        Button(row6, { text = "âš¡ Attack target", size = UDim2.new(0.31, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if not target then notif("Select a player first", 2) return end
             if target.Character and target.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
@@ -6256,20 +5885,20 @@ function UpdateRightContent()
         local lay7 = Instance.new("UIListLayout", row7)
         lay7.FillDirection = Enum.FillDirection.Horizontal
         lay7.Padding = UDim.new(0, 6)
-        Button(row7, { text = " Admin fly/no-clip (remotes)", size = UDim2.new(1, 0, 0, 32), accent = true, callback = function()
+        Button(row7, { text = "ðŸ¦… Admin fly/no-clip (remotes)", size = UDim2.new(1, 0, 0, 32), accent = true, callback = function()
             local target = GetSelectedPlayer()
             if not target then
                 notif("Select a player first", 2)
                 return
             end
             if TryFireAdminRemote(target) then
-                notif("Admin remotes fired ' " .. target.Name, 2)
+                notif("Admin remotes fired â†’ " .. target.Name, 2)
             else
                 notif("No admin remotes found", 3)
             end
         end })
 
-        local spinSection = Section(ContentScroll, "Party", "")
+        local spinSection = Section(ContentScroll, "Party", "ðŸŒ€")
         local spinHandle = ToggleRow(spinSection, {
             text = "Spin", id = "spin", state = spinActive,
             onToggle = function(val)
@@ -6296,8 +5925,8 @@ function UpdateRightContent()
             onChanged = function(val) flingForce = val end
         })
 
-        -- - CUFF ITEMS  spawner / giver
-        local cuffSection = Section(ContentScroll, "Cuff Items  Spawn / Give / Take", "-")
+        -- ðŸ”— CUFF ITEMS â€” spawner / giver
+        local cuffSection = Section(ContentScroll, "Cuff Items â€” Spawn / Give / Take", "ðŸ”—")
         local cuffStatus = Label(cuffSection, "Scanning for cuffs...", UITheme.SUBTEXT, 11)
         local cuffPlayerOptions = {}
         for i = #cuffPlayerOptions, 1, -1 do cuffPlayerOptions[i] = nil end
@@ -6331,11 +5960,11 @@ function UpdateRightContent()
             end
             local names = GetAllCuffItemNames()
             if #names == 0 then
-                cuffStatus.Text = "- No cuffs found  start a round & rescan"
+                cuffStatus.Text = "ðŸ”— No cuffs found â€” start a round & rescan"
                 Label(cuffRows, "No cuff items in the game right now", UITheme.DIM, 11)
                 return
             end
-            cuffStatus.Text = "- Found " .. #names .. " cuff item(s)"
+            cuffStatus.Text = "ðŸ”— Found " .. #names .. " cuff item(s)"
             local selTarget = GetSelectedPlayer()
             for _, itemName in ipairs(names) do
                 local row = Instance.new("Frame")
@@ -6361,17 +5990,17 @@ function UpdateRightContent()
                 nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 
                 Button(row, {
-                    text = "  Spawn me", size = UDim2.new(0.3, 0, 0, 28), accent = true,
+                    text = "ðŸ›  Spawn me", size = UDim2.new(0.3, 0, 0, 28), accent = true,
                     callback = function() SpawnCuffItemForMe(itemName) end
                 })
 
                 Button(row, {
-                    text = "Give  " .. (selTarget and selTarget.Name or "None"),
+                    text = "Give âžœ " .. (selTarget and selTarget.Name or "None"),
                     size = UDim2.new(0.3, 0, 0, 28),
                     callback = function()
                         local target = GetSelectedPlayer()
                         if not target then
-                            notif("Select a player first (' Player button)", 2)
+                            notif("Select a player first (ðŸ‘¤ Player button)", 2)
                         else
                             GiveCuffItemToPlayer(itemName, target)
                         end
@@ -6380,10 +6009,10 @@ function UpdateRightContent()
             end
         end
 
-        Button(cuffSection, " Rescan cuffs", RebuildCuffList)
+        Button(cuffSection, "ðŸ” Rescan cuffs", RebuildCuffList)
 
         local cuffTargetBox = TextBox(cuffSection, { placeholder = "Give to player name (empty = selected)" })
-        Button(cuffSection, " Give every cuff to target", function()
+        Button(cuffSection, "ðŸŽ Give every cuff to target", function()
             local name = cuffTargetBox.Text ~= "" and cuffTargetBox.Text or nil
             local target = name and GetPlayerByName(name) or GetSelectedPlayer() or lp
             if not target then
@@ -6399,19 +6028,19 @@ function UpdateRightContent()
             for _, itemName in ipairs(names) do
                 if GiveCuffItemToPlayer(itemName, target) then given = given + 1 end
             end
-            notif("Gave - " .. given .. " cuff item(s)  " .. target.Name, 2)
+            notif("Gave ðŸ”— " .. given .. " cuff item(s) âžœ " .. target.Name, 2)
         end)
 
-        Button(cuffSection, "  Take cuffs from selected player", function()
+        Button(cuffSection, "ðŸ›  Take cuffs from selected player", function()
             TakeCuffsFromTarget(GetSelectedPlayer())
         end)
 
-        Button(cuffSection, "-' Remove my cuffs", RemoveMyCuffs)
+        Button(cuffSection, "ðŸ—‘ Remove my cuffs", RemoveMyCuffs)
 
-        Note(cuffSection, "Auto-detects every item named with 'cuff' (backpacks, hands, map). Pick the target with  Home's player chip or the ' button in Actions.")
+        Note(cuffSection, "Auto-detects every item named with 'cuff' (backpacks, hands, map). Pick the target with âŒ‚ Home's player chip or the ðŸ‘¤ button in Actions.")
         task.defer(RebuildCuffList)
 
-    -- ----------- SPAWNER -----------
+    -- â•â•â•â•â•â•â•â•â•â•â• SPAWNER â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Spawner" then
         local function MakeTargetChip(section)
             local chip = Instance.new("TextButton")
@@ -6419,7 +6048,7 @@ function UpdateRightContent()
             chip.BorderSizePixel = 0
             chip.Size = UDim2.new(1, 0, 0, 32)
             chip.Font = Enum.Font.GothamBold
-            chip.Text = "Give to: " .. (GetSelectedPlayer() and GetSelectedPlayer().Name or "None (click me)")
+            chip.Text = "ðŸ‘¤ Give to: " .. (GetSelectedPlayer() and GetSelectedPlayer().Name or "None (click me)")
             chip.TextColor3 = Color3.fromRGB(255, 255, 255)
             chip.TextSize = 12
             chip.AutoButtonColor = false
@@ -6429,7 +6058,7 @@ function UpdateRightContent()
             UITheme:RegisterAccent(function(c) chip.BackgroundColor3 = c end)
             chip.MouseButton1Click:Connect(function()
                 CyclePlayer()
-                chip.Text = "Give to: " .. (GetSelectedPlayer() and GetSelectedPlayer().Name or "None")
+                chip.Text = "ðŸ‘¤ Give to: " .. (GetSelectedPlayer() and GetSelectedPlayer().Name or "None")
             end)
             AddPressAnim(chip)
             return chip
@@ -6463,11 +6092,11 @@ function UpdateRightContent()
                 callback = function() SpawnSpawnItemForMe(itemName) end
             })
             Button(row, {
-                text = "Give ", size = UDim2.new(0.3, 0, 0, 28),
+                text = "Give âžœ", size = UDim2.new(0.3, 0, 0, 28),
                 callback = function()
                     local target = GetSelectedPlayer()
                     if not target then
-                        notif("Pick a target first (' chip)", 2)
+                        notif("Pick a target first (ðŸ‘¤ chip)", 2)
                     else
                         GiveSpawnItemToPlayer(itemName, target)
                     end
@@ -6493,7 +6122,7 @@ function UpdateRightContent()
                 end
                 local names = FindItemsByKeyword(keyword, true)
                 if #names == 0 then
-                    status.Text = title .. "  nothing found (start a round & rescan)"
+                    status.Text = title .. " â€” nothing found (start a round & rescan)"
                     Label(rows, "No items found for: " .. keyword, UITheme.DIM, 11)
                     return
                 end
@@ -6502,12 +6131,12 @@ function UpdateRightContent()
                     MakeItemRow(rows, itemName)
                 end
             end
-            Button(section, " Rescan", function() CollectItemSnapshot(); rebuild() end)
+            Button(section, "ðŸ” Rescan", function() CollectItemSnapshot(); rebuild() end)
             task.defer(rebuild)
             return section
         end
 
-        local targetChipSection = Section(ContentScroll, "Target", "'")
+        local targetChipSection = Section(ContentScroll, "Target", "ðŸ‘¤")
         local targetChip = MakeTargetChip(targetChipSection)
         local spawnerPlayerOptions = {}
         for i = #spawnerPlayerOptions, 1, -1 do spawnerPlayerOptions[i] = nil end
@@ -6521,23 +6150,23 @@ function UpdateRightContent()
             onChanged = function(value)
                 SetSelectedPlayer(value)
                 if targetChip then
-                    targetChip.Text = "Give to: " .. (value and value.Name or "None (click me)")
+                    targetChip.Text = "ðŸ‘¤ Give to: " .. (value and value.Name or "None (click me)")
                 end
                 notif("Give target: " .. (value and value.Name or "None"), 2)
             end
         })
-        Note(targetChipSection, "Pick from the list  scroll it if there are many players")
+        Note(targetChipSection, "Pick from the list â€” scroll it if there are many players")
 
         CollectItemSnapshot()
 
-        BuildSpawnerCategory("Sche-cheveux (Hair Dryer)", "", "dryer|seche|cheveux|hair")
-        BuildSpawnerCategory("Coupe-cheveux (Hair Cutter)", "", "cutter|coupe|rasoir|razor")
-        BuildSpawnerCategory("Cuffs", "-", "cuff|menotte")
-        BuildSpawnerCategory("Lockers", "-", "locker|casier")
-        BuildSpawnerCategory("Gloves", "", "glove|gant")
-        BuildSpawnerCategory("Weapons", "-", "knife|cutter|couteau|couteaux|axe|hache|hatchet|bat|batte|hammer|marteau|sword|epee|blade|gun|pistol|pistolet|rifle|fusil|shotgun|machete|machette|cleaver|wrench|dart|kunai|katana|weapon|arme|dague|sabre")
+        BuildSpawnerCategory("SÃ¨che-cheveux (Hair Dryer)", "ðŸŒ¬", "dryer|seche|cheveux|hair")
+        BuildSpawnerCategory("Coupe-cheveux (Hair Cutter)", "âœ‚", "cutter|coupe|rasoir|razor")
+        BuildSpawnerCategory("Cuffs", "ðŸ”—", "cuff|menotte")
+        BuildSpawnerCategory("Lockers", "ðŸ—„", "locker|casier")
+        BuildSpawnerCategory("Gloves", "ðŸ§¤", "glove|gant")
+        BuildSpawnerCategory("Weapons", "ðŸ—¡", "knife|cutter|couteau|couteaux|axe|hache|hatchet|bat|batte|hammer|marteau|sword|epee|blade|gun|pistol|pistolet|rifle|fusil|shotgun|machete|machette|cleaver|wrench|dart|kunai|katana|weapon|arme|dague|sabre")
 
-        local customSection = Section(ContentScroll, "Custom search", "")
+        local customSection = Section(ContentScroll, "Custom search", "ðŸ”Ž")
         local customBox = TextBox(customSection, { placeholder = "Item keyword: e.g. key, candle, soap ..." })
         local customRows = Instance.new("Frame")
         customRows.Parent = customSection
@@ -6566,19 +6195,19 @@ function UpdateRightContent()
                 MakeItemRow(customRows, itemName)
             end
         end
-        Button(customSection, " Search", RebuildCustomBox)
+        Button(customSection, "ðŸ” Search", RebuildCustomBox)
 
-        local takeSection = Section(ContentScroll, "Take from target", " ")
+        local takeSection = Section(ContentScroll, "Take from target", "ðŸ› ")
         local takeBox = TextBox(takeSection, { placeholder = "Take keyword (empty = cuff), from selected player" })
-        Button(takeSection, "  Take items", function()
+        Button(takeSection, "ðŸ›  Take items", function()
             TakeSpawnItemsFromTarget(GetSelectedPlayer(), takeBox.Text ~= "" and takeBox.Text or "cuff")
         end)
 
-        Note(ContentScroll, "Spawner clones the real in-game item for you or the chosen player. The ' chip above sets the give target.")
+        Note(ContentScroll, "Spawner clones the real in-game item for you or the chosen player. The ðŸ‘¤ chip above sets the give target.")
 
-    -- ----------- TROLL -----------
+    -- â•â•â•â•â•â•â•â•â•â•â• TROLL â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Troll" then
-        local targetSection = Section(ContentScroll, "Troll Target", "")
+        local targetSection = Section(ContentScroll, "Troll Target", "ðŸŽ¯")
         trollTargetDD = Dropdown(targetSection, {
             text = "Target",
             options = trollTargetOptions,
@@ -6589,9 +6218,9 @@ function UpdateRightContent()
             end
         })
         RefreshTrollTargetOptions()
-        Button(targetSection, " Refresh players", RefreshTrollTargetOptions)
+        Button(targetSection, "ðŸ”„ Refresh players", RefreshTrollTargetOptions)
 
-        local flingSection = Section(ContentScroll, "Annoy & Fling", "")
+        local flingSection = Section(ContentScroll, "Annoy & Fling", "ðŸš€")
         TrollHandles.fling = ToggleRow(flingSection, {
             text = "Troll Fling", id = "trollfling", state = TrollCfg.fling,
             desc = "Physics yeet: angular velocity + random force on target",
@@ -6606,33 +6235,33 @@ function UpdateRightContent()
                 if val then TrollAnnoyStart() else TrollAnnoyStop() end
             end
         })
-        Button(flingSection, " Stop all troll actions", function()
+        Button(flingSection, "â¹ Stop all troll actions", function()
             TrollFlingStop()
             TrollAnnoyStop()
             notif("Troll actions stopped", 2)
         end)
 
-        local chatSection = Section(ContentScroll, "Fake Admin / System Chat", "'")
+        local chatSection = Section(ContentScroll, "Fake Admin / System Chat", "ðŸ’¬")
         local function fakeTargetName()
             local t = TrollGetTarget()
             return t and t.Name or "Player"
         end
-        Button(chatSection, "  Fake ban notice", function()
+        Button(chatSection, "âš  Fake ban notice", function()
             FakeSystemMessage("[SYSTEM] " .. fakeTargetName() .. " has been banned by an administrator.", Color3.fromRGB(255, 90, 90))
             FakeNotification("Administrator", fakeTargetName() .. " was banned. Reason: Toxic Behavior", 4)
         end)
-        Button(chatSection, "' Fake kick notice", function()
+        Button(chatSection, "ðŸ›‘ Fake kick notice", function()
             FakeSystemMessage("[SYSTEM] " .. fakeTargetName() .. " was kicked from the server.", Color3.fromRGB(255, 170, 70))
         end)
-        Button(chatSection, " Fake server restart", function()
+        Button(chatSection, "â³ Fake server restart", function()
             FakeSystemMessage("[SYSTEM] Server restarting in 10 seconds. Reason: scheduled maintenance.", Color3.fromRGB(255, 120, 60))
             FakeNotification("Server", "Restarting in 10s...", 5)
         end)
-        Button(chatSection, "- Fake admin join", function()
-            FakeSystemMessage(" sa7loul joined the server. Commands available: !fly !noclip !ban", UITheme.CYAN)
+        Button(chatSection, "ðŸ—£ Fake admin join", function()
+            FakeSystemMessage("ðŸ”§ sa7loul joined the server. Commands available: !fly !noclip !ban", UITheme.CYAN)
         end)
         local fakeBox = TextBox(chatSection, { placeholder = "Custom fake system message..." })
-        Button(chatSection, " Send fake message", function()
+        Button(chatSection, "ðŸ“¨ Send fake message", function()
             if fakeBox.Text ~= "" then
                 FakeSystemMessage(fakeBox.Text, Color3.fromRGB(255, 255, 255))
                 fakeBox.Text = ""
@@ -6642,9 +6271,9 @@ function UpdateRightContent()
         end)
         Note(chatSection, "Messages are client-side (only you see them)")
 
-        local adminRemoteSection = Section(ContentScroll, "Fake Admin (remotes)", "-")
+        local adminRemoteSection = Section(ContentScroll, "Fake Admin (remotes)", "ðŸ–¥")
         local adminCmdBox = TextBox(adminRemoteSection, { placeholder = "Command: fly / noclip / ban ... (empty = raw fire)" })
-        Button(adminRemoteSection, " Fire to troll target", function()
+        Button(adminRemoteSection, "ðŸ“¡ Fire to troll target", function()
             local t = TrollGetTarget()
             if not t then
                 notif("Set a troll target first", 2)
@@ -6652,11 +6281,11 @@ function UpdateRightContent()
             end
             local cmd = adminCmdBox.Text ~= "" and adminCmdBox.Text or nil
             local fired = FakeAdminCommand(cmd, t.Name)
-            notif(cmd and ("Fired '" .. cmd .. "' ' " .. t.Name .. " (" .. fired .. " ok)") or ("Raw fire ' " .. t.Name .. " (" .. fired .. " ok)"), 3)
+            notif(cmd and ("Fired '" .. cmd .. "' â†’ " .. t.Name .. " (" .. fired .. " ok)") or ("Raw fire â†’ " .. t.Name .. " (" .. fired .. " ok)"), 3)
         end)
         Note(adminRemoteSection, "Sends the command through every admin-looking remote it finds")
 
-        local ghostSection = Section(ContentScroll, "Ghost & Tools", "'")
+        local ghostSection = Section(ContentScroll, "Ghost & Tools", "ðŸ‘»")
         ToggleRow(ghostSection, {
             text = "Ghost Mode", id = "ghost", state = TrollCfg.invis,
             desc = "Client-side invisibility for your character",
@@ -6666,7 +6295,7 @@ function UpdateRightContent()
         })
         ToggleRow(ghostSection, {
             text = "Sneaky Seat", id = "sneakyseat", state = TrollCfg.sneakySeat,
-            desc = "Invisible seat  hidden while seated",
+            desc = "Invisible seat â€” hidden while seated",
             onToggle = function(val)
                 if val then TrollSneakySeatStart() else TrollSneakySeatStop() end
             end
@@ -6678,7 +6307,7 @@ function UpdateRightContent()
                 if val then TrollClickTPStart() else TrollClickTPStop() end
             end
         })
-        Button(ghostSection, "- Bring Target", function()
+        Button(ghostSection, "ðŸ”— Bring Target", function()
             local t = TrollGetTarget()
             if t then
                 StartBring(t.Name)
@@ -6687,7 +6316,7 @@ function UpdateRightContent()
             end
         end)
 
-        local screenSection = Section(ContentScroll, "Screen Chaos", "'")
+        local screenSection = Section(ContentScroll, "Screen Chaos", "ðŸ’¥")
         ToggleRow(screenSection, {
             text = "Blur Pulse", id = "blurfx", state = ScreenFx.blurOn,
             desc = "Extreme pulsing blur",
@@ -6708,9 +6337,9 @@ function UpdateRightContent()
             desc = "Constant camera shaking",
             onToggle = function(val) SfxSet("shakeOn", val) end
         })
-        Button(screenSection, " JUMPSCARE!", JumpScareBurst)
+        Button(screenSection, "ðŸ˜± JUMPSCARE!", JumpScareBurst)
 
-        local audioSection = Section(ContentScroll, "Earrape Audio", "")
+        local audioSection = Section(ContentScroll, "Earrape Audio", "ðŸ”Š")
         local earrapeDD = Dropdown(audioSection, {
             text = "Sound",
             options = (function()
@@ -6747,47 +6376,161 @@ function UpdateRightContent()
         })
         Note(audioSection, "All effects are client-side & local (FE-safe)")
 
-    -- ----------- BAN -----------
+    -- â•â•â•â•â•â•â•â•â•â•â• BAN â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Ban" then
-        local banSection = Section(ContentScroll, "Ban Manager", "")
-        Button(banSection, " Fetch ban list", FetchBanList)
-        Button(banSection, " Unban all (list)", UnbanAllFromList)
-        Button(banSection, " Scan storage", StorageScan)
-        Button(banSection, "' Blast unban (all remotes)", BlastUnban)
+        local banSection = Section(ContentScroll, "Ban Manager", "â›”")
+        Button(banSection, "ðŸ“œ Fetch ban list", FetchBanList)
+        Button(banSection, "ðŸ”“ Unban all (list)", UnbanAllFromList)
+        Button(banSection, "ðŸ” Scan storage", StorageScan)
+        Button(banSection, "ðŸ’¥ Blast unban (all remotes)", BlastUnban)
         banBox = TextBox(banSection, { placeholder = "Unban by name / ID" })
-        Button(banSection, " Unban this", function() DoUnban(banBox.Text) end)
+        Button(banSection, "ðŸ”“ Unban this", function() DoUnban(banBox.Text) end)
         ToggleRow(banSection, {
-            text = " Auto-unban on join", id = "autounban", state = autoUnbanOn,
+            text = "âš¡ Auto-unban on join", id = "autounban", state = autoUnbanOn,
             keybind = false,
             onToggle = function(val) autoUnbanOn = val end
         })
         ToggleRow(banSection, {
-            text = " Auto rejoin on kick", id = "autorejoin", state = autoRejoinOn,
+            text = "ðŸ”„ Auto rejoin on kick", id = "autorejoin", state = autoRejoinOn,
             keybind = false,
             onToggle = function(val) autoRejoinOn = val end
         })
         customBox = TextBox(banSection, { placeholder = "Fire custom: RemoteName,arg1,arg2" })
-        Button(banSection, " Fire custom remote", FireCustomRemote)
+        Button(banSection, "ðŸ”¥ Fire custom remote", FireCustomRemote)
 
-        banListContainer = Section(ContentScroll, "Banned players", "")
+        banListContainer = Section(ContentScroll, "Banned players", "ðŸ“‹")
         if #bannedCache > 0 then
             for _, name in ipairs(bannedCache) do
-                Button(banListContainer, " " .. name, function() DoUnban(name) end)
+                Button(banListContainer, "ðŸ”“ " .. name, function() DoUnban(name) end)
             end
         else
-            Label(banListContainer, "List empty  press Fetch", UITheme.DIM, 11)
+            Label(banListContainer, "List empty â€” press Fetch", UITheme.DIM, 11)
         end
         if #storageDump > 0 then
-            local storageSection = Section(ContentScroll, "Storage scan", "-")
+            local storageSection = Section(ContentScroll, "Storage scan", "ðŸ—‚")
             for _, line in ipairs(storageDump) do
                 Label(storageSection, line, UITheme.SUBTEXT, 10)
             end
         end
         Note(ContentScroll, "You must be inside the server to fire bans (rejoin before kick)")
 
-    -- ----------- EXTRAS -----------
+    -- â•â•â•â•â•â•â•â•â•â•â• TSUNAMI â•â•â•â•â•â•â•â•â•â•â•
+    elseif CurrentTab == "  Tsunami" then
+        local popcornMain = Section(ContentScroll, "Popcorn Burst", "â—‰")
+        local stLabel = Label(popcornMain, "ðŸ¿ Minigame: OFF", UITheme.CYAN, 12)
+        PopcornBurstAPI.SetStatusLabel(stLabel)
+        PopcornBurstAPI.UpdateStatus()
+        ToggleRow(popcornMain, {
+            text = "ðŸ¿ Play Popcorn Burst", id = "popcorn", state = PopcornBurstAPI.IsActive(),
+            keybind = false,
+            onToggle = function(val)
+                local ok, err = pcall((val and PopcornBurstAPI.Start or PopcornBurstAPI.Stop))
+                if not ok then
+                    notif("ðŸ¿ Error: " .. tostring(err), 6)
+                end
+            end
+        })
+        Note(popcornMain, "3D table builds in-world â€” walk to it and press E to sit")
+        Note(popcornMain, "Click kernels when the ring meets the target: Perfect +100 | Great +50 | Good +20")
+        Note(popcornMain, "1v1 vs Brainrot Bot Â· +10 win / +2 lose / +5 tie Tokens")
+
+        local legacySection = Section(ContentScroll, "Legacy auto-helpers", "ðŸ› ")
+        local tsStatusLabel = Label(legacySection, "All OFF", UITheme.SUBTEXT, 11)
+        tsunamiStatusLabel = tsStatusLabel
+        pcall(RebuildTsunami)
+        local function TsSet(field, val)
+            tsunamiCfg[field] = val
+            pcall(RebuildTsunami)
+        end
+        ToggleRow(legacySection, {
+            text = "Auto Collect", id = "tscollect", state = tsunamiCfg.on,
+            desc = "TPs to the nearest coin/cash/loot part",
+            keybind = false,
+            onToggle = function(val) TsSet("on", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Auto Clicker", id = "tsclicker", state = tsunamiCfg.clicker,
+            desc = "Clicks non-stop at the mouse position",
+            keybind = false,
+            onToggle = function(val) TsSet("clicker", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Popcorn auto-click (GUI)", id = "tspopcorn", state = tsunamiCfg.popcorn,
+            desc = "Spam-clicks green circle/ring UI elements",
+            keybind = false,
+            onToggle = function(val) TsSet("popcorn", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "God Mode", id = "tsgod", state = tsunamiCfg.god,
+            desc = "Keeps your health & stamina full",
+            keybind = false,
+            onToggle = function(val) TsSet("god", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Auto Jump", id = "tsjump", state = tsunamiCfg.autojump,
+            desc = "Jumps every 0.6s",
+            keybind = false,
+            onToggle = function(val) TsSet("autojump", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Safe TP", id = "tssafe", state = tsunamiCfg.safe,
+            desc = "Teleports you to a safe spot every 2s",
+            keybind = false,
+            onToggle = function(val) TsSet("safe", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Minigame Bot", id = "tsmg", state = tsunamiCfg.mgBot,
+            desc = "Clicks fish/cast/reel/play buttons automatically",
+            keybind = false,
+            onToggle = function(val) TsSet("mgBot", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "C4 Clicker", id = "tsc4", state = tsunamiCfg.c4,
+            desc = "Actives col/cell/slot/connect buttons",
+            keybind = false,
+            onToggle = function(val) TsSet("c4", val) end
+        })
+        Slider(legacySection, {
+            text = "Collect delay", min = 5, max = 100, def = 35,
+            onChanged = function(val) tsunamiCfg.collectDelay = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "Popcorn cooldown", min = 5, max = 100, def = 35,
+            onChanged = function(val) tsunamiCfg.popCooldown = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "Safe TP delay", min = 50, max = 500, def = 200,
+            onChanged = function(val) tsunamiCfg.safeDelay = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "Minigame bot delay", min = 20, max = 300, def = 80,
+            onChanged = function(val) tsunamiCfg.mgBotDelay = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "C4 delay", min = 20, max = 300, def = 120,
+            onChanged = function(val) tsunamiCfg.c4Delay = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "C4 column (0 = random)", min = 0, max = 7, def = 0,
+            onChanged = function(val) tsunamiCfg.c4Col = val end
+        })
+        Button(legacySection, "â¹ Stop all helpers", function()
+            tsunamiCfg.on = false
+            tsunamiCfg.clicker = false
+            tsunamiCfg.popcorn = false
+            tsunamiCfg.god = false
+            tsunamiCfg.autojump = false
+            tsunamiCfg.safe = false
+            tsunamiCfg.mgBot = false
+            tsunamiCfg.c4 = false
+            pcall(RebuildTsunami)
+            notif("Tsunami helpers stopped", 2)
+        end)
+        Note(legacySection, "Generic auto-clickers â€” work in any game with GUI buttons. Status refreshes every second.")
+
+    -- â•â•â•â•â•â•â•â•â•â•â• EXTRAS â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Extras" then
-        local scriptsSection = Section(ContentScroll, "External scripts", "-")
+        local scriptsSection = Section(ContentScroll, "External scripts", "â–¤")
         local addRow = Instance.new("Frame")
         addRow.Parent = scriptsSection
         addRow.BackgroundTransparency = 1
@@ -6838,7 +6581,7 @@ function UpdateRightContent()
         end })
 
         for _, scriptData in ipairs(more_scripts) do
-            Button(scriptsSection, " " .. scriptData.name, function()
+            Button(scriptsSection, "ðŸ“œ " .. scriptData.name, function()
                 notif("Loading: " .. scriptData.name, 2)
                 local success, err = pcall(function()
                     local func = loadstring(scriptData.script)
@@ -6851,7 +6594,7 @@ function UpdateRightContent()
         end
 
         if #userScripts > 0 then
-            local userSection = Section(ContentScroll, "Your scripts", "")
+            local userSection = Section(ContentScroll, "Your scripts", "ðŸ“")
             for i, scriptData in ipairs(userScripts) do
                 local frameRow = Instance.new("Frame")
                 frameRow.Parent = userSection
@@ -6860,7 +6603,7 @@ function UpdateRightContent()
                 local sLay = Instance.new("UIListLayout", frameRow)
                 sLay.FillDirection = Enum.FillDirection.Horizontal
                 sLay.Padding = UDim.new(0, 6)
-                Button(frameRow, { text = " " .. scriptData.name, size = UDim2.new(0.8, 0, 1, 0), callback = function()
+                Button(frameRow, { text = "ðŸ“œ " .. scriptData.name, size = UDim2.new(0.8, 0, 1, 0), callback = function()
                     notif("Loading: " .. scriptData.name, 2)
                     local success, err = pcall(function()
                         local func = loadstring(scriptData.script)
@@ -6868,16 +6611,16 @@ function UpdateRightContent()
                     end)
                     if not success and err then notif("Error: " .. tostring(err), 3) end
                 end })
-                Button(frameRow, { text = "Remove", size = UDim2.new(0.18, 0, 1, 0), callback = function()
+                Button(frameRow, { text = "âœ•", size = UDim2.new(0.18, 0, 1, 0), callback = function()
                     RemoveUserScript(i)
                 end })
             end
         end
 
-    -- ----------- SETTINGS -----------
+    -- â•â•â•â•â•â•â•â•â•â•â• SETTINGS â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Settings" then
-        local keySection = Section(ContentScroll, "Keybinds", "")
-        Note(keySection, "Click a chip on any toggle ' press the key you want. Backspace/Delete = clear.")
+        local keySection = Section(ContentScroll, "Keybinds", "âŒ¨")
+        Note(keySection, "Click a chip on any toggle â†’ press the key you want. Backspace/Delete = clear.")
         ToggleRow(keySection, {
             text = "Menu Keybind", id = "menu", state = true,
             desc = "Hides / shows this menu (default RightShift)",
@@ -6886,18 +6629,18 @@ function UpdateRightContent()
                 Window.Visible = val
             end
         })
-        Button(keySection, "-' Reset ALL keybinds", function()
+        Button(keySection, "ðŸ—‘ Reset ALL keybinds", function()
             KeybindsLib:ResetAll()
             notif("All keybinds cleared", 2)
         end)
 
-        local themeSection = Section(ContentScroll, "Theme", "")
+        local themeSection = Section(ContentScroll, "Theme", "ðŸŽ¨")
         ToggleRow(themeSection, {
             text = "RGB Mode", id = "rgb", state = UITheme.RGB,
             keybind = false,
             onToggle = function(val)
                 UITheme.RGB = val
-                rgbQuick.Text = "RGB Mode: " .. (val and "ON" or "OFF")
+                rgbQuick.Text = "âš¡ RGB Mode: " .. (val and "ON" or "OFF")
                 rgbQuick.TextColor3 = val and UITheme.Accent or UITheme.SUBTEXT
                 if not val then
                     UITheme.Accent = UITheme.CYAN
@@ -6906,7 +6649,7 @@ function UpdateRightContent()
             end
         })
 
-        local configSection = Section(ContentScroll, "Configs", "")
+        local configSection = Section(ContentScroll, "Configs", "âš™")
         local configNameBox = TextBox(configSection, { placeholder = "Config name", initial = "Default" })
         local configRow = Instance.new("Frame")
         configRow.Parent = configSection
@@ -6920,19 +6663,19 @@ function UpdateRightContent()
             if n == "" then n = "Default" end
             return n
         end
-        Button(configRow, { text = "' Save", size = UDim2.new(0.32, -4, 1, 0), callback = function() SaveConfig(cfgName()) end })
-        Button(configRow, { text = " Load", size = UDim2.new(0.32, -4, 1, 0), callback = function()
+        Button(configRow, { text = "ðŸ’¾ Save", size = UDim2.new(0.32, -4, 1, 0), callback = function() SaveConfig(cfgName()) end })
+        Button(configRow, { text = "ðŸ“‚ Load", size = UDim2.new(0.32, -4, 1, 0), callback = function()
             LoadConfig(cfgName())
             KeybindsLib:Restore(settings.keybinds)
             UpdateRightContent()
         end })
-        Button(configRow, { text = "-' Delete", size = UDim2.new(0.32, -4, 1, 0), callback = function() DeleteConfig(cfgName()) end })
+        Button(configRow, { text = "ðŸ—‘ Delete", size = UDim2.new(0.32, -4, 1, 0), callback = function() DeleteConfig(cfgName()) end })
 
-        local configListSection = Section(ContentScroll, "Saved configs", "")
+        local configListSection = Section(ContentScroll, "Saved configs", "ðŸ“‹")
         local configsList = GetConfigList()
         if #configsList > 0 then
             for _, name in ipairs(configsList) do
-                Button(configListSection, " " .. name, function()
+                Button(configListSection, "ðŸ“„ " .. name, function()
                     configNameBox.Text = name
                     LoadConfig(name)
                     KeybindsLib:Restore(settings.keybinds)
@@ -6943,12 +6686,12 @@ function UpdateRightContent()
             Label(configListSection, "No saved configs", UITheme.SUBTEXT, 11)
         end
 
-        local unbanSection = Section(ContentScroll, "Account", "")
-        Button(unbanSection, " Try Unban", TryUnban)
-        Button(unbanSection, " Rejoin fresh", RejoinFresh)
+        local unbanSection = Section(ContentScroll, "Account", "ðŸ›¡")
+        Button(unbanSection, "ðŸ›¡ Try Unban", TryUnban)
+        Button(unbanSection, "ðŸ” Rejoin fresh", RejoinFresh)
         Note(unbanSection, "Only works vs remote-based bans")
 
-        local otherSection = Section(ContentScroll, "Other", "")
+        local otherSection = Section(ContentScroll, "Other", "ðŸ”§")
         ToggleRow(otherSection, {
             text = "Anti-AFK", id = "antiafk", state = settings.AntiAFK,
             onToggle = function(val)
@@ -6969,46 +6712,51 @@ function UpdateRightContent()
                 end
             end
         })
-        ToggleRow(otherSection, {
-            text = "Stream Proof", id = "streamproof", state = settings.StreamProof,
-            onToggle = function(val)
-                settings.StreamProof = val
-                if val then
-                    StartStreamProofDetection()
-                    notif("Stream Proof: Enabled", 2)
-                else
-                    StopStreamProofDetection()
-                    SetGuiVisibility(true)
-                    notif("Stream Proof: Disabled", 2)
-                end
-            end
-        })
-        Button(otherSection, " Mic Bypass", ToggleMicBypass)
-        Button(otherSection, " Unmute mic", UnmuteMic)
+        Button(otherSection, "ðŸŽ¤ Mic Bypass", ToggleMicBypass)
+        Button(otherSection, "ðŸ”“ Unmute mic", UnmuteMic)
 
         local footer = Instance.new("Frame")
         footer.Parent = ContentScroll
         footer.BackgroundTransparency = 1
         footer.Size = UDim2.new(1, 0, 0, 60)
         footer.LayoutOrder = 999999
-        Label(footer, "Supports STK v2.31.0    sa7loul V3 Premium", UITheme.SUBTEXT, 11)
-        Label(footer, "Keep it cute, keep it clean -", UITheme.CYAN, 11)
+        Label(footer, "Supports STK v2.31.0  â€¢  sa7loul V3 Premium", UITheme.SUBTEXT, 11)
+        Label(footer, "Keep it cute, keep it clean ðŸ–¤", UITheme.CYAN, 11)
     end
 end
 
---  INIT 
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ INIT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 BuildSidebar()
 CurrentTab = "  Home"
 RefreshTabVisuals()
 UpdateRightContent()
 
--- click-TP dispatcher
+-- click-TP dispatcher + popcorn burst clicks
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode == Enum.KeyCode.E and PopcornBurstAPI.active then
+            PopcornBurstAPI.TrySit()
+        end
         return
     end
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if PopcornBurstAPI.active then
+            local cam = workspace.CurrentCamera
+            local m = UserInputService:GetMouseLocation()
+            if cam then
+                local ray = cam:ViewportPointToRay(m.X, m.Y)
+                local params = RaycastParams.new()
+                params.FilterType = Enum.RaycastFilterType.Exclude
+                local chr = lp.Character
+                if chr then params.FilterDescendantsInstances = { chr } end
+                params.RespectCanCollide = false
+                local res = workspace:Raycast(ray.Origin, ray.Direction * 500, params)
+                if res and PopcornBurstAPI.TryHit(res.Instance) then
+                    return
+                end
+            end
+        end
         if TrollCfg.clickTP then
             TrollClickTPFire()
         end
@@ -7050,8 +6798,6 @@ lp.CharacterAdded:Connect(function(char)
     UpdateESP()
     UpdateDoubleJump()
     UpdateKillerChance()
-    UpdateFly()
-    UpdateNoclip()
     if TrollCfg.sneakySeat then
         task.wait(0.5)
         TrollSneakySeatStart()
@@ -7112,4 +6858,4 @@ UpdateDoubleJump()
 UpdateKillerChance()
 UpdateAllFeatures()
 
-notif(" sa7loul V3 Premium  loaded | RightShift hides menu", 4)
+notif("âœ¨ sa7loul V3 Premium â€” loaded | RightShift hides menu", 4)
