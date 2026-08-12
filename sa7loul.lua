@@ -1349,6 +1349,23 @@ end
 
 local function FetchBanList()
     bannedCache = {}
+    local seen = {}
+    local function addEntry(entry)
+        local name = nil
+        if type(entry) == "string" then
+            name = entry
+        elseif type(entry) == "number" then
+            name = tostring(entry)
+        elseif typeof(entry) == "Instance" then
+            name = entry.Name
+        elseif type(entry) == "table" then
+            name = entry.Name or entry.name or entry.username or (entry.UserId and tostring(entry.UserId)) or (entry.userId and tostring(entry.userId))
+        end
+        if name and name ~= "" and not seen[name] then
+            seen[name] = true
+            table.insert(bannedCache, name)
+        end
+    end
     local remotes = {}
     for _, root in ipairs({game:GetService("ReplicatedStorage"), workspace}) do
         if root then
@@ -1361,29 +1378,44 @@ local function FetchBanList()
     end
     for _, r in ipairs(remotes) do
         if r:IsA("RemoteFunction") then
-            for _, p in ipairs({{"getBans"}, {"GetBans"}, {"getBanList"}, {"GetBanList"}, {"getBannedUsers"}, {"GetBannedUsers"}, {"get"}, {"fetch"}}) do
-                local ok, res = pcall(function()
+            local ok, res = pcall(function()
+                return r:InvokeServer()
+            end)
+            if ok and type(res) == "table" then
+                for _, entry in ipairs(res) do addEntry(entry) end
+            end
+            if #bannedCache > 0 then break end
+            for _, p in ipairs({{"getBans"}, {"GetBans"}, {"getBanList"}, {"GetBanList"}, {"getBannedUsers"}, {"GetBannedUsers"}, {"get"}, {"fetch"}, {"list"}}) do
+                local ok2, res2 = pcall(function()
                     return r:InvokeServer(unpack2(p))
                 end)
-                if ok and type(res) == "table" then
-                    for _, entry in ipairs(res) do
-                        local name = nil
-                        if type(entry) == "string" then
-                            name = entry
-                        elseif type(entry) == "number" then
-                            name = tostring(entry)
-                        elseif typeof(entry) == "Instance" then
-                            name = entry.Name
-                        elseif type(entry) == "table" then
-                            name = entry.Name or (entry.UserId and tostring(entry.UserId))
-                        end
-                        if name then table.insert(bannedCache, name) end
-                    end
+                if ok2 and type(res2) == "table" then
+                    for _, entry in ipairs(res2) do addEntry(entry) end
                     if #bannedCache > 0 then break end
                 end
             end
         end
         if #bannedCache > 0 then break end
+    end
+    if #bannedCache == 0 then
+        for _, root in ipairs({game:GetService("ReplicatedStorage"), workspace}) do
+            if root then
+                for _, obj in ipairs(root:GetDescendants()) do
+                    local n = string.lower(obj.Name)
+                    if n:match("ban") or n:match("banned") or n:match("blacklist") then
+                        if obj:IsA("Folder") or obj:IsA("Model") then
+                            for _, child in ipairs(obj:GetChildren()) do
+                                addEntry(child)
+                                if child:IsA("IntValue") then addEntry(child.Value) end
+                            end
+                        elseif obj:IsA("IntValue") or obj:IsA("StringValue") or obj:IsA("NumberValue") then
+                            addEntry(obj)
+                            if obj:IsA("IntValue") then addEntry(obj.Value) end
+                        end
+                    end
+                end
+            end
+        end
     end
     if #bannedCache > 0 then
         notif("Found " .. #bannedCache .. " banned player(s)", 2)
