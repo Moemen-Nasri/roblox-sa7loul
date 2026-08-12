@@ -1,4 +1,4 @@
--- sa7loul | Survive the Killer V2
+-- sa7loul 
 -- Support version v2.31.0
 -- Integrated with Sahloul Auth & Stream Proof
 
@@ -507,14 +507,49 @@ local function CreateLoginGui()
         statusLabel.Text = "Loading..."
         statusLabel.TextColor3 = Color3.fromRGB(61, 224, 200)
         
-        -- Simulate authentication (replace with real Sahloul Auth)
+        -- Real Sahloul Auth integration
         spawn(function()
-            wait(1)
+            local APP_NAME = "s7roblox"
+            local APP_SECRET = "5UQZZajX4YOrEnjTS9GwHKFNhM7rQ7tQ"
             
-            -- For demo purposes, accept any license with format XXXX-XXXX-XXXX-XXXX
-            if license:match("^%w%w%w%w%-%w%w%w%w%-%w%w%w%w%-%w%w%w%w$") then
+            -- Generate HWID
+            local hwid = game:GetService("Players").LocalPlayer.UserId .. "_" .. tick()
+            
+            -- Make HTTP request to Sahloul Auth API
+            local success, result = pcall(function()
+                local url = "https://auth.sahloul.dev/api/v1/liclogin"
+                local data = {
+                    appname = APP_NAME,
+                    license = license,
+                    hwid = hwid
+                }
+                
+                local response = HttpService:RequestAsync({
+                    Url = url,
+                    Method = "POST",
+                    Headers = {
+                        ["Content-Type"] = "application/json",
+                        ["X-Sahloul-App"] = APP_NAME,
+                        ["X-Sahloul-Secret"] = APP_SECRET
+                    },
+                    Body = HttpService:JSONEncode(data)
+                })
+                
+                if response and response.Success then
+                    local responseData = HttpService:JSONDecode(response.Body)
+                    if responseData.success then
+                        return responseData.data
+                    else
+                        return nil, responseData.message or "Authentication failed"
+                    end
+                else
+                    return nil, "Network error: " .. (response and response.StatusCode or "unknown")
+                end
+            end)
+            
+            if success and result then
                 LoginGui.authenticated = true
-                LoginGui.session = {license = license, username = "User"}
+                LoginGui.session = result
                 
                 -- Save credentials if remember me is enabled
                 if rememberMe then
@@ -527,7 +562,7 @@ local function CreateLoginGui()
                     ClearCredentials()
                 end
                 
-                statusLabel.Text = "Success! Loading main menu..."
+                statusLabel.Text = "Success! Welcome, " .. (result.username or "User")
                 statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
                 
                 wait(1)
@@ -539,8 +574,17 @@ local function CreateLoginGui()
                     LoginGui.mainFrame = nil
                 end)
             else
-                statusLabel.Text = "Error: Invalid license format"
+                local errorMsg = result or "Unknown error"
+                statusLabel.Text = "Error: " .. errorMsg
                 statusLabel.TextColor3 = Color3.fromRGB(244, 67, 54)
+                
+                -- Shake animation for error
+                local originalPos = mainFrame.Position
+                for i = 1, 3 do
+                    mainFrame.Position = originalPos + UDim2.new(0, (i % 2 == 0 and 5 or -5), 0, 0)
+                    wait(0.05)
+                end
+                mainFrame.Position = originalPos
             end
         end)
     end)
