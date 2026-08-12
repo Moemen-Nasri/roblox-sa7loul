@@ -1302,6 +1302,107 @@ local function RejoinFresh()
     end
 end
 
+local bannedCache = {}
+local banListContainer = nil
+
+local function DoUnban(name)
+    if not name or name == "" then
+        notif("Write a name or ID first", 2)
+        return
+    end
+    local remotes = ScanUnbanRemotes()
+    if #remotes == 0 then
+        notif("No ban remotes found", 2)
+        return
+    end
+    local id = tonumber(name) or name
+    local payloads = {
+        {"unban", name}, {"unban", id, true}, {"Unban", name}, {"Unban", id},
+        {"unbanUser", id}, {"unbanByUserId", id}, {"unban", id, false},
+        {"whitelist", id}, {"unban", id, "0"}
+    }
+    local hits = 0
+    for _, remote in ipairs(remotes) do
+        for _, args in ipairs(payloads) do
+            local fired = pcall(function()
+                if remote:IsA("RemoteFunction") then
+                    remote:InvokeServer(unpack2(args))
+                else
+                    remote:FireServer(unpack2(args))
+                end
+            end)
+            if fired then hits = hits + 1 end
+        end
+        local raw = pcall(function()
+            if remote:IsA("RemoteFunction") then
+                remote:InvokeServer(id)
+            else
+                remote:FireServer(id)
+            end
+        end)
+        if raw then hits = hits + 1 end
+    end
+    notif("Unban fired for: " .. name .. " (" .. hits .. ")", 2)
+end
+
+local function FetchBanList()
+    bannedCache = {}
+    local remotes = {}
+    for _, root in ipairs({game:GetService("ReplicatedStorage"), workspace}) do
+        if root then
+            for _, obj in ipairs(root:GetDescendants()) do
+                if (obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction")) and string.lower(obj.Name):match("ban") then
+                    table.insert(remotes, obj)
+                end
+            end
+        end
+    end
+    for _, r in ipairs(remotes) do
+        if r:IsA("RemoteFunction") then
+            for _, p in ipairs({{"getBans"}, {"GetBans"}, {"getBanList"}, {"GetBanList"}, {"getBannedUsers"}, {"GetBannedUsers"}, {"get"}, {"fetch"}}) do
+                local ok, res = pcall(function()
+                    return r:InvokeServer(unpack2(p))
+                end)
+                if ok and type(res) == "table" then
+                    for _, entry in ipairs(res) do
+                        local name = nil
+                        if type(entry) == "string" then
+                            name = entry
+                        elseif type(entry) == "number" then
+                            name = tostring(entry)
+                        elseif typeof(entry) == "Instance" then
+                            name = entry.Name
+                        elseif type(entry) == "table" then
+                            name = entry.Name or (entry.UserId and tostring(entry.UserId))
+                        end
+                        if name then table.insert(bannedCache, name) end
+                    end
+                    if #bannedCache > 0 then break end
+                end
+            end
+        end
+        if #bannedCache > 0 then break end
+    end
+    if #bannedCache > 0 then
+        notif("Found " .. #bannedCache .. " banned player(s)", 2)
+    else
+        notif("Ban list not exposed (protected)", 2)
+    end
+    if CurrentTab == "  Ban" then UpdateRightContent() end
+end
+
+local function UnbanAllFromList()
+    if #bannedCache == 0 then
+        notif("Ban list empty — fetch first", 2)
+        return
+    end
+    for _, name in ipairs(bannedCache) do
+        DoUnban(name)
+        task.wait(0.05)
+    end
+    notif("Unban fired for all " .. #bannedCache, 2)
+end
+
 local function isKillerNearby(position, radius)
     for _, player in ipairs(game.Players:GetPlayers()) do
         if player ~= lp and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -2103,6 +2204,7 @@ local MenuItems = {
     {key = "  World", label = "🌍 World"},
     {key = "  Players", label = "👥 Players"},
     {key = "  Revive", label = "💉 Revive"},
+    {key = "  Ban", label = "⛔ Ban"},
     {key = "  Fun", label = "🎮 Fun"},
     {key = "  More", label = "📦 Extras"},
     {key = "  Settings", label = "⚙️ Settings"}
@@ -3327,6 +3429,26 @@ function UpdateRightContent()
                 end
             end
         end)
+        
+    elseif CurrentTab == "  Ban" then
+        local banSection = CreateSection(RightContent, "⛔ Ban manager")
+        CreateButton(banSection, "📜 Fetch ban list", FetchBanList)
+        CreateButton(banSection, "🔓 Unban all (list)", UnbanAllFromList)
+        local banBox = CreateTextBox(banSection, "Unban by name / ID")
+        CreateButton(banSection, "🔓 Unban this", function()
+            DoUnban(banBox.Text)
+        end)
+        banListContainer = CreateSection(RightContent, "📋 Banned players")
+        if #bannedCache > 0 then
+            for _, name in ipairs(bannedCache) do
+                CreateButton(banListContainer, "🔓 " .. name, function()
+                    DoUnban(name)
+                end)
+            end
+        else
+            CreateLabel(banListContainer, "List empty — press Fetch", TEXT_DIM)
+        end
+        CreateLabel(RightContent, "You must be inside the server to fire bans (rejoin before kick)", TEXT_DIM)
         
     elseif CurrentTab == "  More" then
         local scriptsSection = CreateSection(RightContent, "📦 External scripts")
