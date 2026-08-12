@@ -1859,7 +1859,10 @@ do
     -- ===== STATUS + BEST SCORE =====
     local function PopcornUpdateStatus()
         if not statusLabel or not statusLabel.Parent then return end
-        if popcornCfg.active then
+        if popcornCfg.mode == "playing" and popcornCfg.round then
+            statusLabel.Text = "🍿 Playing · Score: " .. popcornCfg.round.scores.me
+                .. " · Best: " .. popcornCfg.best
+        elseif popcornCfg.active then
             statusLabel.Text = "🍿 ON · Best: " .. popcornCfg.best
         else
             statusLabel.Text = "🍿 Minigame: OFF · Best: " .. popcornCfg.best
@@ -2245,7 +2248,7 @@ do
         p.Position = popcornCfg.tableTop.CFrame * hole
         p.Anchored = true
         p.CanCollide = false
-        p.CanQuery = false
+        p.CanQuery = true
         p.CanTouch = false
         p.Transparency = 1
         p:SetAttribute("Kid", kernelId)
@@ -2288,6 +2291,17 @@ do
                 popcornCfg.sfx:Play()
             end
         end
+        -- live feedback: judgement flash on the score display + status label
+        PopcornSetScore(round.scores.me, round.scores.bot,
+            judgement .. " +" .. tostring(points))
+        task.spawn(function()
+            task.wait(1.1)
+            if round and not round.finished and popcornCfg.mode == "playing" then
+                PopcornSetScore(round.scores.me, round.scores.bot,
+                    "Time: " .. string.format("%.1f", os.clock() - round.start - POPCONFIG.Countdown) .. "s")
+            end
+        end)
+        PopcornUpdateStatus()
     end
 
     local function PopcornBotAttempt(kernelId)
@@ -2448,6 +2462,28 @@ do
 
         local mouse = UserInputService:GetMouseLocation()
         local ray = cam:ViewportPointToRay(mouse.X, mouse.Y)
+
+        -- PRIMARY HIT TEST: physical raycast straight onto the kernel parts
+        local rayParams = RaycastParams.new()
+        rayParams.FilterType = Enum.RaycastFilterType.Exclude
+        local char = lp.Character
+        if char then rayParams.FilterDescendantsInstances = { char } end
+        local result = Workspace:Raycast(ray.Origin, ray.Direction * 400, rayParams)
+        if result and result.Instance then
+            local id = result.Instance:GetAttribute("Kid")
+            if id then
+                local k = popcornCfg.activeKernels[id]
+                if k then
+                    PopcornRemoveKernelVisual(id)
+                    PopcornPopBurst(k.center)
+                    local err = math.abs(os.clock() - round.kernels[id].expected)
+                    PopcornJudge("me", id, false, err)
+                    return
+                end
+            end
+        end
+
+        -- FALLBACK: plane intersection math over the board surface
         local planeY = popcornCfg.tableTop.Position.Y + 0.15
         if math.abs(ray.Direction.Y) < 0.0001 then return end
         local tHit = (planeY - ray.Origin.Y) / ray.Direction.Y
@@ -2472,10 +2508,17 @@ do
     end
 
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
-        if input.UserInputType == Enum.UserInputType.MouseButton1
-            or input.UserInputType == Enum.UserInputType.Touch then
-            pcall(PopcornClick)
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1
+            and input.UserInputType ~= Enum.UserInputType.Touch then
+            return
+        end
+        -- during a round we OWN the board view: accept clicks even when the
+        -- game UI consumed them so nothing swallows our clicks
+        if popcornCfg.mode ~= "playing" and gameProcessed then return end
+        local ok, err = pcall(PopcornClick)
+        if not ok and os.clock() - (popcornCfg.lastClickErr or 0) > 4 then
+            popcornCfg.lastClickErr = os.clock()
+            notif("🍿 Click error: " .. tostring(err), 5)
         end
     end)
 
