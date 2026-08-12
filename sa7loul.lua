@@ -1065,48 +1065,56 @@ local function TryFireAdminRemote(target)
     return false
 end
 
-local function GiveFlyNoClip(target)
-    if not target then return end
-    local fx = flyFx[target]
+local function GiveFlyNoClip()
+    if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then
+        notif("No character", 2)
+        return
+    end
+    local fx = flyFx[lp]
     if fx then
         if fx.connection then fx.connection:Disconnect() end
         if fx.bv and fx.bv.Parent then fx.bv:Destroy() end
-        if target.Character then
-            for _, part in ipairs(target.Character:GetDescendants()) do
+        if lp.Character then
+            for _, part in ipairs(lp.Character:GetDescendants()) do
                 if part:IsA("BasePart") then part.CanCollide = true end
             end
+            local hum = lp.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.PlatformStand = false end
         end
-        flyFx[target] = nil
-        notif("Fly+NoClip OFF: " .. target.Name, 2)
+        flyFx[lp] = nil
+        notif("Fly+NoClip OFF", 2)
         return
     end
     
-    local adminHit = TryFireAdminRemote(target)
-    
-    if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-        local root = target.Character.HumanoidRootPart
-        local bv = Instance.new("BodyVelocity")
-        bv.Name = "Sa7loulFly"
-        bv.MaxForce = Vector3.new(0, 9e9, 0)
-        bv.Velocity = Vector3.new(0, 0, 0)
-        bv.P = 120000
-        bv.Parent = root
-        local conn = RunService.Stepped:Connect(function()
-            if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                local r = target.Character.HumanoidRootPart
-                local v = r.AssemblyLinearVelocity
-                if v.Y < 0 then r.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z) end
-                bv.Velocity = Vector3.new(0, 0, 0)
-                for _, part in ipairs(target.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then part.CanCollide = false end
-                end
-            end
-        end)
-        flyFx[target] = {bv = bv, connection = conn}
-        notif((adminHit and "Admin give Fly+NoClip: " or "Fly+NoClip: ") .. target.Name, 2)
-    else
-        notif("Target has no character", 2)
-    end
+    local root = lp.Character.HumanoidRootPart
+    local bv = Instance.new("BodyVelocity")
+    bv.Name = "Sa7loulFly"
+    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bv.Velocity = Vector3.new(0, 0, 0)
+    bv.P = 120000
+    bv.Parent = root
+    local speed = 55
+    local conn = RunService.RenderStepped:Connect(function()
+        if not (lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")) then return end
+        local r = lp.Character.HumanoidRootPart
+        local cam = workspace.CurrentCamera
+        local moveDir = Vector3.new()
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir + Vector3.new(0, -1, 0) end
+        if moveDir.Magnitude > 0 then moveDir = moveDir.Unit * speed end
+        bv.Velocity = moveDir
+        for _, part in ipairs(lp.Character:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+        local hum = lp.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.PlatformStand = true end
+    end)
+    flyFx[lp] = {bv = bv, connection = conn}
+    notif("Fly+NoClip ON (WASD + Space/LCtrl)", 2)
 end
 
 local function isKillerNearby(position, radius)
@@ -2346,17 +2354,22 @@ local function CreatePlayerEntry(parent, player)
         createToggleBtn("🌀", TEAL, Color3.fromRGB(30, 150, 130), function()
             if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
                 local root = player.Character.HumanoidRootPart
-                root.Anchored = true
-                root.CFrame = lp.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
+                local bp = Instance.new("BodyPosition")
+                bp.Name = "Sa7loulTP"
+                bp.P = 9e9
+                bp.D = 2e4
+                bp.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                bp.Position = lp.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
+                bp.Parent = root
                 task.wait(0.15)
-                root.Anchored = false
+                if bp.Parent then bp:Destroy() end
                 notif("Teleported: " .. player.Name, 2)
             else
                 notif("Player not found", 2)
             end
         end)
         createToggleBtn("🦅", Color3.fromRGB(120, 90, 255), Color3.fromRGB(80, 50, 220), function()
-            GiveFlyNoClip(player)
+            GiveFlyNoClip()
         end)
         createToggleBtn("👁", Color3.fromRGB(50, 160, 255), Color3.fromRGB(30, 110, 200), function(on)
             if on then StartView(player.Name) else StopView() end
