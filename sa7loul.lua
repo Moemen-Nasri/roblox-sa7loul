@@ -73,7 +73,7 @@ local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 
--- DESIGN COLORS â€” soft rose & teal palette
+-- DESIGN COLORS — soft rose & teal palette
 local ACCENT = Color3.fromRGB(255, 94, 148)      -- soft rose
 local ACCENT_DARK = Color3.fromRGB(196, 60, 106)
 local TEAL = Color3.fromRGB(61, 224, 200)
@@ -89,7 +89,7 @@ local BORDER_COLOR = Color3.fromRGB(40, 42, 62)
 local function notif(str, dur)
     pcall(function()
         StarterGui:SetCore("SendNotification", {
-            Title = "â¤ sa7loul V2",
+            Title = "⏤ sa7loul V2",
             Text = str,
             Duration = dur or 3
         })
@@ -166,9 +166,9 @@ function SetSelectedPlayer(player)
     selectedPlayer = player
     if selectedPlayerLabel then
         if GetSelectedPlayer() then
-            selectedPlayerLabel.Text = "ðŸ‘¤ Player: " .. selectedPlayer.Name
+            selectedPlayerLabel.Text = "👤 Player: " .. selectedPlayer.Name
         else
-            selectedPlayerLabel.Text = "ðŸ‘¤ Player: None"
+            selectedPlayerLabel.Text = "👤 Player: None"
         end
     end
 end
@@ -1209,9 +1209,9 @@ function ToggleMicBypass()
         w2.Parent = hub
         
         voiceFx = {hub = hub, saved = saved, active = true}
-        notif("ðŸŽ¤ Mic Bypass ON", 2)
+        notif("🎤 Mic Bypass ON", 2)
     else
-        notif("No character â€” enter a game first", 2)
+        notif("No character — enter a game first", 2)
     end
 end
 
@@ -1325,7 +1325,7 @@ function StorageScan()
                 if obj:IsA("IntValue") or obj:IsA("StringValue") or obj:IsA("NumberValue") or obj:IsA("BoolValue") then
                     extra = " = " .. tostring(obj.Value)
                 end
-                table.insert(storageDump, obj.ClassName .. " â†’ " .. obj.Name .. extra)
+                table.insert(storageDump, obj.ClassName .. " → " .. obj.Name .. extra)
                 count = count + 1
             end
         end
@@ -1333,7 +1333,7 @@ function StorageScan()
     for _, obj in ipairs({game, lp}) do
         for k, v in pairs(obj:GetAttributes()) do
             if count < 150 then
-                table.insert(storageDump, "Attr â†’ " .. tostring(k) .. " = " .. tostring(v))
+                table.insert(storageDump, "Attr → " .. tostring(k) .. " = " .. tostring(v))
                 count = count + 1
             end
         end
@@ -1538,7 +1538,7 @@ end
 
 function UnbanAllFromList()
     if #bannedCache == 0 then
-        notif("Ban list empty â€” fetch first", 2)
+        notif("Ban list empty — fetch first", 2)
         return
     end
     for _, name in ipairs(bannedCache) do
@@ -2196,7 +2196,7 @@ end
 
 -- =====================================================================
 -- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
---  NOVA UI FRAMEWORK â€” sa7loul V3 PREMIUM REDESIGN
+--  NOVA UI FRAMEWORK — sa7loul V3 PREMIUM REDESIGN
 --  Dark mode + neon accents | RGB mode | rounded corners | glow
 --  Draggable header | search | fluid tab navigation
 -- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -2269,6 +2269,8 @@ Window.BorderSizePixel = 0
 Window.AnchorPoint = Vector2.new(0.5, 0.5)
 Window.Position = UDim2.fromScale(0.5, 0.5)
 Window.Size = UDim2.new(0, 720, 0, 540)
+Window.Active = true
+Window.Draggable = true
 local windowCorner = Instance.new("UICorner", Window)
 windowCorner.CornerRadius = UDim.new(0, 16)
 local windowStroke = Instance.new("UIStroke", Window)
@@ -2392,7 +2394,7 @@ local headerSub = Instance.new("TextLabel")
 headerSub.Parent = Header
 headerSub.BackgroundTransparency = 1
 headerSub.Font = Enum.Font.Gotham
-headerSub.Text = "Survive the Killer â€¢ Premium"
+headerSub.Text = "Survive the Killer • Premium"
 headerSub.TextColor3 = UITheme.SUBTEXT
 headerSub.TextSize = 11
 headerSub.Size = UDim2.new(0, 260, 0, 16)
@@ -2440,16 +2442,20 @@ menuKeyChip.TextSize = 10
 menuKeyChip.ZIndex = 6
 Instance.new("UICorner", menuKeyChip).CornerRadius = UDim.new(0, 7)
 
-local minimizeBtn = headerIconButton("â€“", UITheme.GREEN)
+local minimizeBtn = headerIconButton("–", UITheme.GREEN)
 minimizeBtn.Position = UDim2.new(1, -104, 0.5, -13)
-local closeBtn = headerIconButton("âœ•", UITheme.RED)
+minimizeBtn.Name = "MinimizeButton"
+minimizeBtn.Visible = true
+local closeBtn = headerIconButton("✕", UITheme.RED)
 closeBtn.Position = UDim2.new(1, -72, 0.5, -13)
+closeBtn.Name = "CloseButton"
+closeBtn.Visible = true
 
 local minimizedHint = Instance.new("TextLabel")
 minimizedHint.Parent = Header
 minimizedHint.BackgroundTransparency = 1
 minimizedHint.Font = Enum.Font.Gotham
-minimizedHint.Text = "minimized Â·  click âœš to restore full menu"
+minimizedHint.Text = "minimized ·  click ✚ to restore full menu"
 minimizedHint.TextColor3 = UITheme.SUBTEXT
 minimizedHint.TextSize = 10
 minimizedHint.Size = UDim2.new(0, 220, 0, 16)
@@ -2567,15 +2573,15 @@ end)
 -- minimize / restore
 function ApplyMinimized(state)
     minimized = state
-    minimizeBtn.Text = state and "âœš" or "â€“"
-    headerSub.Visible = not state
-    menuKeyChip.Visible = not state
-    minimizedHint.Visible = state
+    if minimizeBtn then minimizeBtn.Text = state and "✚" or "–" end
+    if headerSub then headerSub.Visible = not state end
+    if menuKeyChip then menuKeyChip.Visible = not state end
+    if minimizedHint then minimizedHint.Visible = state end
     if state then
-        Sidebar.Visible = false
-        ContentScroll.Visible = false
-        SearchBar.Visible = false
-        statusBar.Visible = false
+        if Sidebar then Sidebar.Visible = false end
+        if ContentScroll then ContentScroll.Visible = false end
+        if SearchBar then SearchBar.Visible = false end
+        if statusBar then statusBar.Visible = false end
         pcall(function()
             TweenService:Create(Window, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
                 Size = UDim2.new(0, 300, 0, 54),
@@ -2592,10 +2598,10 @@ function ApplyMinimized(state)
             end
         end)
     else
-        Sidebar.Visible = true
-        ContentScroll.Visible = true
-        SearchBar.Visible = true
-        statusBar.Visible = true
+        if Sidebar then Sidebar.Visible = true end
+        if ContentScroll then ContentScroll.Visible = true end
+        if SearchBar then SearchBar.Visible = true end
+        if statusBar then statusBar.Visible = true end
         pcall(function()
             TweenService:Create(Window, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, 720, 0, 540),
@@ -2616,7 +2622,9 @@ function ApplyMinimized(state)
 end
 minimizeBtn.MouseButton1Click:Connect(function()
     if os.clock() < suppressBtnClick then return end
-    ApplyMinimized(not minimized)
+    pcall(function()
+        ApplyMinimized(not minimized)
+    end)
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
@@ -2640,7 +2648,7 @@ local searchIcon = Instance.new("TextLabel")
 searchIcon.Parent = SearchBar
 searchIcon.BackgroundTransparency = 1
 searchIcon.Font = Enum.Font.Gotham
-searchIcon.Text = "âŒ•"
+searchIcon.Text = "🔍"
 searchIcon.TextColor3 = UITheme.SUBTEXT
 searchIcon.TextSize = 18
 searchIcon.Size = UDim2.new(0, 30, 1, 0)
@@ -2711,7 +2719,7 @@ sidebarTitle.BackgroundTransparency = 1
 sidebarTitle.LayoutOrder = -1
 sidebarTitle.Size = UDim2.new(1, -24, 0, 24)
 sidebarTitle.Font = Enum.Font.GothamBold
-sidebarTitle.Text = "â˜°  MENU"
+sidebarTitle.Text = "☰  MENU"
 sidebarTitle.TextColor3 = UITheme.Accent
 sidebarTitle.TextSize = 12
 sidebarTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -2719,18 +2727,18 @@ sidebarTitle.TextYAlignment = Enum.TextYAlignment.Center
 UITheme:RegisterAccent(function(c) sidebarTitle.TextColor3 = c end, true)
 
 local TabItems = {
-    { key = "  Home",       icon = "âŒ‚", label = "Home" },
-    { key = "  Player",     icon = "â˜„", label = "Player" },
-    { key = "  Revive",     icon = "âœš", label = "Revive" },
-    { key = "  World",      icon = "âœº", label = "World" },
-    { key = "  Players",    icon = "â˜°", label = "Players" },
-    { key = "  Fun",        icon = "âœ¿", label = "Fun" },
-    { key = "  Spawner",    icon = "ðŸ”§", label = "Spawner" },
-    { key = "  Troll",      icon = "â˜ ", label = "Troll" },
-    { key = "  Ban",        icon = "â›”", label = "Ban" },
-    { key = "  Tsunami",    icon = "ðŸŒŠ", label = "Tsunami" },
-    { key = "  Extras",     icon = "â–¤", label = "Extras" },
-    { key = "  Settings",   icon = "âš™", label = "Settings" },
+    { key = "  Home",       icon = "⌂", label = "Home" },
+    { key = "  Player",     icon = "☄", label = "Player" },
+    { key = "  Revive",     icon = "✚", label = "Revive" },
+    { key = "  World",      icon = "✺", label = "World" },
+    { key = "  Players",    icon = "☰", label = "Players" },
+    { key = "  Fun",        icon = "✿", label = "Fun" },
+    { key = "  Spawner",    icon = "🔧", label = "Spawner" },
+    { key = "  Troll",      icon = "☠", label = "Troll" },
+    { key = "  Ban",        icon = "🛡", label = "Ban" },
+    { key = "  Tsunami",    icon = "🌊", label = "Tsunami" },
+    { key = "  Extras",     icon = "▤", label = "Extras" },
+    { key = "  Settings",   icon = "⚙", label = "Settings" },
 }
 local TabButtons = {}
 
@@ -2748,7 +2756,7 @@ rgbQuick.BorderSizePixel = 0
 rgbQuick.Size = UDim2.new(1, -24, 0, 28)
 rgbQuick.Position = UDim2.new(0, 12, 0, 4)
 rgbQuick.Font = Enum.Font.GothamBold
-rgbQuick.Text = "âš¡ RGB Mode: OFF"
+rgbQuick.Text = "⚡ RGB Mode: OFF"
 rgbQuick.TextColor3 = UITheme.SUBTEXT
 rgbQuick.TextSize = 10
 Instance.new("UICorner", rgbQuick).CornerRadius = UDim.new(0, 7)
@@ -4305,7 +4313,7 @@ function CreatePlayerEntry(parent, player)
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.TextYAlignment = Enum.TextYAlignment.Center
     if player == lp then
-        statusLabel.Text = "âœ¦ You"
+        statusLabel.Text = "✦ You"
         statusLabel.TextColor3 = UITheme.Accent
     elseif IsPlayerDowned(player) then
         statusLabel.Text = "ðŸ’€ Down"
