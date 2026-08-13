@@ -250,6 +250,7 @@ local function StartBring(targetName)
     notif("Bringing: " .. target.Name, 2)
     
     coroutine.wrap(function()
+        local hum = nil
         local originSaved = false
         
         local function SaveOrigin()
@@ -271,73 +272,64 @@ local function StartBring(targetName)
                 originSaved = true
             end
             
-            -- Calculate target position
+            -- Disable player control completely
+            hum = target.Character:FindFirstChildOfClass("Humanoid")
+            if hum then 
+                hum.PlatformStand = true
+                hum.AutoRotate = false
+                hum.WalkSpeed = 0
+                hum.JumpPower = 0
+            end
+            
+            -- Make all parts CanCollide = false and Anchored for direct control
+            for _, part in ipairs(target.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                    part.Anchored = true
+                end
+            end
+            
+            -- Set target position directly in front of player using multiple methods
             local targetPos = myRoot.Position + (myRoot.CFrame.LookVector * 3)
             targetPos = Vector3.new(targetPos.X, myRoot.Position.Y, targetPos.Z)
             
-            -- Try ALL possible methods of teleportation
+            -- Try multiple approaches to ensure movement
             pcall(function()
                 targetRoot.CFrame = CFrame.new(targetPos)
-            end)
-            
-            pcall(function()
-                targetRoot.CFrame = CFrame.new(targetPos, myRoot.CFrame.LookVector)
-            end)
-            
-            pcall(function()
-                target.Character:MoveTo(targetPos)
-            end)
-            
-            pcall(function()
-                target.Character:PivotTo(CFrame.new(targetPos))
             end)
             
             pcall(function()
                 targetRoot.Position = targetPos
             end)
             
-            -- Try using TeleportService
             pcall(function()
-                game:GetService("TeleportService"):Teleport(target, targetPos)
+                targetRoot.AssemblyLinearVelocity = Vector3.zero
+                targetRoot.AssemblyAngularVelocity = Vector3.zero
             end)
             
-            -- Try setting character properties
-            local hum = target.Character:FindFirstChildOfClass("Humanoid")
-            if hum then 
-                pcall(function()
-                    hum.PlatformStand = true
-                    hum.WalkSpeed = 0
-                    hum.JumpPower = 0
-                end)
-            end
-            
-            -- Try anchoring and moving
+            -- Direct character positioning
             pcall(function()
-                targetRoot.Anchored = true
-                targetRoot.CFrame = CFrame.new(targetPos)
-                targetRoot.Anchored = false
-            end)
-            
-            -- Try velocity manipulation
-            pcall(function()
-                targetRoot.AssemblyLinearVelocity = (targetPos - targetRoot.Position).Unit * 100
+                target.Character:PivotTo(CFrame.new(targetPos))
             end)
             
             RunService.RenderStepped:Wait()
         end
         
         -- Cleanup
-        local hum = target.Character:FindFirstChildOfClass("Humanoid")
         if hum then 
-            pcall(function()
-                hum.PlatformStand = false
-                hum.WalkSpeed = 16
-                hum.JumpPower = 50
-            end)
+            hum.PlatformStand = false
+            hum.AutoRotate = true
+            hum.WalkSpeed = 16
+            hum.JumpPower = 50
         end
-        pcall(function()
-            targetRoot.Anchored = false
-        end)
+        if target.Character then
+            for _, part in ipairs(target.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
+                    part.Anchored = false
+                end
+            end
+        end
         bringActive = false
         notif("Bring stopped", 2)
     end)()
@@ -943,26 +935,31 @@ local function StartBringAll()
                     bringOrigins[player] = save
                 end
                 
+                -- Disable player control completely
+                local hum = player.Character:FindFirstChildOfClass("Humanoid")
+                if hum then 
+                    hum.PlatformStand = true
+                    hum.AutoRotate = false
+                    hum.WalkSpeed = 0
+                    hum.JumpPower = 0
+                end
+                
+                -- Anchor all parts for direct control
+                for _, part in ipairs(player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                        part.Anchored = true
+                    end
+                end
+                
                 -- Position in circle around player
                 local angle = ((i - 1) / #alive) * math.pi * 2
                 local offset = Vector3.new(math.cos(angle) * 5, 0, math.sin(angle) * 5)
                 local targetPos = myRoot.Position + offset
                 
-                -- Try ALL methods for each player
+                -- Multiple positioning methods
                 pcall(function()
                     root.CFrame = CFrame.new(targetPos)
-                end)
-                
-                pcall(function()
-                    root.CFrame = CFrame.new(targetPos, myRoot.CFrame.LookVector)
-                end)
-                
-                pcall(function()
-                    player.Character:MoveTo(targetPos)
-                end)
-                
-                pcall(function()
-                    player.Character:PivotTo(CFrame.new(targetPos))
                 end)
                 
                 pcall(function()
@@ -970,29 +967,13 @@ local function StartBringAll()
                 end)
                 
                 pcall(function()
-                    game:GetService("TeleportService"):Teleport(player, targetPos)
+                    player.Character:PivotTo(CFrame.new(targetPos))
                 end)
                 
                 pcall(function()
-                    root.AssemblyLinearVelocity = (targetPos - root.Position).Unit * 100
+                    root.AssemblyLinearVelocity = Vector3.zero
+                    root.AssemblyAngularVelocity = Vector3.zero
                 end)
-                
-                -- Try anchoring method
-                pcall(function()
-                    root.Anchored = true
-                    root.CFrame = CFrame.new(targetPos)
-                    root.Anchored = false
-                end)
-                
-                -- Disable humanoid
-                local hum = player.Character:FindFirstChildOfClass("Humanoid")
-                if hum then 
-                    pcall(function()
-                        hum.PlatformStand = true
-                        hum.WalkSpeed = 0
-                        hum.JumpPower = 0
-                    end)
-                end
             end
             
             RunService.RenderStepped:Wait()
@@ -1003,17 +984,16 @@ local function StartBringAll()
             if player.Character then
                 local hum = player.Character:FindFirstChildOfClass("Humanoid")
                 if hum then 
-                    pcall(function()
-                        hum.PlatformStand = false
-                        hum.WalkSpeed = 16
-                        hum.JumpPower = 50
-                    end)
+                    hum.PlatformStand = false
+                    hum.AutoRotate = true
+                    hum.WalkSpeed = 16
+                    hum.JumpPower = 50
                 end
-                local root = player.Character:FindFirstChild("HumanoidRootPart")
-                if root then
-                    pcall(function()
-                        root.Anchored = false
-                    end)
+                for _, part in ipairs(player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                        part.Anchored = false
+                    end
                 end
             end
         end
