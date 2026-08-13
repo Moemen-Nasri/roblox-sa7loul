@@ -1,6 +1,12 @@
 -- sa7loul | Survive the Killer V3 Premium
 -- Support version v2.31.0
 
+-- boot marker - proves the script actually started on the executor
+pcall(function()
+    warn("[sa7loul] script executing...")
+    game:GetService("StarterGui"):SetCore("SendNotification", { Title = "sa7loul", Text = "script started" })
+end)
+
 local configs = {
     savedConfigs = {},
     currentConfigName = "Default"
