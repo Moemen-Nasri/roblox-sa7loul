@@ -2374,29 +2374,22 @@ local NovaUI = Instance.new("ScreenGui")
 NovaUI.Name = "sa7loul_V3"
 NovaUI.ResetOnSpawn = false
 NovaUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
--- robust GUI parent: prefer whatever the executor exposes (gethui / get_hidden_gui),
--- fall back to PlayerGui (always renders), CoreGui last
+-- safe GUI parent: PlayerGui internals are 100% standard API on any executor,
+-- CoreGui only as a fallback. no gethui/syn natives (they crash some executors)
 local NovaUIParent = nil
 pcall(function()
-    local fn = gethui
-    if type(fn) ~= "function" then fn = get_hidden_gui end
-    if type(fn) == "function" then
-        local h = fn()
-        if h and typeof(h) == "Instance" then NovaUIParent = h end
-    end
-end)
-if not NovaUIParent then
     local lp0 = game:GetService("Players").LocalPlayer
     if lp0 and lp0:FindFirstChild("PlayerGui") then
         NovaUIParent = lp0.PlayerGui
     end
-end
+end)
 NovaUIParent = NovaUIParent or CoreGui
 pcall(function()
-    local p = syn and syn.protect_gui
-    if p then p(NovaUI) end
+    NovaUI.Parent = NovaUIParent
 end)
-NovaUI.Parent = NovaUIParent
+if not NovaUI.Parent then
+    NovaUI.Parent = CoreGui
+end
 
 local Window = Instance.new("Frame")
 Window.Name = "Window"
@@ -7117,12 +7110,12 @@ task.spawn(function()
     end
 end)
 
-UpdateNoFog()
-UpdateESP()
-UpdateESPExits()
-UpdateESPTraps()
-UpdateDoubleJump()
-UpdateKillerChance()
-UpdateAllFeatures()
+pcall(UpdateNoFog)
+pcall(UpdateESP)
+pcall(UpdateESPExits)
+pcall(UpdateESPTraps)
+pcall(UpdateDoubleJump)
+pcall(UpdateKillerChance)
+pcall(UpdateAllFeatures)
 
 notif("sa7loul V3 Premium loaded | RightShift hides menu", 4)
