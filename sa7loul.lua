@@ -250,6 +250,7 @@ local function StartBring(targetName)
     notif("Bringing: " .. target.Name, 2)
     
     coroutine.wrap(function()
+        local bp = nil
         local hum = nil
         local originSaved = false
         
@@ -272,64 +273,29 @@ local function StartBring(targetName)
                 originSaved = true
             end
             
-            -- Disable player control completely
+            if not bp or bp.Parent ~= targetRoot then
+                if bp and bp.Parent then bp:Destroy() end
+                bp = Instance.new("BodyPosition")
+                bp.Name = "BringHold"
+                bp.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                bp.P = 60000
+                bp.D = 5000
+                bp.Position = targetRoot.Position
+                bp.Parent = targetRoot
+            end
+            
             hum = target.Character:FindFirstChildOfClass("Humanoid")
-            if hum then 
-                hum.PlatformStand = true
-                hum.AutoRotate = false
-                hum.WalkSpeed = 0
-                hum.JumpPower = 0
-            end
+            if hum then hum.PlatformStand = true end
             
-            -- Make all parts CanCollide = false and Anchored for direct control
-            for _, part in ipairs(target.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                    part.Anchored = true
-                end
-            end
-            
-            -- Set target position directly in front of player using multiple methods
-            local targetPos = myRoot.Position + (myRoot.CFrame.LookVector * 3)
+            local targetPos = myRoot.Position + (myRoot.CFrame.LookVector * 4)
             targetPos = Vector3.new(targetPos.X, myRoot.Position.Y, targetPos.Z)
-            
-            -- Try multiple approaches to ensure movement
-            pcall(function()
-                targetRoot.CFrame = CFrame.new(targetPos)
-            end)
-            
-            pcall(function()
-                targetRoot.Position = targetPos
-            end)
-            
-            pcall(function()
-                targetRoot.AssemblyLinearVelocity = Vector3.zero
-                targetRoot.AssemblyAngularVelocity = Vector3.zero
-            end)
-            
-            -- Direct character positioning
-            pcall(function()
-                target.Character:PivotTo(CFrame.new(targetPos))
-            end)
+            bp.Position = targetPos
             
             RunService.RenderStepped:Wait()
         end
         
-        -- Cleanup
-        if hum then 
-            hum.PlatformStand = false
-            hum.AutoRotate = true
-            hum.WalkSpeed = 16
-            hum.JumpPower = 50
-        end
-        if target.Character then
-            for _, part in ipairs(target.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                    part.Anchored = false
-                end
-            end
-        end
+        if bp and bp.Parent then bp:Destroy() end
+        if hum then hum.PlatformStand = false end
         bringActive = false
         notif("Bring stopped", 2)
     end)()
@@ -915,6 +881,7 @@ local function StartBringAll()
     notif("Bring All: bringing everyone", 2)
     
     coroutine.wrap(function()
+        local drags = {}
         while bringAllActive and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") do
             local myRoot = lp.Character.HumanoidRootPart
             local alive = {}
@@ -935,66 +902,46 @@ local function StartBringAll()
                     bringOrigins[player] = save
                 end
                 
-                -- Disable player control completely
-                local hum = player.Character:FindFirstChildOfClass("Humanoid")
-                if hum then 
-                    hum.PlatformStand = true
-                    hum.AutoRotate = false
-                    hum.WalkSpeed = 0
-                    hum.JumpPower = 0
+                local bp = drags[player]
+                if not bp or not bp.Parent or bp.Parent ~= root then
+                    if bp and bp.Parent then bp:Destroy() end
+                    bp = Instance.new("BodyPosition")
+                    bp.Name = "BringAllHold"
+                    bp.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                    bp.P = 40000
+                    bp.D = 8000
+                    bp.Position = root.Position
+                    bp.Parent = root
+                    drags[player] = bp
                 end
                 
-                -- Anchor all parts for direct control
+                local angle = ((i - 1) / #alive) * math.pi * 2
+                local offset = Vector3.new(math.cos(angle) * 6, 0, math.sin(angle) * 6)
+                local targetPos = myRoot.Position + offset
+                local delta = targetPos - root.Position
+                if delta.Magnitude > 4 then delta = delta.Unit * 4 end
+                bp.Position = targetPos
                 for _, part in ipairs(player.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
+                    if part:IsA("BasePart") and part ~= root then
                         part.Anchored = true
+                        part.CFrame = part.CFrame + delta
                     end
                 end
-                
-                -- Position in circle around player
-                local angle = ((i - 1) / #alive) * math.pi * 2
-                local offset = Vector3.new(math.cos(angle) * 5, 0, math.sin(angle) * 5)
-                local targetPos = myRoot.Position + offset
-                
-                -- Multiple positioning methods
-                pcall(function()
-                    root.CFrame = CFrame.new(targetPos)
-                end)
-                
-                pcall(function()
-                    root.Position = targetPos
-                end)
-                
-                pcall(function()
-                    player.Character:PivotTo(CFrame.new(targetPos))
-                end)
-                
-                pcall(function()
-                    root.AssemblyLinearVelocity = Vector3.zero
-                    root.AssemblyAngularVelocity = Vector3.zero
-                end)
+                root.Anchored = true
+                root.CFrame = CFrame.new(targetPos)
+                root.AssemblyLinearVelocity = Vector3.zero
+                local hum = player.Character:FindFirstChildOfClass("Humanoid")
+                if hum then hum.PlatformStand = true end
             end
             
             RunService.RenderStepped:Wait()
         end
         
-        -- Cleanup
-        for _, player in ipairs(game.Players:GetPlayers()) do
+        for player, bp in pairs(drags) do
+            if bp and bp.Parent then bp:Destroy() end
             if player.Character then
                 local hum = player.Character:FindFirstChildOfClass("Humanoid")
-                if hum then 
-                    hum.PlatformStand = false
-                    hum.AutoRotate = true
-                    hum.WalkSpeed = 16
-                    hum.JumpPower = 50
-                end
-                for _, part in ipairs(player.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = true
-                        part.Anchored = false
-                    end
-                end
+                if hum then hum.PlatformStand = false end
             end
         end
         bringAllActive = false
@@ -4075,8 +4022,6 @@ local function IsCuffObject(obj)
 end
 
 -- Extended spawner for all item types
-local functionalCuffsMode = false -- Global variable for cuff mode (shared across functions)
-
 local function IsGameItem(obj)
     local name = string.lower(obj.Name)
     return (obj:IsA("Tool") or obj:IsA("Model") or obj:IsA("BasePart"))
@@ -4163,50 +4108,6 @@ local function SpawnItemNoCollision(itemName, targetPlayer)
     end)
     if ok then
         notif("Spawned " .. itemName .. " ➜ " .. target.Name, 2)
-    else
-        notif("Could not spawn: " .. itemName, 2)
-    end
-    return ok
-end
-
-local function SpawnCuffFunctional(itemName, targetPlayer)
-    local target = targetPlayer or lp
-    if not target then
-        notif("No target player", 2)
-        return false
-    end
-    local source = FindGameItem(itemName)
-    if not source then
-        notif("Cuff not in game: " .. itemName, 2)
-        return false
-    end
-    local ok = pcall(function()
-        local item = source:Clone()
-        -- Enable touch detection but disable collision for functional cuffs
-        for _, part in ipairs(item:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false -- Player can walk through the cuff
-                part.CanTouch = true -- But can still touch/catch players
-                part.Transparency = 0.5 -- Make it slightly visible
-            end
-        end
-        if item:IsA("Tool") then
-            local backpack = target:FindFirstChild("Backpack")
-            if backpack then
-                item.Parent = backpack
-                local hum = target.Character and target.Character:FindFirstChildOfClass("Humanoid")
-                if hum then pcall(function() hum:EquipTool(item) end) end
-            else
-                item.Parent = workspace
-                PositionItemNearPlayer(item, target)
-            end
-        else
-            item.Parent = workspace
-            PositionItemNearPlayer(item, target)
-        end
-    end)
-    if ok then
-        notif("Spawned functional " .. itemName .. " ➜ " .. target.Name, 2)
     else
         notif("Could not spawn: " .. itemName, 2)
     end
@@ -4323,12 +4224,7 @@ local function GiveCuffItemToPlayer(itemName, targetPlayer)
 end
 
 local function SpawnCuffItemForMe(itemName)
-    local isCuff = string.lower(itemName):find("cuff", 1, true) ~= nil
-    if functionalCuffsMode and isCuff then
-        return SpawnCuffFunctional(itemName, lp)
-    else
-        return SpawnItemNoCollision(itemName, lp)
-    end
+    return SpawnItemNoCollision(itemName, lp)
 end
 
 local function TakeCuffsFromTarget(target)
@@ -5055,36 +4951,9 @@ function UpdateRightContent()
         end)
         
         -- 🔗 GAME ITEMS — spawner (cuffs, césar, sechoir, gant, box)
-        local cuffSection = CreateSection(RightContent, "🔗 Game Items Spawner")
+        local cuffSection = CreateSection(RightContent, "🔗 Game Items Spawner (No Collision)")
         
         local cuffStatus = CreateLabel(cuffSection, "Scanning for items...", TEXT_SECONDARY)
-        
-        -- Spawn Mode Toggle
-        local cuffModeBtn = Instance.new("TextButton")
-        cuffModeBtn.Parent = cuffSection
-        cuffModeBtn.BorderSizePixel = 0
-        cuffModeBtn.Size = UDim2.new(1, 0, 0, 35)
-        cuffModeBtn.Font = Enum.Font.GothamBold
-        cuffModeBtn.Text = "🔗 Mode: Normal (No Collision)"
-        cuffModeBtn.TextColor3 = TEXT_SECONDARY
-        cuffModeBtn.TextSize = 13
-        cuffModeBtn.BackgroundColor3 = BG_ELEMENT
-        cuffModeBtn.BackgroundTransparency = 0.3
-        local cuffModeCorner = Instance.new("UICorner", cuffModeBtn)
-        cuffModeCorner.CornerRadius = UDim.new(0, 8)
-        cuffModeBtn.MouseEnter:Connect(function()
-            TweenService:Create(cuffModeBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
-        end)
-        cuffModeBtn.MouseLeave:Connect(function()
-            TweenService:Create(cuffModeBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
-        end)
-        cuffModeBtn.MouseButton1Click:Connect(function()
-            functionalCuffsMode = not functionalCuffsMode
-            cuffModeBtn.Text = functionalCuffsMode and "🔗 Mode: Functional (Can Catch)" or "🔗 Mode: Normal (No Collision)"
-            cuffModeBtn.BackgroundColor3 = functionalCuffsMode and TEAL or BG_ELEMENT
-            cuffModeBtn.TextColor3 = functionalCuffsMode and Color3.fromRGB(255, 255, 255) or TEXT_SECONDARY
-            notif("Cuff mode: " .. (functionalCuffsMode and "Functional" or "Normal"), 2)
-        end)
         
         -- Spawn All Button
         local spawnAllBtn = Instance.new("TextButton")
@@ -5092,7 +4961,7 @@ function UpdateRightContent()
         spawnAllBtn.BorderSizePixel = 0
         spawnAllBtn.Size = UDim2.new(1, 0, 0, 35)
         spawnAllBtn.Font = Enum.Font.GothamBold
-        spawnAllBtn.Text = "🚀 SPAWN ALL ITEMS"
+        spawnAllBtn.Text = "🚀 SPAWN ALL ITEMS (No Collision)"
         spawnAllBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         spawnAllBtn.TextSize = 13
         spawnAllBtn.BackgroundColor3 = ACCENT
@@ -5106,21 +4975,7 @@ function UpdateRightContent()
             TweenService:Create(spawnAllBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
         end)
         spawnAllBtn.MouseButton1Click:Connect(function()
-            local names = GetAllGameItemNames()
-            if #names == 0 then
-                notif("No items found in game", 2)
-                return
-            end
-            local spawned = 0
-            for _, itemName in ipairs(names) do
-                local isCuff = string.lower(itemName):find("cuff", 1, true) ~= nil
-                if functionalCuffsMode and isCuff then
-                    if SpawnCuffFunctional(itemName, lp) then spawned = spawned + 1 end
-                else
-                    if SpawnItemNoCollision(itemName, lp) then spawned = spawned + 1 end
-                end
-            end
-            notif("Spawned " .. spawned .. " items (" .. (functionalCuffsMode and "functional cuffs" or "no collision") .. ")", 3)
+            SpawnAllItems()
             RebuildCuffList()
         end)
         
@@ -5190,12 +5045,7 @@ function UpdateRightContent()
                     TweenService:Create(spawnBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.3}):Play()
                 end)
                 spawnBtn.MouseButton1Click:Connect(function()
-                    local isCuff = string.lower(itemName):find("cuff", 1, true) ~= nil
-                    if functionalCuffsMode and isCuff then
-                        SpawnCuffFunctional(itemName, lp)
-                    else
-                        SpawnItemNoCollision(itemName, lp)
-                    end
+                    SpawnItemNoCollision(itemName, lp)
                 end)
                 
                 local giveBtn = Instance.new("TextButton")
@@ -5221,12 +5071,7 @@ function UpdateRightContent()
                     if not target then
                         notif("Select a player first (👤 button)", 2)
                     else
-                        local isCuff = string.lower(itemName):find("cuff", 1, true) ~= nil
-                        if functionalCuffsMode and isCuff then
-                            SpawnCuffFunctional(itemName, target)
-                        else
-                            SpawnItemNoCollision(itemName, target)
-                        end
+                        SpawnItemNoCollision(itemName, target)
                     end
                 end)
             end
@@ -5249,12 +5094,7 @@ function UpdateRightContent()
             end
             local given = 0
             for _, itemName in ipairs(names) do
-                local isCuff = string.lower(itemName):find("cuff", 1, true) ~= nil
-                if functionalCuffsMode and isCuff then
-                    if SpawnCuffFunctional(itemName, target) then given = given + 1 end
-                else
-                    if SpawnItemNoCollision(itemName, target) then given = given + 1 end
-                end
+                if SpawnItemNoCollision(itemName, target) then given = given + 1 end
             end
             notif("Gave " .. given .. " item(s) ➜ " .. target.Name, 2)
         end)
@@ -5267,7 +5107,7 @@ function UpdateRightContent()
         
         task.defer(RebuildCuffList)
         
-        CreateLabel(RightContent, "Tip: Game items (cuffs, césar, sechoir, gant, box) are found automatically. Toggle mode for functional cuffs that can catch players. Click 👤 Player above to pick who gets them.", TEXT_DIM)
+        CreateLabel(RightContent, "Tip: Game items (cuffs, césar, sechoir, gant, box) are found automatically by name anywhere in the game. All spawned items have NO COLLISION. Click 👤 Player above to pick who gets them.", TEXT_DIM)
         
     elseif CurrentTab == "  Ban" then
         local banSection = CreateSection(RightContent, "⛔ Ban manager")
