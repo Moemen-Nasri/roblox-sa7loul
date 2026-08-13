@@ -2,6 +2,8 @@
 -- Support version v2.31.0
 -- WITH SAHLOUL AUTH, CESAR/SECHOIR SPAWNER, MIC BYPASS
 
+print("SA7LOUL SCRIPT STARTING...")
+
 -- ============================================
 -- SAHLOUL AUTH SYSTEM
 -- ============================================
@@ -61,10 +63,10 @@ local LoginGui = {
 }
 
 local function CreateLoginGui()
-    local CoreGui = game:GetService("CoreGui")
+    local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
     
     -- Remove existing login GUI if present
-    local existingGui = CoreGui:FindFirstChild("SahloulAuthGUI")
+    local existingGui = PlayerGui:FindFirstChild("SahloulAuthGUI")
     if existingGui then
         existingGui:Destroy()
     end
@@ -74,7 +76,7 @@ local function CreateLoginGui()
     screenGui.ResetOnSpawn = false
     screenGui.IgnoreGuiInset = true
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    screenGui.Parent = CoreGui
+    screenGui.Parent = PlayerGui
     
     -- Main Container
     local mainFrame = Instance.new("Frame")
@@ -244,11 +246,104 @@ end
 local session = {license = "test-0000-0000-0000", username = "TestUser"} 
 -- local session = WaitForAuthentication() -- Disabled temporarily to test menu
 
+local configs = {
+    savedConfigs = {},
+    currentConfigName = "Default"
+}
+
+local defaultSettings = {
+    Speed = 16, 
+    speedEnabled = false,
+    speedDisableOnDown = true,
+    Fly = false, 
+    flySpeed = 50,
+    Noclip = false,
+    DoubleJump = false,
+    KillerChanceX3 = false,
+    ESP = false,
+    ESPExits = false,
+    ESPTraps = false,
+    NoFog = false,
+    Fullbright = false,
+    AutoLoot = false,
+    returnHomeAfterLoot = true,
+    KillAura = false,
+    killAuraRadius = 10,
+    AutoReviveLegit = false,
+    AutoReviveRisky = false,
+    AutoReviveSelf = false,
+    selfReviveCooldown = 7,
+    selfReviveMode = "Random",
+    AutoEscape = false,
+    AntiAFK = false,
+    AntiTrap = false,
+    PanicTP = false
+}
+
+local userScripts = {}
+
+local function LoadUserScripts()
+    local success, data = pcall(function()
+        return game:GetService("HttpService"):JSONDecode(readfile("sa7loul_Scripts.json"))
+    end)
+    if success and data then
+        userScripts = data
+    end
+end
+
+local function SaveUserScripts()
+    pcall(function()
+        writefile("sa7loul_Scripts.json", game:GetService("HttpService"):JSONEncode(userScripts))
+    end)
+end
+
+LoadUserScripts()
+
+local more_scripts = {
+    {
+        name = "sa7loul V1.4",
+        script = "loadstring(game:HttpGet('https://raw.githubusercontent.com/AuriXDev/VHubs/refs/heads/main/old/STK_V1_4.lua'))()"
+    },
+    {
+        name = "Infinite Yield",
+        script = "loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()"
+    }
+}
+
+local lp = game:FindService("Players").LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local StarterGui = game:GetService("StarterGui")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+
+-- DESIGN COLORS — soft rose & teal palette
+local ACCENT = Color3.fromRGB(255, 94, 148)      -- soft rose
+local ACCENT_DARK = Color3.fromRGB(196, 60, 106)
+local TEAL = Color3.fromRGB(61, 224, 200)
+local BG_MAIN = Color3.fromRGB(13, 14, 20)
+local BG_PANEL = Color3.fromRGB(19, 20, 30)
+local BG_ELEMENT = Color3.fromRGB(28, 30, 44)
+local BG_HOVER = Color3.fromRGB(40, 43, 62)
+local TEXT_PRIMARY = Color3.fromRGB(248, 248, 252)
+local TEXT_SECONDARY = Color3.fromRGB(165, 168, 190)
+local TEXT_DIM = Color3.fromRGB(95, 98, 125)
+local BORDER_COLOR = Color3.fromRGB(40, 42, 62)
+
+local function notif(str, dur)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = "⏤ sa7loul V2",
+            Text = str,
+            Duration = dur or 3
+        })
+    end)
+end
+
 -- ============================================
 -- MIC BYPASS (LEGITIMATE ROBLOX AUDIO)
 -- ============================================
-
-local lp = game:FindService("Players").LocalPlayer
 
 local function ToggleMicBypass()
     local audioIn = lp:FindFirstChild("AudioDeviceInput")
@@ -380,101 +475,6 @@ local function SpawnAllCesarSechoir()
     end
     notif("Spawned " .. spawned .. " Cesar/Sechoir items", 3)
     return spawned
-end
-
-local configs = {
-    savedConfigs = {},
-    currentConfigName = "Default"
-}
-
-local defaultSettings = {
-    Speed = 16, 
-    speedEnabled = false,
-    speedDisableOnDown = true,
-    Fly = false, 
-    flySpeed = 50,
-    Noclip = false,
-    DoubleJump = false,
-    KillerChanceX3 = false,
-    ESP = false,
-    ESPExits = false,
-    ESPTraps = false,
-    NoFog = false,
-    Fullbright = false,
-    AutoLoot = false,
-    returnHomeAfterLoot = true,
-    KillAura = false,
-    killAuraRadius = 10,
-    AutoReviveLegit = false,
-    AutoReviveRisky = false,
-    AutoReviveSelf = false,
-    selfReviveCooldown = 7,
-    selfReviveMode = "Random",
-    AutoEscape = false,
-    AntiAFK = false,
-    AntiTrap = false,
-    PanicTP = false
-}
-
-local userScripts = {}
-
-local function LoadUserScripts()
-    local success, data = pcall(function()
-        return game:GetService("HttpService"):JSONDecode(readfile("sa7loul_Scripts.json"))
-    end)
-    if success and data then
-        userScripts = data
-    end
-end
-
-local function SaveUserScripts()
-    pcall(function()
-        writefile("sa7loul_Scripts.json", game:GetService("HttpService"):JSONEncode(userScripts))
-    end)
-end
-
-LoadUserScripts()
-
-local more_scripts = {
-    {
-        name = "sa7loul V1.4",
-        script = "loadstring(game:HttpGet('https://raw.githubusercontent.com/AuriXDev/VHubs/refs/heads/main/old/STK_V1_4.lua'))()"
-    },
-    {
-        name = "Infinite Yield",
-        script = "loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()"
-    }
-}
-
-local lp = game:FindService("Players").LocalPlayer
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local Lighting = game:GetService("Lighting")
-local StarterGui = game:GetService("StarterGui")
-local TweenService = game:GetService("TweenService")
-local HttpService = game:GetService("HttpService")
-
--- DESIGN COLORS — soft rose & teal palette
-local ACCENT = Color3.fromRGB(255, 94, 148)      -- soft rose
-local ACCENT_DARK = Color3.fromRGB(196, 60, 106)
-local TEAL = Color3.fromRGB(61, 224, 200)
-local BG_MAIN = Color3.fromRGB(13, 14, 20)
-local BG_PANEL = Color3.fromRGB(19, 20, 30)
-local BG_ELEMENT = Color3.fromRGB(28, 30, 44)
-local BG_HOVER = Color3.fromRGB(40, 43, 62)
-local TEXT_PRIMARY = Color3.fromRGB(248, 248, 252)
-local TEXT_SECONDARY = Color3.fromRGB(165, 168, 190)
-local TEXT_DIM = Color3.fromRGB(95, 98, 125)
-local BORDER_COLOR = Color3.fromRGB(40, 42, 62)
-
-local function notif(str, dur)
-    pcall(function()
-        StarterGui:SetCore("SendNotification", {
-            Title = "⏤ sa7loul V2",
-            Text = str,
-            Duration = dur or 3
-        })
-    end)
 end
 
 local settings = {}
