@@ -2374,7 +2374,29 @@ local NovaUI = Instance.new("ScreenGui")
 NovaUI.Name = "sa7loul_V3"
 NovaUI.ResetOnSpawn = false
 NovaUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-NovaUI.Parent = CoreGui
+-- robust GUI parent: prefer whatever the executor exposes (gethui / get_hidden_gui),
+-- fall back to PlayerGui (always renders), CoreGui last
+local NovaUIParent = nil
+pcall(function()
+    local fn = gethui
+    if type(fn) ~= "function" then fn = get_hidden_gui end
+    if type(fn) == "function" then
+        local h = fn()
+        if h and typeof(h) == "Instance" then NovaUIParent = h end
+    end
+end)
+if not NovaUIParent then
+    local lp0 = game:GetService("Players").LocalPlayer
+    if lp0 and lp0:FindFirstChild("PlayerGui") then
+        NovaUIParent = lp0.PlayerGui
+    end
+end
+NovaUIParent = NovaUIParent or CoreGui
+pcall(function()
+    local p = syn and syn.protect_gui
+    if p then p(NovaUI) end
+end)
+NovaUI.Parent = NovaUIParent
 
 local Window = Instance.new("Frame")
 Window.Name = "Window"
