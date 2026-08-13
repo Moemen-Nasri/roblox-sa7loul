@@ -145,6 +145,9 @@ local invisSaved = {}
 local adminRemotesCache = nil
 local unpack2 = table.unpack or unpack
 
+local bringDistance = 4
+local flingForce = 9999
+
 function AddPressAnim(btn)
     btn.MouseButton1Down:Connect(function()
         TweenService:Create(btn, TweenInfo.new(0.08), {Size = btn.Size - UDim2.new(0.01, 0, 0.01, 0)}):Play()
@@ -287,7 +290,7 @@ function StartBring(targetName)
             hum = target.Character:FindFirstChildOfClass("Humanoid")
             if hum then hum.PlatformStand = true end
             
-            local targetPos = myRoot.Position + (myRoot.CFrame.LookVector * 4)
+            local targetPos = myRoot.Position + (myRoot.CFrame.LookVector * (bringDistance or 4))
             targetPos = Vector3.new(targetPos.X, myRoot.Position.Y, targetPos.Z)
             bp.Position = targetPos
             
@@ -534,9 +537,9 @@ function UpdateESPExits()
                             if color and color.Keypoints then
                                 for _, keypoint in ipairs(color.Keypoints) do
                                     local c = keypoint.Value
-                                    local r = math.round(c.R * 10) / 10
-                                    local g = math.round(c.G * 10) / 10
-                                    local b = math.round(c.B * 10) / 10
+                                    local r = math.floor(c.R * 10 + 0.5) / 10
+                                    local g = math.floor(c.G * 10 + 0.5) / 10
+                                    local b = math.floor(c.B * 10 + 0.5) / 10
                                     if not (r == 0 and g == 0 and b == 0) then
                                         isTimerActive = true
                                         break
@@ -744,9 +747,9 @@ function CheckTimerColors()
     if color.Keypoints then
         for _, keypoint in ipairs(color.Keypoints) do
             local c = keypoint.Value
-            local r = math.round(c.R * 10) / 10
-            local g = math.round(c.G * 10) / 10
-            local b = math.round(c.B * 10) / 10
+            local r = math.floor(c.R * 10 + 0.5) / 10
+            local g = math.floor(c.G * 10 + 0.5) / 10
+            local b = math.floor(c.B * 10 + 0.5) / 10
             if not (r == 0 and g == 0 and b == 0) then
                 return true
             end
@@ -1545,1120 +1548,6 @@ function UnbanAllFromList()
     notif("Unban fired for all " .. #bannedCache, 2)
 end
 
-local tsunamiCfg = {on = false, clicker = false, c4 = false, c4Timer = 0, c4Index = 0, c4Delay = 1.2, c4Col = 0, collectDelay = 0.35, collectTimer = 0, clickerDelay = 0.1, baseline = 0, collected = 0, god = false, autojump = false, jumpTimer = 0, safe = false, safeTimer = 0, safeDelay = 2, mgBot = false, mgBotTimer = 0, mgBotDelay = 0.8, popcorn = false, popTimer = 0, popCooldown = 0.35, popCount = 0}
-
-function FindPopcornCircles()
-    local circles = {}
-    for _, gui in ipairs({lp:FindFirstChild("PlayerGui"), game:GetService("CoreGui")}) do
-        if gui then
-            for _, obj in ipairs(gui:GetDescendants()) do
-                if (obj:IsA("ImageLabel") or obj:IsA("Frame") or obj:IsA("ImageButton") or obj:IsA("TextButton")) and obj.Visible then
-                    local n = string.lower(obj.Name)
-                    if n:match("circle") or n:match("ring") or n:match("pop") or n:match("corn") or n:match("kernel") or n:match("timer") then
-                        table.insert(circles, obj)
-                    end
-                end
-            end
-        end
-    end
-    return circles
-end
-
-function IsCircleGreen(obj)
-    if not obj then return false end
-    local ok, c = pcall(function()
-        if obj:IsA("ImageLabel") or obj:IsA("ImageButton") then
-            return obj.ImageColor3
-        end
-        return obj.BackgroundColor3
-    end)
-    if not ok or not c then return false end
-    return c.G > c.R + 0.08 and c.G > c.B + 0.08
-end
-local tsunamiRunConn = nil
-local tsunamiStatusLabel = nil
-local tsunamiPatterns = {"cash", "coin", "money", "brainrot", "corn", "pop", "collect", "loot"}
-
-function RunTsunamiCollect()
-    local chr = lp.Character
-    local root = chr and chr:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    local targets = {}
-    for _, p in ipairs(workspace:GetDescendants()) do
-        if p:IsA("BasePart") and p.Transparency < 0.9 then
-            local n = string.lower(p.Name)
-            for _, pat in ipairs(tsunamiPatterns) do
-                if n:find(pat) then
-                    table.insert(targets, p)
-                    break
-                end
-            end
-        end
-    end
-    if #targets == 0 then return end
-    local nearest, nd = nil, math.huge
-    for _, t in ipairs(targets) do
-        local d = (t.Position - root.Position).Magnitude
-        if d < nd then
-            nearest, nd = t, d
-        end
-    end
-    if nearest then
-        root.CFrame = nearest.CFrame + Vector3.new(0, 2, 0)
-    end
-    if tsunamiCfg.baseline == 0 or #targets > tsunamiCfg.baseline then
-        tsunamiCfg.baseline = #targets
-    end
-    tsunamiCfg.collected = tsunamiCfg.baseline - #targets
-    if tsunamiCfg.collected < 0 then tsunamiCfg.collected = 0 end
-end
-
-function UpdateTsunamiStatus()
-    if not tsunamiStatusLabel or not tsunamiStatusLabel.Parent then return end
-    local ping = 0
-    pcall(function()
-        ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
-    end)
-    local pct = 0
-    if tsunamiCfg.baseline > 0 then
-        pct = math.floor(tsunamiCfg.collected / tsunamiCfg.baseline * 100)
-    end
-    tsunamiStatusLabel.Text = "Ping: " .. ping .. "ms · 🍿 " .. tsunamiCfg.popCount .. "/99 · 💰 " .. pct .. "%"
-end
-
-function TsunamiGodMode()
-    local chr = lp.Character
-    if not chr then return end
-    local hum = chr:FindFirstChildOfClass("Humanoid")
-    if not hum then return end
-    hum.Health = hum.MaxHealth
-    hum.WalkSpeed = math.max(hum.WalkSpeed, 16)
-end
-
-function TsunamiSafeTP()
-    local chr = lp.Character
-    local root = chr and chr:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    local best, bestY = nil, -math.huge
-    for _, p in ipairs(workspace:GetDescendants()) do
-        if p:IsA("BasePart") and p.Position.Y > bestY and p.Transparency < 0.95 then
-            local n = string.lower(p.Name)
-            if n:match("safe") or n:match("island") or n:match("platform") or n:match("zone") or n:match("roof") or n:match("tower") or n:match("top") then
-                best, bestY = p, p.Position.Y
-            end
-        end
-    end
-    if best then
-        root.CFrame = best.CFrame + Vector3.new(0, 6, 0)
-    end
-end
-
-function FindGameButtons(patterns, roots)
-    local btns = {}
-    for _, gui in ipairs(roots or {lp:FindFirstChild("PlayerGui"), game:GetService("CoreGui")}) do
-        if gui then
-            for _, obj in ipairs(gui:GetDescendants()) do
-                if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Visible then
-                    local n = string.lower(obj.Name)
-                    for _, pat in ipairs(patterns) do
-                        if n:match(pat) then
-                            table.insert(btns, obj)
-                            break
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return btns
-end
-
-function RebuildTsunami()
-    if tsunamiRunConn then
-        tsunamiRunConn:Disconnect()
-        tsunamiRunConn = nil
-    end
-    tsunamiCfg.c4Timer = 0
-    tsunamiCfg.collectTimer = 0
-    tsunamiCfg.jumpTimer = 0
-    tsunamiCfg.safeTimer = 0
-    tsunamiCfg.mgBotTimer = 0
-    if not (tsunamiCfg.on or tsunamiCfg.clicker or tsunamiCfg.c4 or tsunamiCfg.god or tsunamiCfg.autojump or tsunamiCfg.safe or tsunamiCfg.mgBot or tsunamiCfg.popcorn) then
-        if tsunamiStatusLabel then tsunamiStatusLabel.Text = "All OFF" end
-        return
-    end
-    local statusAcc = 0
-    local vim = game:GetService("VirtualInputManager")
-    tsunamiRunConn = RunService.Heartbeat:Connect(function(dt)
-        statusAcc = statusAcc + dt
-        if tsunamiCfg.on then
-            tsunamiCfg.collectTimer = tsunamiCfg.collectTimer + dt
-            if tsunamiCfg.collectTimer >= tsunamiCfg.collectDelay then
-                tsunamiCfg.collectTimer = 0
-                RunTsunamiCollect()
-            end
-        end
-        if tsunamiCfg.clicker then
-            local m = UserInputService:GetMouseLocation()
-            vim:SendMouseButtonEvent(m.X, m.Y, 0, true, game, 1)
-            vim:SendMouseButtonEvent(m.X, m.Y, 0, false, game, 1)
-        end
-        if tsunamiCfg.popcorn then
-            tsunamiCfg.popTimer = tsunamiCfg.popTimer + dt
-            local circles = FindPopcornCircles()
-            if #circles == 0 then
-                tsunamiCfg.popCount = 0
-            elseif tsunamiCfg.popTimer >= tsunamiCfg.popCooldown then
-                tsunamiCfg.popTimer = 0
-                if #circles >= 2 then
-                    local target = circles[#circles]
-                    if IsCircleGreen(target) then
-                        local pos = target.AbsolutePosition + target.AbsoluteSize / 2
-                        vim:SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 1)
-                        vim:SendMouseButtonEvent(pos.X, pos.Y, 0, false, game, 1)
-                        tsunamiCfg.popCount = math.min(tsunamiCfg.popCount + 1, 99)
-                    end
-                end
-            end
-        end
-        if tsunamiCfg.god then
-            TsunamiGodMode()
-        end
-        if tsunamiCfg.autojump then
-            tsunamiCfg.jumpTimer = tsunamiCfg.jumpTimer + dt
-            if tsunamiCfg.jumpTimer >= 0.6 then
-                tsunamiCfg.jumpTimer = 0
-                vim:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                vim:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-            end
-        end
-        if tsunamiCfg.safe then
-            tsunamiCfg.safeTimer = tsunamiCfg.safeTimer + dt
-            if tsunamiCfg.safeTimer >= tsunamiCfg.safeDelay then
-                tsunamiCfg.safeTimer = 0
-                TsunamiSafeTP()
-            end
-        end
-        if tsunamiCfg.mgBot then
-            tsunamiCfg.mgBotTimer = tsunamiCfg.mgBotTimer + dt
-            if tsunamiCfg.mgBotTimer >= tsunamiCfg.mgBotDelay then
-                tsunamiCfg.mgBotTimer = 0
-                local btns = FindGameButtons({"fish", "cast", "reel", "pull", "pop", "click", "play", "start", "spin", "roll", "bet"}, nil)
-                if #btns > 0 then
-                    tsunamiCfg.c4Index = tsunamiCfg.c4Index + 1
-                    if tsunamiCfg.c4Index > #btns then tsunamiCfg.c4Index = 1 end
-                    pcall(function() btns[tsunamiCfg.c4Index]:Activate() end)
-                end
-            end
-        end
-        if tsunamiCfg.c4 then
-            tsunamiCfg.c4Timer = tsunamiCfg.c4Timer + dt
-            if tsunamiCfg.c4Timer >= tsunamiCfg.c4Delay then
-                tsunamiCfg.c4Timer = 0
-                local btns = {}
-                for _, gui in ipairs({lp:FindFirstChild("PlayerGui"), game:GetService("CoreGui")}) do
-                    if gui then
-                        for _, obj in ipairs(gui:GetDescendants()) do
-                            if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Visible then
-                                local n = string.lower(obj.Name)
-                                if n:match("col") or n:match("cell") or n:match("slot") or n:match("drop") or n:match("connect") then
-                                    table.insert(btns, obj)
-                                end
-                            end
-                        end
-                    end
-                end
-                if #btns > 0 then
-                    local picked = nil
-                    if tsunamiCfg.c4Col and tsunamiCfg.c4Col >= 1 and tsunamiCfg.c4Col <= 7 then
-                        for _, b in ipairs(btns) do
-                            local bi = tonumber(b.Name:match("%d+"))
-                            if bi == tsunamiCfg.c4Col then
-                                picked = b
-                                break
-                            end
-                        end
-                    end
-                    if not picked then
-                        tsunamiCfg.c4Index = tsunamiCfg.c4Index + 1
-                        if tsunamiCfg.c4Index > #btns then tsunamiCfg.c4Index = 1 end
-                        picked = btns[tsunamiCfg.c4Index]
-                    end
-                    pcall(function() picked:Activate() end)
-                end
-            end
-        end
-        if statusAcc >= 1 then
-            statusAcc = 0
-            UpdateTsunamiStatus()
-        end
-    end)
-end
-
--- ================================================================
--- ════════════════════════════════════════════════════════════════════
--- 🍿 POPCORN BURST — 3D IN-WORLD TABLETOP MINIGAME (FINAL)
--- Launched from the "Tsunami" tab toggle. Fully client-side:
---  · Builds the 3D minigame table in Workspace (board + 2 seats +
---    digital score display on the table edge).
---  · Press E near a seat → camera locks onto the board, shrinking-ring
---    kernels spawn in 3D, click them in-world (raycast on the board).
---  · Judging: PERFECT +100 / GREAT +50 / GOOD +20 / MISS 0.
---  · Plays against a local BOT opponent; +10 win / +2 lose / +5 tie
---    Tokens into leaderstats; best score saved to sa7loul_popcorn.json.
---  · Works 3D-only: no ScreenGui overlay at all.
--- ════════════════════════════════════════════════════════════════════
-local PopcornBurstAPI = nil
-do
-    local popcornCfg = {
-        active = false,
-        tableModel = nil, tableTop = nil, kernelTargets = nil,
-        p1Label = nil, p2Label = nil, timerLabel = nil,
-        mode = "idle",            -- "idle" | "playing"
-        round = nil,
-        activeKernels = {},       -- kernelId -> record
-        kernelOrder = {},
-        kernelSpots = {},
-        cameraBusy = false,
-        sfx = nil,
-        score = 0,
-        stats = { Perfect = 0, Great = 0, Good = 0, Miss = 0 },
-        best = 0,
-    }
-    local statusLabel = nil
-
-    local POPCONFIG = {
-        KernelCount     = 12,
-        KernelDuration  = 1.5,
-        SpawnInterval   = 1.35,
-        Countdown       = 3,
-        PerfectWindow   = 0.08,
-        GreatWindow     = 0.20,
-        GoodWindow      = 0.40,
-        LatencyBuffer   = 0.10,
-        Points          = { Perfect = 100, Great = 50, Good = 20, Miss = 0 },
-        Rewards         = { Winner = 10, Loser = 2, Tie = 5 },
-        BotSkill        = 0.70,   -- bot hit-rate (0.0 - 1.0)
-        GridX           = 4,
-        GridZ           = 4,
-        TargetDiameter  = 0.6,    -- studs
-        RingStartScale  = 1.8,
-        RingColor       = Color3.fromRGB(255, 200, 60),
-        TargetColor     = Color3.fromRGB(245, 245, 250),
-        KernelColor     = Color3.fromRGB(255, 220, 130),
-        Judgement = {
-            Perfect = { Color = Color3.fromRGB(255, 215, 0),   Pitch = 1.25 },
-            Great   = { Color = Color3.fromRGB(86, 255, 129),  Pitch = 1.06 },
-            Good    = { Color = Color3.fromRGB(77, 148, 255),  Pitch = 0.95 },
-            Miss    = { Color = Color3.fromRGB(255, 77, 77),   Pitch = 0.80 },
-        },
-        Camera          = { Height = 8.2, Back = 4.6, Duration = 1.1 },
-        PopSfxId        = "rbxassetid://1234567890", -- <-- replace with your pop sound
-    }
-
-    -- ===== STATUS + BEST SCORE =====
-    local function PopcornUpdateStatus()
-        if not statusLabel or not statusLabel.Parent then return end
-        if popcornCfg.mode == "playing" and popcornCfg.round then
-            statusLabel.Text = "🍿 Playing · Score: " .. popcornCfg.round.scores.me
-                .. " · Best: " .. popcornCfg.best
-        elseif popcornCfg.active then
-            statusLabel.Text = "🍿 ON · Best: " .. popcornCfg.best
-        else
-            statusLabel.Text = "🍿 Minigame: OFF · Best: " .. popcornCfg.best
-        end
-    end
-
-    local function PopcornLoadBest()
-        local ok, data = pcall(function()
-            return game:GetService("HttpService"):JSONDecode(readfile("sa7loul_popcorn.json"))
-        end)
-        if ok and type(data) == "number" then
-            popcornCfg.best = data
-        end
-    end
-
-    local function PopcornSaveBest()
-        pcall(function()
-            writefile("sa7loul_popcorn.json", game:GetService("HttpService"):JSONEncode(popcornCfg.best))
-        end)
-    end
-
-    PopcornLoadBest()
-
-    -- ===== TABLE BUILD (client-side; replicates to the server) =====
-    local function PopcornBuildTable(buildPos)
-        if popcornCfg.tableModel and popcornCfg.tableModel.Parent then return end
-
-        local tableModel = Instance.new("Model")
-        tableModel.Name = "PopcornTable_" .. lp.Name
-        tableModel.Parent = Workspace
-
-        -- build the table AT the player (in front of them) so it's always visible
-        local origin = buildPos or Vector3.new(0, 6, 0)
-
-        local function mkPart(name, size, pos, color, material, parent)
-            local p = Instance.new("Part")
-            p.Name = name
-            p.Size = size
-            p.Position = pos
-            p.Anchored = true
-            p.CanCollide = false
-            p.TopSurface = Enum.SurfaceType.Smooth
-            p.BottomSurface = Enum.SurfaceType.Smooth
-            p.Color = color
-            p.Material = material or Enum.Material.WoodPlanks
-            p.Parent = parent or tableModel
-            return p
-        end
-
-        local top = mkPart("TableTop", Vector3.new(6, 0.4, 4), origin,
-            Color3.fromRGB(120, 82, 48))
-        mkPart("Leg1", Vector3.new(0.3, 4.2, 0.3), origin + Vector3.new(-2.6, -2.2, -1.6), Color3.fromRGB(90, 60, 35), nil, top)
-        mkPart("Leg2", Vector3.new(0.3, 4.2, 0.3), origin + Vector3.new(2.6, -2.2, -1.6), Color3.fromRGB(90, 60, 35), nil, top)
-        mkPart("Leg3", Vector3.new(0.3, 4.2, 0.3), origin + Vector3.new(-2.6, -2.2, 1.6), Color3.fromRGB(90, 60, 35), nil, top)
-        mkPart("Leg4", Vector3.new(0.3, 4.2, 0.3), origin + Vector3.new(2.6, -2.2, 1.6), Color3.fromRGB(90, 60, 35), nil, top)
-        local deco = mkPart("BoardDeco", Vector3.new(3.2, 0.08, 3.6), origin + Vector3.new(0, 0.26, 0),
-            Color3.fromRGB(255, 200, 60), Enum.Material.Neon, top)
-        deco.Transparency = 0.85
-
-        local function mkSeat(name, pos)
-            local seat = Instance.new("Seat")
-            seat.Name = name
-            seat.Size = Vector3.new(2, 1.3, 2)
-            seat.Position = pos
-            seat.Anchored = true
-            seat.CanCollide = false
-            seat.Color = Color3.fromRGB(190, 60, 60)
-            seat.Material = Enum.Material.SmoothPlastic
-            seat.Parent = tableModel
-            return seat
-        end
-        popcornCfg.seat1 = mkSeat("Seat1", origin + Vector3.new(-1.6, 0.05, 3.4))
-        popcornCfg.seat2 = mkSeat("Seat2", origin + Vector3.new(1.6, 0.05, 3.4))
-        popcornCfg.seats = { popcornCfg.seat1, popcornCfg.seat2 }
-
-        -- digital score display on the table edge, facing the players
-        local scoreGui = Instance.new("SurfaceGui")
-        scoreGui.Name = "ScoreGui"
-        scoreGui.Face = Enum.NormalId.Front
-        scoreGui.CanvasSize = Vector2.new(600, 180)
-        scoreGui.LightInfluence = 0
-        scoreGui.Parent = top
-        local bg = Instance.new("Frame")
-        bg.Size = UDim2.fromScale(1, 1)
-        bg.BackgroundColor3 = Color3.fromRGB(14, 16, 22)
-        bg.BorderSizePixel = 0
-        bg.Parent = scoreGui
-        local p1 = Instance.new("TextLabel")
-        p1.Name = "P1"
-        p1.Size = UDim2.fromScale(0.5, 0.55)
-        p1.Position = UDim2.fromScale(0, 0.15)
-        p1.BackgroundTransparency = 1
-        p1.Font = Enum.Font.GothamBold
-        p1.TextSize = 34
-        p1.TextColor3 = Color3.fromRGB(64, 156, 255)
-        p1.Text = "P1: 0"
-        p1.Parent = scoreGui
-        local p2 = p1:Clone()
-        p2.Name = "P2"
-        p2.Position = UDim2.fromScale(0.5, 0.15)
-        p2.TextColor3 = Color3.fromRGB(255, 99, 71)
-        p2.Text = "P2: 0"
-        p2.Parent = scoreGui
-        local timer = Instance.new("TextLabel")
-        timer.Name = "Timer"
-        timer.Size = UDim2.fromScale(1, 0.3)
-        timer.Position = UDim2.fromScale(0, 0.7)
-        timer.BackgroundTransparency = 1
-        timer.Font = Enum.Font.Gotham
-        timer.TextSize = 24
-        timer.TextColor3 = Color3.fromRGB(255, 215, 0)
-        timer.Text = "Walk into a seat to play (or press E)"
-        timer.Parent = scoreGui
-
-        local targets = Instance.new("Folder")
-        targets.Name = "KernelTargets"
-        targets.Parent = tableModel
-
-        popcornCfg.tableModel = tableModel
-        popcornCfg.tableTop = top
-        popcornCfg.p1Label = p1
-        popcornCfg.p2Label = p2
-        popcornCfg.timerLabel = timer
-        popcornCfg.kernelTargets = targets
-    end
-
-    local function PopcornDestroyTable()
-        popcornCfg.mode = "idle"
-        popcornCfg.round = nil
-        popcornCfg.activeKernels = {}
-        popcornCfg.kernelOrder = {}
-        popcornCfg.kernelSpots = {}
-        if popcornCfg.sfx then pcall(function() popcornCfg.sfx:Stop() end) end
-        if popcornCfg.tableModel and popcornCfg.tableModel.Parent then
-            pcall(function() popcornCfg.tableModel:Destroy() end)
-        end
-        popcornCfg.tableModel = nil
-    end
-
-    local function PopcornSetScore(t1, t2, timerText)
-        if popcornCfg.p1Label and popcornCfg.p1Label.Parent then
-            popcornCfg.p1Label.Text = lp.Name .. ": " .. tostring(t1)
-        end
-        if popcornCfg.p2Label and popcornCfg.p2Label.Parent then
-            popcornCfg.p2Label.Text = "Brainrot Bot: " .. tostring(t2)
-        end
-        if popcornCfg.timerLabel and popcornCfg.timerLabel.Parent then
-            popcornCfg.timerLabel.Text = timerText
-        end
-    end
-
-    -- ===== CAMERA =====
-    local function PopcornBoardView()
-        local top = popcornCfg.tableTop
-        local center = top.Position + Vector3.new(0, 0.3, 0)
-        local lookFrom = top.CFrame.Position
-            + top.CFrame.UpVector * POPCONFIG.Camera.Height
-            + top.CFrame.LookVector * POPCONFIG.Camera.Back
-        return CFrame.lookAt(lookFrom, center)
-    end
-
-    local function PopcornLockCamera()
-        local cam = Workspace.CurrentCamera
-        if not cam then return end
-        cam.CameraType = Enum.CameraType.Scriptable
-        popcornCfg.cameraBusy = true
-        task.spawn(function()
-            local startCF = cam.CFrame
-            local targetCF = PopcornBoardView()
-            local t0 = os.clock()
-            while popcornCfg.cameraBusy do
-                local t = math.clamp((os.clock() - t0) / POPCONFIG.Camera.Duration, 0, 1)
-                local eased = 1 - (1 - t) * (1 - t)
-                cam.CFrame = startCF:Lerp(targetCF, eased)
-                if t >= 1 then break end
-                RunService.Heartbeat:Wait()
-            end
-            while popcornCfg.cameraBusy do
-                cam.CFrame = targetCF
-                RunService.Heartbeat:Wait()
-            end
-        end)
-    end
-
-    local function PopcornUnlockCamera()
-        popcornCfg.cameraBusy = false
-        local cam = Workspace.CurrentCamera
-        if cam then cam.CameraType = Enum.CameraType.Custom end
-    end
-
-    -- ===== BILLBOARD HELPERS =====
-    local startDiameter = POPCONFIG.TargetDiameter * POPCONFIG.RingStartScale
-    local targetScale = POPCONFIG.TargetDiameter / startDiameter
-
-    local function PopcornMakeBillboard(adornee, sizeStuds, offset)
-        local bb = Instance.new("BillboardGui")
-        bb.Adornee = adornee
-        bb.Size = UDim2.fromOffset(sizeStuds, sizeStuds)
-        bb.AlwaysOnTop = true
-        bb.ClipsDescendants = false
-        bb.MaxDistance = 400
-        bb.StudsOffsetWorldSpace = offset or Vector3.new(0, 0.15, 0)
-        bb.Parent = adornee
-        return bb
-    end
-
-    local function PopcornMakeCircle(sizeScale, thickness, color)
-        local f = Instance.new("Frame")
-        f.Size = UDim2.fromScale(sizeScale, sizeScale)
-        f.AnchorPoint = Vector2.new(0.5, 0.5)
-        f.Position = UDim2.fromScale(0.5, 0.5)
-        f.BackgroundTransparency = 1
-        f.BorderSizePixel = 0
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(1, 0)
-        corner.Parent = f
-        local stroke = Instance.new("UIStroke")
-        stroke.Thickness = thickness
-        stroke.Color = color
-        stroke.Parent = f
-        return f
-    end
-
-    local function PopcornSpawnAnchor(pos)
-        local p = Instance.new("Part")
-        p.Name = "PopcornFx"
-        p.Size = Vector3.new(0.2, 0.2, 0.2)
-        p.Position = pos
-        p.Anchored = true
-        p.CanCollide = false
-        p.CanQuery = false
-        p.CanTouch = false
-        p.Transparency = 1
-        p.CastShadow = false
-        p.Parent = Workspace
-        return p
-    end
-
-    -- ===== KERNEL VISUALS (3D billboard rings) =====
-    local function PopcornSpawnKernelVisual(id, part)
-        if popcornCfg.activeKernels[id] then return end
-        local bb = PopcornMakeBillboard(part, startDiameter, Vector3.new(0, 0.35, 0))
-
-        local target = PopcornMakeCircle(targetScale, 4, POPCONFIG.TargetColor)
-        target.Parent = bb
-
-        local dot = Instance.new("Frame")
-        dot.Size = UDim2.fromScale(0.1, 0.1)
-        dot.AnchorPoint = Vector2.new(0.5, 0.5)
-        dot.Position = UDim2.fromScale(0.5, 0.5)
-        dot.BackgroundColor3 = POPCONFIG.KernelColor
-        dot.BorderSizePixel = 0
-        dot.ZIndex = 3
-        local dotCorner = Instance.new("UICorner")
-        dotCorner.CornerRadius = UDim.new(1, 0)
-        dotCorner.Parent = dot
-        dot.Parent = bb
-
-        local ring = PopcornMakeCircle(1, 7, POPCONFIG.RingColor)
-        ring.ZIndex = 2
-        ring.Parent = bb
-
-        TweenService:Create(ring,
-            TweenInfo.new(POPCONFIG.KernelDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
-                Size = UDim2.fromScale(targetScale, targetScale),
-            }):Play()
-
-        popcornCfg.activeKernels[id] = {
-            id = id,
-            part = part,
-            bb = bb,
-            center = part.Position,
-            spawnTime = os.clock(),
-            startRadius = startDiameter / 2,
-            targetRadius = POPCONFIG.TargetDiameter / 2,
-        }
-        popcornCfg.kernelSpots[id] = part.Position
-        table.insert(popcornCfg.kernelOrder, id)
-    end
-
-    local function PopcornRemoveKernelVisual(id)
-        local k = popcornCfg.activeKernels[id]
-        if not k then return end
-        popcornCfg.activeKernels[id] = nil
-        for i, kId in ipairs(popcornCfg.kernelOrder) do
-            if kId == id then table.remove(popcornCfg.kernelOrder, i) break end
-        end
-        if k.bb and k.bb.Parent then pcall(function() k.bb:Destroy() end) end
-    end
-
-    local function PopcornPopBurst(center)
-        local anchor = PopcornSpawnAnchor(Vector3.new(center.X, popcornCfg.tableTop.Position.Y + 0.45, center.Z))
-        local bb = PopcornMakeBillboard(anchor, POPCONFIG.TargetDiameter, Vector3.new())
-        local ring = PopcornMakeCircle(1, 6, POPCONFIG.RingColor)
-        ring.Parent = bb
-        TweenService:Create(bb,
-            TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.fromOffset(startDiameter * 2.6, startDiameter * 2.6),
-            }):Play()
-        local stroke = ring:FindFirstChild("UIStroke")
-        TweenService:Create(stroke,
-            TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Transparency = 1,
-            }):Play()
-        task.delay(0.45, function() anchor:Destroy() end)
-    end
-
-    -- ===== JUDGEMENT TEXT (3D float) =====
-    local function PopcornShowJudgement(text, color, center)
-        local anchor = PopcornSpawnAnchor(Vector3.new(center.X, popcornCfg.tableTop.Position.Y + 0.5, center.Z))
-        local bb = Instance.new("BillboardGui")
-        bb.Adornee = anchor
-        bb.Size = UDim2.fromOffset(2.6, 1.0)
-        bb.AlwaysOnTop = true
-        bb.MaxDistance = 400
-        bb.StudsOffsetWorldSpace = Vector3.new(0, 0.5, 0)
-        bb.Parent = anchor
-
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.fromScale(1, 1)
-        label.BackgroundTransparency = 1
-        label.Text = text
-        label.Font = Enum.Font.GothamBlack
-        label.TextScaled = true
-        label.TextColor3 = color
-        label.TextStrokeTransparency = 0.35
-        label.TextStrokeColor3 = Color3.fromRGB(20, 20, 25)
-        label.Parent = bb
-
-        TweenService:Create(bb,
-            TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                StudsOffsetWorldSpace = Vector3.new(0, 1.8, 0),
-                Size = UDim2.fromOffset(3.4, 1.3),
-            }):Play()
-        TweenService:Create(label,
-            TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                TextTransparency = 1,
-            }):Play()
-        task.delay(1.0, function() anchor:Destroy() end)
-    end
-
-    local function PopcornPlayCountdown()
-        local center = Vector3.new(popcornCfg.tableTop.Position.X, popcornCfg.tableTop.Position.Y + 0.6, popcornCfg.tableTop.Position.Z)
-        for i = POPCONFIG.Countdown, 1, -1 do
-            PopcornShowJudgement(tostring(i), Color3.fromRGB(255, 215, 0), center)
-            task.wait(1)
-        end
-        PopcornShowJudgement("POP!", Color3.fromRGB(255, 215, 0), center)
-        if popcornCfg.sfx then
-            popcornCfg.sfx.PlaybackSpeed = 1.1
-            popcornCfg.sfx:Play()
-        end
-    end
-
-    -- ===== ROUND =====
-    local function PopcornHolePositions()
-        local size = popcornCfg.tableTop.Size
-        local halfX = (size.X / 2) - 0.55
-        local halfZ = (size.Z / 2) - 0.55
-        local holes = {}
-        for gx = 1, POPCONFIG.GridX do
-            local x = -halfX + (gx - 0.5) * ((halfX * 2) / POPCONFIG.GridX)
-            for gz = 1, POPCONFIG.GridZ do
-                local z = -halfZ + (gz - 0.5) * ((halfZ * 2) / POPCONFIG.GridZ)
-                table.insert(holes, Vector3.new(x, 0.09, z))
-            end
-        end
-        return holes
-    end
-
-    local function PopcornShuffle(t)
-        for i = #t, 2, -1 do
-            local j = math.random(1, i)
-            t[i], t[j] = t[j], t[i]
-        end
-        return t
-    end
-
-    local function PopcornSpawnAnchorPart(kernelId, hole)
-        local p = Instance.new("Part")
-        p.Name = "Kernel_" .. kernelId
-        p.Size = Vector3.new(0.6, 0.02, 0.6)
-        p.Position = popcornCfg.tableTop.CFrame * hole
-        p.Anchored = true
-        p.CanCollide = false
-        p.CanQuery = true
-        p.CanTouch = false
-        p.Transparency = 1
-        p:SetAttribute("Kid", kernelId)
-        p.Parent = popcornCfg.kernelTargets
-        return p
-    end
-
-    -- who: "me" | "bot" ; missed: forced miss ; err: timing error (seconds)
-    local function PopcornJudge(who, kernelId, missed, err)
-        local round = popcornCfg.round
-        if not round or round.finished or round.judged[who][kernelId] then return end
-        round.judged[who][kernelId] = true
-
-        local judgement, points = "Miss", POPCONFIG.Points.Miss
-        if not missed then
-            err = math.max(0, (err or 0) - POPCONFIG.LatencyBuffer)
-            if err <= POPCONFIG.PerfectWindow then
-                judgement, points = "Perfect", POPCONFIG.Points.Perfect
-            elseif err <= POPCONFIG.GreatWindow then
-                judgement, points = "Great", POPCONFIG.Points.Great
-            elseif err <= POPCONFIG.GoodWindow then
-                judgement, points = "Good", POPCONFIG.Points.Good
-            end
-        end
-        round.scores[who] = round.scores[who] + points
-
-        local k = round.kernels[kernelId]
-        if k and k.anchor and k.anchor.Parent then pcall(function() k.anchor:Destroy() end) end
-
-        PopcornSetScore(round.scores.me, round.scores.bot, popcornCfg.timerLabel.Text)
-        if who == "bot" then return end
-
-        if popcornCfg.activeKernels[kernelId] then PopcornRemoveKernelVisual(kernelId) end
-        local spot = popcornCfg.kernelSpots[kernelId]
-        if spot then
-            local cfg = POPCONFIG.Judgement[judgement] or POPCONFIG.Judgement.Miss
-            PopcornShowJudgement(judgement .. "!", cfg.Color, spot)
-            if popcornCfg.sfx then
-                popcornCfg.sfx.PlaybackSpeed = cfg.Pitch
-                popcornCfg.sfx:Play()
-            end
-        end
-        -- live feedback: judgement flash on the score display + status label
-        PopcornSetScore(round.scores.me, round.scores.bot,
-            judgement .. " +" .. tostring(points))
-        task.spawn(function()
-            task.wait(1.1)
-            if round and not round.finished and popcornCfg.mode == "playing" then
-                PopcornSetScore(round.scores.me, round.scores.bot,
-                    "Time: " .. string.format("%.1f", os.clock() - round.start - POPCONFIG.Countdown) .. "s")
-            end
-        end)
-        PopcornUpdateStatus()
-    end
-
-    local function PopcornBotAttempt(kernelId)
-        if math.random() > POPCONFIG.BotSkill then
-            PopcornJudge("bot", kernelId, true)
-            return
-        end
-        local spread = 0.45 * (1 - POPCONFIG.BotSkill) + 0.05
-        PopcornJudge("bot", kernelId, false, math.abs((math.random() * 2 - 1) * spread))
-    end
-
-    local function PopcornStartRound()
-        if popcornCfg.mode ~= "idle" then return end
-        popcornCfg.mode = "playing"
-        local start = os.clock()
-        popcornCfg.round = {
-            start = start,
-            scores = { me = 0, bot = 0 },
-            judged = { me = {}, bot = {} },
-            kernels = {},
-            finished = false,
-        }
-        local round = popcornCfg.round
-
-        PopcornSetScore(0, 0, "3...2...1... GO!")
-        PopcornLockCamera()
-        task.spawn(PopcornPlayCountdown)
-
-        local holes = PopcornShuffle(PopcornHolePositions())
-        for i = 1, POPCONFIG.KernelCount do
-            local delay = POPCONFIG.Countdown + (i - 1) * POPCONFIG.SpawnInterval
-            local hole = holes[i] or holes[math.random(#holes)]
-            round.kernels[i] = {
-                spawnAt = start + delay,
-                expected = start + delay + POPCONFIG.KernelDuration,
-                anchor = nil,
-            }
-            local kid = i
-            task.delay(delay, function()
-                if popcornCfg.mode ~= "playing" or round.finished then return end
-                local k = round.kernels[kid]
-                k.anchor = PopcornSpawnAnchorPart(kid, hole)
-                PopcornSpawnKernelVisual(kid, k.anchor)
-            end)
-            task.delay(delay + POPCONFIG.KernelDuration * 0.6, function()
-                if popcornCfg.mode ~= "playing" or round.finished then return end
-                PopcornBotAttempt(kid)
-            end)
-            task.delay(delay + POPCONFIG.KernelDuration + POPCONFIG.GoodWindow + 0.1, function()
-                if popcornCfg.mode ~= "playing" or round.finished then return end
-                PopcornJudge("me", kid, true)
-            end)
-        end
-
-        local lastDelay = POPCONFIG.Countdown + (POPCONFIG.KernelCount - 1) * POPCONFIG.SpawnInterval
-        local roundEndAt = lastDelay + POPCONFIG.KernelDuration + POPCONFIG.GoodWindow + 1.5
-        task.spawn(function()
-            while popcornCfg.mode == "playing" and not round.finished and (os.clock() - start) < roundEndAt do
-                local elapsed = os.clock() - start
-                if elapsed < POPCONFIG.Countdown then
-                    popcornCfg.timerLabel.Text = tostring(math.ceil(POPCONFIG.Countdown - elapsed))
-                else
-                    popcornCfg.timerLabel.Text = "Time: " .. string.format("%.1f", elapsed - POPCONFIG.Countdown) .. "s"
-                end
-                task.wait(0.1)
-            end
-        end)
-
-        task.delay(roundEndAt, function()
-            if popcornCfg.mode ~= "playing" or round.finished then return end
-            round.finished = true
-            local sMe, sBot = round.scores.me, round.scores.bot
-            local resultText, win, tie = "", false, false
-            if sMe > sBot then
-                win, resultText = true, "YOU WIN!"
-            elseif sBot > sMe then
-                resultText = "BOT WINS"
-            else
-                tie, resultText = true, "TIE!"
-            end
-
-            local reward = tie and POPCONFIG.Rewards.Tie
-                or (win and POPCONFIG.Rewards.Winner or POPCONFIG.Rewards.Loser)
-            pcall(function()
-                local leaderstats = lp:FindFirstChild("leaderstats")
-                if not leaderstats then
-                    leaderstats = Instance.new("Folder")
-                    leaderstats.Name = "leaderstats"
-                    leaderstats.Parent = lp
-                end
-                local tokens = leaderstats:FindFirstChild("Tokens")
-                if not tokens then
-                    tokens = Instance.new("IntValue")
-                    tokens.Name = "Tokens"
-                    tokens.Parent = leaderstats
-                end
-                tokens.Value = tokens.Value + reward
-            end)
-
-            -- best score (only counts MY score vs the max possible)
-            if sMe > popcornCfg.best then
-                popcornCfg.best = sMe
-                PopcornSaveBest()
-            end
-            popcornCfg.score = sMe
-
-            PopcornSetScore(sMe, sBot,
-                resultText .. "  (+" .. tostring(reward) .. " Tokens)")
-            PopcornUnlockCamera()
-            notif("🍿 " .. resultText .. "  +" .. tostring(reward) .. " Tokens"
-
-                .. "  (Score " .. sMe .. " | Best " .. popcornCfg.best .. ")", 4)
-            task.delay(1.2, function()
-                if popcornCfg.mode ~= "playing" then return end
-                popcornCfg.mode = "idle"
-                popcornCfg.round = nil
-                for id, _ in pairs(popcornCfg.activeKernels) do PopcornRemoveKernelVisual(id) end
-                popcornCfg.activeKernels = {}
-                popcornCfg.kernelOrder = {}
-                popcornCfg.kernelSpots = {}
-                for _, child in ipairs(popcornCfg.kernelTargets:GetChildren()) do
-                    child:Destroy()
-                end
-                PopcornSetScore(sMe, sBot, "Walk into a seat to play (or press E)")
-                PopcornUpdateStatus()
-            end)
-        end)
-    end
-
-    local function PopcornCleanupRound()
-        PopcornUnlockCamera()
-        if popcornCfg.round then popcornCfg.round.finished = true end
-        popcornCfg.round = nil
-        popcornCfg.mode = "idle"
-        for id, _ in pairs(popcornCfg.activeKernels) do PopcornRemoveKernelVisual(id) end
-        popcornCfg.activeKernels = {}
-        popcornCfg.kernelOrder = {}
-        popcornCfg.kernelSpots = {}
-        if popcornCfg.kernelTargets then
-            for _, child in ipairs(popcornCfg.kernelTargets:GetChildren()) do
-                child:Destroy()
-            end
-        end
-    end
-
-    -- ===== CLICK DETECTION (3D raycast on the board plane) =====
-    local function PopcornCurrentRadius(k)
-        local t = math.clamp((os.clock() - k.spawnTime) / POPCONFIG.KernelDuration, 0, 1)
-        return k.startRadius + (k.targetRadius - k.startRadius) * t
-    end
-
-    local function PopcornClick()
-        if popcornCfg.mode ~= "playing" then return end
-        local round = popcornCfg.round
-        if not round or round.finished then return end
-        local cam = Workspace.CurrentCamera
-        if not cam then return end
-
-        local mouse = UserInputService:GetMouseLocation()
-        local ray = cam:ViewportPointToRay(mouse.X, mouse.Y)
-
-        -- PRIMARY HIT TEST: physical raycast straight onto the kernel parts
-        local rayParams = RaycastParams.new()
-        rayParams.FilterType = Enum.RaycastFilterType.Exclude
-        local char = lp.Character
-        if char then rayParams.FilterDescendantsInstances = { char } end
-        local result = Workspace:Raycast(ray.Origin, ray.Direction * 400, rayParams)
-        if result and result.Instance then
-            local id = result.Instance:GetAttribute("Kid")
-            if id then
-                local k = popcornCfg.activeKernels[id]
-                if k then
-                    PopcornRemoveKernelVisual(id)
-                    PopcornPopBurst(k.center)
-                    local err = math.abs(os.clock() - round.kernels[id].expected)
-                    PopcornJudge("me", id, false, err)
-                    return
-                end
-            end
-        end
-
-        -- FALLBACK: plane intersection math over the board surface
-        local planeY = popcornCfg.tableTop.Position.Y + 0.15
-        if math.abs(ray.Direction.Y) < 0.0001 then return end
-        local tHit = (planeY - ray.Origin.Y) / ray.Direction.Y
-        if tHit <= 0 then return end
-        local hit = ray.Origin + ray.Direction * tHit
-
-        for i = #popcornCfg.kernelOrder, 1, -1 do
-            local id = popcornCfg.kernelOrder[i]
-            local k = popcornCfg.activeKernels[id]
-            if k and (os.clock() - k.spawnTime) <= POPCONFIG.KernelDuration then
-                local dx = hit.X - k.center.X
-                local dz = hit.Z - k.center.Z
-                if (dx * dx + dz * dz) <= (PopcornCurrentRadius(k) ^ 2) then
-                    PopcornRemoveKernelVisual(id)
-                    PopcornPopBurst(k.center)
-                    local err = math.abs(os.clock() - round.kernels[id].expected)
-                    PopcornJudge("me", id, false, err)
-                    return
-                end
-            end
-        end
-    end
-
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if input.UserInputType ~= Enum.UserInputType.MouseButton1
-            and input.UserInputType ~= Enum.UserInputType.Touch then
-            return
-        end
-        -- during a round we OWN the board view: accept clicks even when the
-        -- game UI consumed them so nothing swallows our clicks
-        if popcornCfg.mode ~= "playing" and gameProcessed then return end
-        local ok, err = pcall(PopcornClick)
-        if not ok and os.clock() - (popcornCfg.lastClickErr or 0) > 4 then
-            popcornCfg.lastClickErr = os.clock()
-            notif("🍿 Click error: " .. tostring(err), 5)
-        end
-    end)
-
-    -- ===== SIT / STAND (E near a seat) =====
-    -- force-sit with fallback: :Sit() first, then teleport onto the seat
-    local function PopcornTrySit(seat)
-        local char = lp.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not hum or not hrp then return false end
-        pcall(function() hum:Sit() end)
-        task.wait(0.4)
-        if hum.Seated and hum.SeatPart == seat then return true end
-        pcall(function()
-            hrp.CFrame = seat.CFrame * CFrame.new(0, 1.3, 0)
-            hum.Sit = true
-        end)
-        task.wait(0.4)
-        return hum.Seated == true
-    end
-
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
-        if input.KeyCode ~= Enum.KeyCode.E then return end
-        if not popcornCfg.active then return end
-
-        if popcornCfg.mode == "playing" then
-            PopcornCleanupRound()
-            PopcornSetScore(0, 0, "Walk into a seat to play (or press E)")
-            return
-        end
-
-        local char = lp.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        local nearest, best = nil, 8
-        for _, seat in ipairs(popcornCfg.seats or {}) do
-            local d = hrp and (hrp.Position - seat.Position).Magnitude or math.huge
-            if d < best then best, nearest = d, seat end
-        end
-        if nearest then
-            PopcornTrySit(nearest)
-            PopcornStartRound() -- works seated OR standing next to the board
-        end
-    end)
-
-    -- AUTO-SIT: walking into a seat starts the round (no key needed)
-    task.spawn(function()
-        while true do
-            task.wait(0.3)
-            if popcornCfg.active and popcornCfg.mode == "idle" then
-                local char = lp.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
-                if hrp and hum and not hum.Seated and popcornCfg.seats then
-                    for _, seat in ipairs(popcornCfg.seats) do
-                        if (hrp.Position - seat.Position).Magnitude <= 2.5 then
-                            PopcornTrySit(seat)
-                            if hum.Seated then PopcornStartRound() end
-                            break
-                        end
-                    end
-                end
-            end
-        end
-    end)
-
-    -- leaving the table area mid-round = round cancelled
-    task.spawn(function()
-        while true do
-            task.wait(0.5)
-            if popcornCfg.active and popcornCfg.mode == "playing" then
-                local char = lp.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                local stillThere = hrp and popcornCfg.tableTop
-                    and (hrp.Position - popcornCfg.tableTop.Position).Magnitude <= 9
-                if not stillThere then
-                    PopcornCleanupRound()
-                    PopcornSetScore(0, 0, "Walk into a seat to play (or press E)")
-                end
-            end
-        end
-    end)
-
-    -- respawn mid-round = clean restart
-    lp.CharacterAdded:Connect(function()
-        task.wait(0.2)
-        if popcornCfg.active and popcornCfg.mode == "playing" then
-            PopcornCleanupRound()
-            PopcornSetScore(0, 0, "Walk into a seat to play (or press E)")
-        end
-    end)
-
-    -- ===== API =====
-    local function PopcornStart()
-        if popcornCfg.active then return end
-        local ok, err = pcall(function()
-            -- build the table IN FRONT OF the player so it's instantly visible
-            local char = lp.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            local buildPos = Vector3.new(0, 6, 0)
-            if hrp then
-                buildPos = hrp.Position + hrp.CFrame.LookVector * 12
-                buildPos = Vector3.new(buildPos.X, hrp.Position.Y - 0.2, buildPos.Z)
-            end
-            PopcornBuildTable(buildPos)
-        end)
-        if not ok then
-            notif("🍿 Build error: " .. tostring(err), 6)
-            return
-        end
-        popcornCfg.active = true
-        popcornCfg.mode = "idle"
-        PopcornSetScore(0, 0, "Walk into a seat to play (or press E)")
-        if not popcornCfg.sfx then
-            local sfx = Instance.new("Sound")
-            sfx.SoundId = POPCONFIG.PopSfxId
-            sfx.Volume = 0.85
-            sfx.Parent = lp
-            popcornCfg.sfx = sfx
-        end
-        PopcornUpdateStatus()
-        notif("🍿 Table built in front of you — walk into a seat", 4)
-    end
-
-    local function PopcornStop()
-        if not popcornCfg.active then return end
-        popcornCfg.active = false
-        pcall(PopcornCleanupRound)
-        pcall(PopcornDestroyTable)
-        PopcornUpdateStatus()
-    end
-
-    PopcornBurstAPI = {
-        Start = PopcornStart,
-        Stop = PopcornStop,
-        IsActive = function() return popcornCfg.active end,
-        UpdateStatus = PopcornUpdateStatus,
-        SetStatusLabel = function(instance) statusLabel = instance end,
-    }
-end
 
 function isKillerNearby(position, radius)
     for _, player in ipairs(game.Players:GetPlayers()) do
@@ -3306,17 +2195,17 @@ function PeriodicESPUpdate()
 end
 
 -- =====================================================================
--- ═══════════════════════════════════════════════════════════════════════
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 --  NOVA UI FRAMEWORK — sa7loul V3 PREMIUM REDESIGN
 --  Dark mode + neon accents | RGB mode | rounded corners | glow
 --  Draggable header | search | fluid tab navigation
--- ═══════════════════════════════════════════════════════════════════════
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 local CoreGui    = game:GetService("CoreGui")
 local GuiService = game:GetService("GuiService")
 local SoundService = game:GetService("SoundService")
 local PlayersSvc = game:GetService("Players")
 
--- ────────────────────────── THEME ──────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ THEME â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local UITheme = {
     BG        = Color3.fromRGB(7, 8, 13),
     BG_DEEP   = Color3.fromRGB(10, 12, 19),
@@ -3337,13 +2226,24 @@ local UITheme = {
     Hue       = 0.5,
 }
 local accentListeners = {}
-function UITheme:RegisterAccent(fn)
-    table.insert(accentListeners, fn)
+local coreAccentListeners = {}
+function UITheme:RegisterAccent(fn, core)
+    if core then
+        table.insert(coreAccentListeners, fn)
+    else
+        table.insert(accentListeners, fn)
+    end
 end
 function UITheme:ApplyAccent()
+    for _, fn in ipairs(coreAccentListeners) do
+        pcall(fn, UITheme.Accent)
+    end
     for _, fn in ipairs(accentListeners) do
         pcall(fn, UITheme.Accent)
     end
+end
+function UITheme:ClearContentAccents()
+    accentListeners = {}
 end
 function UITheme:Tick(dt)
     if UITheme.RGB then
@@ -3353,7 +2253,7 @@ function UITheme:Tick(dt)
     end
 end
 
--- ────────────────────────── ROOT ──────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ROOT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local NovaUI = Instance.new("ScreenGui")
 NovaUI.Name = "sa7loul_V3"
 NovaUI.ResetOnSpawn = false
@@ -3369,6 +2269,8 @@ Window.BorderSizePixel = 0
 Window.AnchorPoint = Vector2.new(0.5, 0.5)
 Window.Position = UDim2.fromScale(0.5, 0.5)
 Window.Size = UDim2.new(0, 720, 0, 540)
+Window.Active = true
+Window.Draggable = true
 local windowCorner = Instance.new("UICorner", Window)
 windowCorner.CornerRadius = UDim.new(0, 16)
 local windowStroke = Instance.new("UIStroke", Window)
@@ -3417,7 +2319,7 @@ UITheme:RegisterAccent(function(c)
         ColorSequenceKeypoint.new(0.5, c),
         ColorSequenceKeypoint.new(1, UITheme.PURPLE)
     })
-end)
+end, true)
 
 -- opening animation
 TweenService:Create(Window, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
@@ -3425,7 +2327,7 @@ TweenService:Create(Window, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.Easi
     Size = UDim2.new(0, 720, 0, 540)
 }):Play()
 
--- ────────────────────────── HEADER ──────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local Header = Instance.new("Frame")
 Header.Name = "Header"
 Header.Parent = Window
@@ -3435,6 +2337,12 @@ Header.BorderSizePixel = 0
 Header.Size = UDim2.new(1, 0, 0, 54)
 Header.ZIndex = 5
 Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 16)
+local headerGrad = Instance.new("UIGradient", Header)
+headerGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, UITheme.BG_DEEP),
+    ColorSequenceKeypoint.new(0.6, UITheme.PANEL),
+    ColorSequenceKeypoint.new(1, UITheme.BG_DEEP)
+})
 local headerBottom = Instance.new("Frame")
 headerBottom.Parent = Header
 headerBottom.BackgroundColor3 = UITheme.BORDER
@@ -3458,7 +2366,7 @@ logoStroke.Transparency = 0.7
 UITheme:RegisterAccent(function(c)
     logoDot.BackgroundColor3 = c
     logoStroke.Color = c
-end)
+end, true)
 
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Parent = Header
@@ -3480,7 +2388,7 @@ titleAccent.TextSize = 14
 titleAccent.Size = UDim2.new(0, 30, 0, 18)
 titleAccent.Position = UDim2.new(0, 128, 0, 9)
 titleAccent.TextXAlignment = Enum.TextXAlignment.Left
-UITheme:RegisterAccent(function(c) titleAccent.TextColor3 = c end)
+UITheme:RegisterAccent(function(c) titleAccent.TextColor3 = c end, true)
 
 local headerSub = Instance.new("TextLabel")
 headerSub.Parent = Header
@@ -3494,7 +2402,7 @@ headerSub.Position = UDim2.new(0, 36, 0, 30)
 headerSub.TextXAlignment = Enum.TextXAlignment.Left
 
 -- header buttons (minimize / close)
-local function headerIconButton(text, color)
+function headerIconButton(text, color)
     local btn = Instance.new("TextButton")
     btn.Parent = Header
     btn.BackgroundColor3 = UITheme.ELEMENT
@@ -3536,55 +2444,187 @@ Instance.new("UICorner", menuKeyChip).CornerRadius = UDim.new(0, 7)
 
 local minimizeBtn = headerIconButton("–", UITheme.GREEN)
 minimizeBtn.Position = UDim2.new(1, -104, 0.5, -13)
+minimizeBtn.Name = "MinimizeButton"
+minimizeBtn.Visible = true
 local closeBtn = headerIconButton("✕", UITheme.RED)
 closeBtn.Position = UDim2.new(1, -72, 0.5, -13)
+closeBtn.Name = "CloseButton"
+closeBtn.Visible = true
 
--- ────────────────────────── DRAG ──────────────────────────
+local minimizedHint = Instance.new("TextLabel")
+minimizedHint.Parent = Header
+minimizedHint.BackgroundTransparency = 1
+minimizedHint.Font = Enum.Font.Gotham
+minimizedHint.Text = "minimized ·  click ✚ to restore full menu"
+minimizedHint.TextColor3 = UITheme.SUBTEXT
+minimizedHint.TextSize = 10
+minimizedHint.Size = UDim2.new(0, 220, 0, 16)
+minimizedHint.Position = UDim2.new(0, 36, 0, 32)
+minimizedHint.TextXAlignment = Enum.TextXAlignment.Left
+minimizedHint.Visible = false
+
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DRAG â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+local minimized = false
 local dragging = false
+local pendingDrag = false
+local dragMoved = false
+local dragStartPos = Vector2.zero
 local dragOffset = Vector2.zero
+local dragLockUntil = 0
+local suppressBtnClick = 0
+
+local function pointInGui(pos, gui)
+    if not gui then return false end
+    local p = gui.AbsolutePosition
+    local s = gui.AbsoluteSize
+    return pos.X >= p.X and pos.X <= p.X + s.X and pos.Y >= p.Y and pos.Y <= p.Y + s.Y
+end
+
+-- blocks drag when the press lands on an interactive element (buttons, toggles, sliders...)
+local function shouldBlockDrag(pos)
+    local guis = {}
+    local ok = pcall(function()
+        guis = GuiService:GetGuiObjectsAtPosition(pos.X, pos.Y)
+    end)
+    if ok and #guis > 0 then
+        for _, g in ipairs(guis) do
+            if g:IsA("TextButton") or g:IsA("TextBox") or g:IsA("ImageButton") then
+                return true
+            end
+            if g.GetAttribute and g:GetAttribute("noDrag") then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+local function registerDragStart(pos)
+    pendingDrag = true
+    dragStartPos = pos
+    dragMoved = false
+end
+
+local function headerClicked(input)
+    local pos = input.Position
+    if not pointInGui(pos, Header) then return end
+    if minimized then
+        if pointInGui(pos, closeBtn) then return end
+        ApplyMinimized(false)
+        suppressBtnClick = os.clock() + 0.6
+        dragLockUntil = os.clock() + 0.6
+        return
+    end
+    if os.clock() < dragLockUntil then return end
+    if pointInGui(pos, minimizeBtn) or pointInGui(pos, closeBtn) or pointInGui(pos, menuKeyChip) then return end
+    registerDragStart(pos)
+end
+
+-- drag from ANYWHERE in the window (except interactive controls)
+local function windowDragCheck(input)
+    if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+    if minimized then return end
+    if os.clock() < dragLockUntil then return end
+    local pos = input.Position
+    if not pointInGui(pos, Window) then return end
+    if shouldBlockDrag(pos) then return end
+    registerDragStart(pos)
+end
+
 Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragOffset = input.Position - Vector2.new(Window.AbsolutePosition.X, Window.AbsolutePosition.Y)
+        headerClicked(input)
     end
 end)
-Header.InputEnded:Connect(function(input)
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        headerClicked(input)
+        windowDragCheck(input)
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = false
+        pendingDrag = false
+        dragMoved = false
     end
 end)
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local newPos = input.Position - dragOffset
-        Window.Position = UDim2.fromOffset(newPos.X, newPos.Y)
+RunService.RenderStepped:Connect(function()
+    if pendingDrag and not dragging then
+        local cur = UserInputService:GetMouseLocation()
+        if (cur - dragStartPos).Magnitude > 6 then
+            dragging = true
+            dragOffset = cur - Vector2.new(Window.AbsolutePosition.X, Window.AbsolutePosition.Y)
+        end
+    end
+    if dragging then
+        local pos = UserInputService:GetMouseLocation()
+        local sz = Window.AbsoluteSize
+        pcall(function()
+            -- anchor-point aware positioning: keeps the grab point fixed under the cursor
+            Window.Position = UDim2.fromOffset(
+                pos.X - dragOffset.X + sz.X * Window.AnchorPoint.X,
+                pos.Y - dragOffset.Y + sz.Y * Window.AnchorPoint.Y
+            )
+        end)
     end
 end)
 
 -- minimize / restore
-local minimized = false
-minimizeBtn.MouseButton1Click:Connect(function()
-    if not minimized then
-        minimized = true
-        TweenService:Create(Window, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 260, 0, 54),
-            AnchorPoint = Vector2.new(0, 0),
-            Position = UDim2.fromOffset(14, 14)
-        }):Play()
-        task.wait(0.25)
-        Sidebar.Visible = false
-        ContentScroll.Visible = false
-        SearchBar.Visible = false
+function ApplyMinimized(state)
+    minimized = state
+    if minimizeBtn then minimizeBtn.Text = state and "✚" or "–" end
+    if headerSub then headerSub.Visible = not state end
+    if menuKeyChip then menuKeyChip.Visible = not state end
+    if minimizedHint then minimizedHint.Visible = state end
+    if state then
+        if Sidebar then Sidebar.Visible = false end
+        if ContentScroll then ContentScroll.Visible = false end
+        if SearchBar then SearchBar.Visible = false end
+        if statusBar then statusBar.Visible = false end
+        pcall(function()
+            TweenService:Create(Window, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                Size = UDim2.new(0, 300, 0, 54),
+                AnchorPoint = Vector2.new(0, 0),
+                Position = UDim2.fromOffset(14, 14)
+            }):Play()
+        end)
+        task.spawn(function()
+            task.wait(0.25)
+            if minimized then
+                Window.AnchorPoint = Vector2.new(0, 0)
+                Window.Position = UDim2.fromOffset(14, 14)
+                Window.Size = UDim2.new(0, 300, 0, 54)
+            end
+        end)
     else
-        minimized = false
-        Sidebar.Visible = true
-        ContentScroll.Visible = true
-        SearchBar.Visible = true
-        TweenService:Create(Window, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 720, 0, 540),
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.fromScale(0.5, 0.5)
-        }):Play()
+        if Sidebar then Sidebar.Visible = true end
+        if ContentScroll then ContentScroll.Visible = true end
+        if SearchBar then SearchBar.Visible = true end
+        if statusBar then statusBar.Visible = true end
+        pcall(function()
+            TweenService:Create(Window, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 720, 0, 540),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Position = UDim2.fromScale(0.5, 0.5)
+            }):Play()
+        end)
+        task.spawn(function()
+            task.wait(0.32)
+            if not minimized then
+                Window.AnchorPoint = Vector2.new(0.5, 0.5)
+                Window.Position = UDim2.fromScale(0.5, 0.5)
+                Window.Size = UDim2.new(0, 720, 0, 540)
+                pcall(UpdateRightContent)
+            end
+        end)
     end
+end
+minimizeBtn.MouseButton1Click:Connect(function()
+    if os.clock() < suppressBtnClick then return end
+    pcall(function()
+        ApplyMinimized(not minimized)
+    end)
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
@@ -3597,7 +2637,7 @@ closeBtn.MouseButton1Click:Connect(function()
     if GlowBlur then pcall(function() GlowBlur:Destroy() end) end
 end)
 
--- ────────────────────────── SEARCH BAR ──────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SEARCH BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local SearchBar = Instance.new("Frame")
 SearchBar.Parent = Window
 SearchBar.BackgroundTransparency = 1
@@ -3608,7 +2648,7 @@ local searchIcon = Instance.new("TextLabel")
 searchIcon.Parent = SearchBar
 searchIcon.BackgroundTransparency = 1
 searchIcon.Font = Enum.Font.Gotham
-searchIcon.Text = "⌕"
+searchIcon.Text = "🔍"
 searchIcon.TextColor3 = UITheme.SUBTEXT
 searchIcon.TextSize = 18
 searchIcon.Size = UDim2.new(0, 30, 1, 0)
@@ -3642,7 +2682,7 @@ SearchBox.FocusLost:Connect(function()
     TweenService:Create(searchStroke, TweenInfo.new(0.15), {Color = UITheme.BORDER, Transparency = 0.4}):Play()
 end)
 
--- ────────────────────────── SIDEBAR ──────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local Sidebar = Instance.new("Frame")
 Sidebar.Parent = Window
 Sidebar.BackgroundColor3 = UITheme.PANEL
@@ -3673,16 +2713,30 @@ sidebarList.Padding = UDim.new(0, 3)
 sidebarList.SortOrder = Enum.SortOrder.LayoutOrder
 Instance.new("UIPadding", SidebarScroll).PaddingTop = UDim.new(0, 10)
 
+local sidebarTitle = Instance.new("TextLabel")
+sidebarTitle.Parent = SidebarScroll
+sidebarTitle.BackgroundTransparency = 1
+sidebarTitle.LayoutOrder = -1
+sidebarTitle.Size = UDim2.new(1, -24, 0, 24)
+sidebarTitle.Font = Enum.Font.GothamBold
+sidebarTitle.Text = "☰  MENU"
+sidebarTitle.TextColor3 = UITheme.Accent
+sidebarTitle.TextSize = 12
+sidebarTitle.TextXAlignment = Enum.TextXAlignment.Left
+sidebarTitle.TextYAlignment = Enum.TextYAlignment.Center
+UITheme:RegisterAccent(function(c) sidebarTitle.TextColor3 = c end, true)
+
 local TabItems = {
     { key = "  Home",       icon = "⌂", label = "Home" },
     { key = "  Player",     icon = "☄", label = "Player" },
+    { key = "  Revive",     icon = "✚", label = "Revive" },
     { key = "  World",      icon = "✺", label = "World" },
     { key = "  Players",    icon = "☰", label = "Players" },
-    { key = "  Revive",     icon = "✚", label = "Revive" },
     { key = "  Fun",        icon = "✿", label = "Fun" },
+    { key = "  Spawner",    icon = "🔧", label = "Spawner" },
     { key = "  Troll",      icon = "☠", label = "Troll" },
-    { key = "  Ban",        icon = "⛔", label = "Ban" },
-    { key = "  Tsunami",    icon = "◉", label = "Tsunami" },
+    { key = "  Ban",        icon = "🛡", label = "Ban" },
+    { key = "  Tsunami",    icon = "🌊", label = "Tsunami" },
     { key = "  Extras",     icon = "▤", label = "Extras" },
     { key = "  Settings",   icon = "⚙", label = "Settings" },
 }
@@ -3707,7 +2761,8 @@ rgbQuick.TextColor3 = UITheme.SUBTEXT
 rgbQuick.TextSize = 10
 Instance.new("UICorner", rgbQuick).CornerRadius = UDim.new(0, 7)
 
-local function BuildSidebar()
+local tabVisuals = {}
+function BuildSidebar()
     for _, item in ipairs(TabItems) do
         local btn = Instance.new("TextButton")
         btn.Parent = SidebarScroll
@@ -3736,7 +2791,7 @@ local function BuildSidebar()
         glowBar.BackgroundTransparency = 1
         glowBar.ZIndex = 5
         Instance.new("UICorner", glowBar).CornerRadius = UDim.new(1, 0)
-        UITheme:RegisterAccent(function(c) glowBar.BackgroundColor3 = c end)
+        UITheme:RegisterAccent(function(c) glowBar.BackgroundColor3 = c end, true)
 
         btn.MouseEnter:Connect(function()
             if CurrentTab ~= item.key then
@@ -3755,12 +2810,11 @@ local function BuildSidebar()
         tabVisuals[item.key] = { btn = btn, glow = glowBar }
     end
 end
-local tabVisuals = {}
-local function RefreshTabVisuals()
+function RefreshTabVisuals()
     for key, vis in pairs(tabVisuals) do
         local active = (CurrentTab == key)
         TweenService:Create(vis.btn, TweenInfo.new(0.18), {
-            BackgroundTransparency = active and 0.5 or 1,
+            BackgroundTransparency = active and 0.35 or 1,
             TextColor3 = active and UITheme.TEXT or UITheme.SUBTEXT
         }):Play()
         TweenService:Create(vis.glow, TweenInfo.new(0.18), {
@@ -3769,14 +2823,14 @@ local function RefreshTabVisuals()
     end
 end
 
--- ────────────────────────── CONTENT ──────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CONTENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local ContentScroll = Instance.new("ScrollingFrame")
 ContentScroll.Parent = Window
 ContentScroll.BackgroundColor3 = UITheme.BG
 ContentScroll.BackgroundTransparency = 0.6
 ContentScroll.BorderSizePixel = 0
 ContentScroll.Position = UDim2.new(0, 182, 0, 108)
-ContentScroll.Size = UDim2.new(1, -194, 1, -122)
+ContentScroll.Size = UDim2.new(1, -194, 1, -154)
 ContentScroll.ScrollBarThickness = 4
 ContentScroll.ScrollBarImageColor3 = UITheme.Accent
 ContentScroll.ScrollBarImageTransparency = 0.4
@@ -3788,11 +2842,56 @@ local contentLayout = Instance.new("UIListLayout", ContentScroll)
 contentLayout.Padding = UDim.new(0, 16)
 contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- ────────────────────────── COMPONENTS ──────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ STATUS BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+local statusBar = Instance.new("Frame")
+statusBar.Parent = Window
+statusBar.BackgroundColor3 = UITheme.PANEL
+statusBar.BackgroundTransparency = 0.35
+statusBar.BorderSizePixel = 0
+statusBar.Position = UDim2.new(0, 182, 1, -26)
+statusBar.Size = UDim2.new(1, -194, 0, 26)
+Instance.new("UICorner", statusBar).CornerRadius = UDim.new(0, 8)
+Instance.new("UIPadding", statusBar).PaddingLeft = UDim.new(0, 10)
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Parent = statusBar
+statusLabel.BackgroundTransparency = 1
+statusLabel.Size = UDim2.new(1, 0, 1, 0)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.Text = "FPS: --  |  Ping: --ms  |  Players: --  |  RightShift = hide UI"
+statusLabel.TextColor3 = UITheme.SUBTEXT
+statusLabel.TextSize = 10
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.TextYAlignment = Enum.TextYAlignment.Center
+UITheme:RegisterAccent(function(c) statusLabel.TextColor3 = c end, true)
+
+task.spawn(function()
+    local lastFrame = os.clock()
+    while statusLabel and statusLabel.Parent do
+        pcall(function()
+            local now = os.clock()
+            local fps = 1 / math.max(0.001, now - lastFrame)
+            lastFrame = now
+            local ping = 0
+            pcall(function()
+                ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
+            end)
+            local activeCount = 0
+            for _, v in pairs(settings) do
+                if v == true then activeCount = activeCount + 1 end
+            end
+            statusLabel.Text = "FPS: " .. math.floor(fps) .. "  |  Ping: " .. ping .. "ms  |  Players: " .. #PlayersSvc:GetPlayers() .. "  |  Active toggles: " .. activeCount .. "  |  RightShift = hide UI"
+        end)
+        task.wait(1)
+    end
+end)
+
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ COMPONENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local activeRows = {}
 
-local function ClearContent()
+function ClearContent()
     activeRows = {}
+    UITheme:ClearContentAccents()
     for _, child in ipairs(ContentScroll:GetChildren()) do
         if child:IsA("Frame") or child:IsA("TextLabel") then
             child:Destroy()
@@ -3800,7 +2899,7 @@ local function ClearContent()
     end
 end
 
-local function RefreshSearch()
+function RefreshSearch()
     local q = SearchBox.Text:lower()
     for _, h in ipairs(activeRows) do
         local match = (q == "") or (h.tag and h.tag:find(q, 1, true))
@@ -3809,7 +2908,7 @@ local function RefreshSearch()
 end
 SearchBox:GetPropertyChangedSignal("Text"):Connect(RefreshSearch)
 
-local function trackRow(row, tag)
+function trackRow(row, tag)
     local handle = { Row = row, tag = tag and tag:lower() or "" }
     table.insert(activeRows, handle)
     return handle
@@ -3818,15 +2917,31 @@ end
 local function Section(parent, title, icon)
     local section = Instance.new("Frame")
     section.Parent = parent
-    section.BackgroundTransparency = 1
+    section.BackgroundColor3 = UITheme.PANEL
+    section.BackgroundTransparency = 0.5
+    section.BorderSizePixel = 0
     section.Size = UDim2.new(1, 0, 0, 0)
     section.AutomaticSize = Enum.AutomaticSize.Y
     section.LayoutOrder = #parent:GetChildren()
+    Instance.new("UICorner", section).CornerRadius = UDim.new(0, 12)
+    local secStroke = Instance.new("UIStroke", section)
+    secStroke.Thickness = 1
+    secStroke.Color = UITheme.BORDER
+    secStroke.Transparency = 0.5
+    UITheme:RegisterAccent(function(c)
+        secStroke.Color = c
+        secStroke.Transparency = 0.25
+    end)
+    local secPad = Instance.new("UIPadding", section)
+    secPad.PaddingLeft = UDim.new(0, 12)
+    secPad.PaddingRight = UDim.new(0, 12)
+    secPad.PaddingTop = UDim.new(0, 8)
+    secPad.PaddingBottom = UDim.new(0, 10)
 
     local head = Instance.new("Frame")
     head.Parent = section
     head.BackgroundTransparency = 1
-    head.Size = UDim2.new(1, 0, 0, 26)
+    head.Size = UDim2.new(1, -24, 0, 26)
 
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Parent = head
@@ -4005,6 +3120,7 @@ local function Slider(parent, opts)
     track.Size = UDim2.new(1, 0, 0, 5)
     track.BackgroundColor3 = UITheme.ELEMENT
     track.BackgroundTransparency = 0.3
+    track:SetAttribute("noDrag", true)
     Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
 
     local fill = Instance.new("Frame")
@@ -4041,7 +3157,7 @@ local function Slider(parent, opts)
     local function update(x)
         local x0 = track.AbsolutePosition.X
         local w = track.AbsoluteSize.X
-        local t = math.clamp((x - x0) / w, 0, 1)
+        local t = math.max(0, math.min(1, (x - x0) / w))
         current = min + (max - min) * t
         if decimals == 0 then
             current = math.floor(current)
@@ -4125,10 +3241,19 @@ local function Dropdown(parent, opts)
     list.Visible = false
     Instance.new("UICorner", list).CornerRadius = UDim.new(0, 8)
     Instance.new("UIStroke", list).Color = UITheme.BORDER
-    local listLayout = Instance.new("UIListLayout", list)
+    local listScroll = Instance.new("ScrollingFrame")
+    listScroll.Parent = list
+    listScroll.BackgroundTransparency = 1
+    listScroll.BorderSizePixel = 0
+    listScroll.Size = UDim2.new(1, 0, 1, 0)
+    listScroll.ScrollBarThickness = 3
+    listScroll.ScrollBarImageTransparency = 0.5
+    listScroll.ScrollBarImageColor3 = UITheme.Accent
+    listScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    local listLayout = Instance.new("UIListLayout", listScroll)
     listLayout.Padding = UDim.new(0, 2)
     listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    Instance.new("UIPadding", list).PaddingTop = UDim.new(0, 3)
+    Instance.new("UIPadding", listScroll).PaddingTop = UDim.new(0, 3)
 
     local currentIdx = opts.default or 1
     local function setLabel()
@@ -4146,12 +3271,12 @@ local function Dropdown(parent, opts)
     box.MouseButton1Click:Connect(function()
         open = not open
         if open then
-            for _, child in ipairs(list:GetChildren()) do
+            for _, child in ipairs(listScroll:GetChildren()) do
                 if child:IsA("TextButton") then child:Destroy() end
             end
             for i, o in ipairs(opts.options) do
                 local optBtn = Instance.new("TextButton")
-                optBtn.Parent = list
+                optBtn.Parent = listScroll
                 optBtn.BackgroundColor3 = UITheme.ELEMENT
                 optBtn.BackgroundTransparency = 0.4
                 optBtn.BorderSizePixel = 0
@@ -4184,7 +3309,7 @@ local function Dropdown(parent, opts)
     return { SetIndex = function(i) currentIdx = i; setLabel() end }
 end
 
--- ────────────────────────── TOGGLE + KEYBIND CHIP ──────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TOGGLE + KEYBIND CHIP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 local function ToggleRow(parent, opts)
     opts = opts or {}
     local row = Instance.new("Frame")
@@ -4334,12 +3459,12 @@ local function ToggleRow(parent, opts)
     return handle
 end
 -- =====================================================================
--- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
---  PART 2 â€” KEYBIND MANAGER Â· SCREEN FX Â· TROLL ENGINE
--- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+--  PART 2 Ã¢â‚¬â€ KEYBIND MANAGER Ã‚Â· SCREEN FX Ã‚Â· TROLL ENGINE
+-- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ KEYBIND MANAGER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
--- Every toggle gets a clickable keybind chip. Click chip â†’ "Press Key..."
+-- Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ KEYBIND MANAGER Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+-- Every toggle gets a clickable keybind chip. Click chip Ã¢â€ â€™ "Press Key..."
 -- Backspace/Delete unbinds. Bound key toggles the feature (gameProcessed-safe).
 local KeybindsLib = {
     map = {},    -- id -> { set, get, chip, name, key }
@@ -4458,14 +3583,14 @@ function KeybindsLib:ResetAll()
     self:Save()
 end
 
--- load saved keybinds from disk (pcall â€” safe on executors without file io)
+-- load saved keybinds from disk (pcall Ã¢â‚¬â€ safe on executors without file io)
 local function KeybindsLoadFromDisk()
     local ok, data = pcall(function()
         return HttpService:JSONDecode(readfile(keybindFile))
     end)
     if ok and type(data) == "table" then
         KeybindsLib:Restore(data)
-        notif("âŒ¨ Keybinds restored", 2)
+        notif("Ã¢Å’Â¨ Keybinds restored", 2)
     end
 end
 
@@ -4503,7 +3628,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SCREEN FX ENGINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ SCREEN FX ENGINE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 local ScreenFx = {
     blurOn = false,
     fovOn = false,
@@ -4631,7 +3756,7 @@ local function SfxSet(flag, on)
     SfxRebuild()
 end
 
--- ðŸ˜± JUMPSCARE BURST â€” flash + FOV punch + shake + sound
+-- Ã°Å¸ËœÂ± JUMPSCARE BURST Ã¢â‚¬â€ flash + FOV punch + shake + sound
 local jumpScareActive = false
 local function JumpScareBurst()
     if jumpScareActive then return end
@@ -4695,7 +3820,7 @@ local function JumpScareBurst()
     end)
 end
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TROLL ENGINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ TROLL ENGINE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 local TrollTargetSel = nil
 -- Emoji-free mapping: keep players dropdown synced
 local trollTargetDropdown = nil
@@ -4750,7 +3875,7 @@ local function TrollMyRoot()
     return nil
 end
 
--- ðŸš€ 1) FLING TARGET (physics-based: angular velocity + random linear yeet)
+-- Ã°Å¸Å¡â‚¬ 1) FLING TARGET (physics-based: angular velocity + random linear yeet)
 local function TrollFlingStart()
     TrollCfg.fling = true
     if TrollState.flingConn then TrollState.flingConn:Disconnect() end
@@ -4801,7 +3926,7 @@ local function TrollFlingStart()
             end
         end
     end)
-    notif("ðŸ›¸ Troll Fling: ON", 2)
+    notif("Ã°Å¸â€ºÂ¸ Troll Fling: ON", 2)
 end
 
 local function TrollFlingStop()
@@ -4815,10 +3940,10 @@ local function TrollFlingStop()
         local hum = tRoot.Parent:FindFirstChildOfClass("Humanoid")
         if hum then pcall(function() hum.PlatformStand = false end) end
     end
-    notif("ðŸ›¸ Troll Fling: OFF", 2)
+    notif("Ã°Å¸â€ºÂ¸ Troll Fling: OFF", 2)
 end
 
--- ðŸŒ€ 2) ANNOY LOOP â€” teleport spam around the target
+-- Ã°Å¸Å’â‚¬ 2) ANNOY LOOP Ã¢â‚¬â€ teleport spam around the target
 local function TrollAnnoyStart()
     TrollCfg.annoy = true
     if TrollState.annoyConn then TrollState.annoyConn:Disconnect() end
@@ -4844,17 +3969,17 @@ local function TrollAnnoyStart()
             myRoot.CFrame = CFrame.new(tRoot.Position + offset)
         end
     end)
-    notif("ðŸŒ€ Annoy Loop: ON (hops around " .. (TrollGetTarget() and TrollGetTarget().Name or "target") .. ")", 2)
+    notif("Ã°Å¸Å’â‚¬ Annoy Loop: ON (hops around " .. (TrollGetTarget() and TrollGetTarget().Name or "target") .. ")", 2)
 end
 
 local function TrollAnnoyStop()
     TrollCfg.annoy = false
     if TrollHandles and TrollHandles.annoy then pcall(function() TrollHandles.annoy:Set(false, true) end) end
     if TrollState.annoyConn then TrollState.annoyConn:Disconnect(); TrollState.annoyConn = nil end
-    notif("ðŸŒ€ Annoy Loop: OFF", 2)
+    notif("Ã°Å¸Å’â‚¬ Annoy Loop: OFF", 2)
 end
 
--- ðŸ‘» 3) GHOST MODE (client-side invisibility)
+-- Ã°Å¸â€˜Â» 3) GHOST MODE (client-side invisibility)
 local function TrollInvisStart()
     TrollCfg.invis = true
     if TrollState.invisConn then TrollState.invisConn:Disconnect() end
@@ -4871,7 +3996,7 @@ local function TrollInvisStart()
         end
     end
     TrollState.invisConn = RunService.RenderStepped:Connect(hide)
-    notif("ðŸ‘» Ghost Mode: ON", 2)
+    notif("Ã°Å¸â€˜Â» Ghost Mode: ON", 2)
 end
 
 local function TrollInvisStop()
@@ -4885,10 +4010,10 @@ local function TrollInvisStop()
         end
     end
     TrollState.invisSaved = {}
-    notif("ðŸ‘» Ghost Mode: OFF", 2)
+    notif("Ã°Å¸â€˜Â» Ghost Mode: OFF", 2)
 end
 
--- ðŸª‘ 4) SNEAKY SEAT â€” invisible seat + hide while seated
+-- Ã°Å¸Âªâ€˜ 4) SNEAKY SEAT Ã¢â‚¬â€ invisible seat + hide while seated
 local function TrollSneakySeatStart()
     TrollCfg.sneakySeat = true
     local root = TrollMyRoot()
@@ -4932,7 +4057,7 @@ local function TrollSneakySeatStart()
             end)
         end
     end
-    notif("ðŸª‘ Sneaky Seat spawned â€” you're invisible while seated", 3)
+    notif("Ã°Å¸Âªâ€˜ Sneaky Seat spawned Ã¢â‚¬â€ you're invisible while seated", 3)
 end
 
 local function TrollSneakySeatStop()
@@ -4949,10 +4074,10 @@ local function TrollSneakySeatStop()
         end
     end
     TrollState.sneakySaved = {}
-    notif("ðŸª‘ Sneaky Seat: OFF", 2)
+    notif("Ã°Å¸Âªâ€˜ Sneaky Seat: OFF", 2)
 end
 
--- ðŸ–± 5) CLICK-TO-TELEPORT TOOL
+-- Ã°Å¸â€“Â± 5) CLICK-TO-TELEPORT TOOL
 local function TrollClickTPFire()
     if os.clock() - TrollState.clickTPLast < 0.45 then return end
     local root = TrollMyRoot()
@@ -4983,21 +4108,21 @@ local function TrollClickTPFire()
         if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
             root.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3.5)
             TrollState.clickTPLast = os.clock()
-            notif("ðŸ–± Teleported to: " .. target.Name, 1)
+            notif("Ã°Å¸â€“Â± Teleported to: " .. target.Name, 1)
         end
     end
 end
 
 local function TrollClickTPStart()
     TrollCfg.clickTP = true
-    notif("ðŸ–± Click TP: ON â€” click any player to teleport", 2)
+    notif("Ã°Å¸â€“Â± Click TP: ON Ã¢â‚¬â€ click any player to teleport", 2)
 end
 local function TrollClickTPStop()
     TrollCfg.clickTP = false
-    notif("ðŸ–± Click TP: OFF", 2)
+    notif("Ã°Å¸â€“Â± Click TP: OFF", 2)
 end
 
--- ðŸ”‡ 6) EARRAPE AUDIO SPAM (local sounds)
+-- Ã°Å¸â€â€¡ 6) EARRAPE AUDIO SPAM (local sounds)
 local function TrollEarrapeStart()
     TrollCfg.earrape = true
     local choice = TROLL_SOUNDS[TrollCfg.earrapeChoice] or TROLL_SOUNDS[1]
@@ -5032,7 +4157,7 @@ local function TrollEarrapeStart()
             end)
         end
     end)
-    notif("ðŸ”Š Earrape: ON (" .. choice.name .. ")", 2)
+    notif("Ã°Å¸â€Å  Earrape: ON (" .. choice.name .. ")", 2)
 end
 
 local function TrollEarrapeStop()
@@ -5043,10 +4168,10 @@ local function TrollEarrapeStop()
         pcall(function() TrollState.earrapeSound:Destroy() end)
         TrollState.earrapeSound = nil
     end
-    notif("ðŸ”Š Earrape: OFF", 2)
+    notif("Ã°Å¸â€Å  Earrape: OFF", 2)
 end
 
--- ðŸ’¬ FAKE ADMIN / SYSTEM MESSAGES (client chat only)
+-- Ã°Å¸â€™Â¬ FAKE ADMIN / SYSTEM MESSAGES (client chat only)
 local function FakeSystemMessage(text, color)
     pcall(function()
         StarterGui:SetCore("ChatMakeSystemMessage", {
@@ -5068,7 +4193,7 @@ local function FakeNotification(title, text, duration)
     end)
 end
 
--- ðŸ¤– FAKE ADMIN SCRIPT SPOOF â€” fires "admin" remotes with a fake server title
+-- Ã°Å¸Â¤â€“ FAKE ADMIN SCRIPT SPOOF Ã¢â‚¬â€ fires "admin" remotes with a fake server title
 local function FakeAdminCommand(cmd, targetName)
     local remotes = ScanAdminRemotes()
     local fired = 0
@@ -5086,9 +4211,9 @@ local function FakeAdminCommand(cmd, targetName)
     return fired
 end
 -- =====================================================================
--- ═══════════════════════════════════════════════════════════════════════
---  PART 3 — TAB CONTENTS · EVENTS · INIT
--- ═══════════════════════════════════════════════════════════════════════
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+--  PART 3 â€” TAB CONTENTS Â· EVENTS Â· INIT
+-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 local TrollHandles = {}
 local trollTargetOptions = {}
@@ -5103,7 +4228,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 local function RefreshTrollTargetOptions()
-    table.clear(trollTargetOptions)
+    for i = #trollTargetOptions, 1, -1 do table.remove(trollTargetOptions, i) end
     for _, p in ipairs(PlayersSvc:GetPlayers()) do
         if p ~= lp then
             table.insert(trollTargetOptions, { text = p.Name, value = p })
@@ -5127,7 +4252,7 @@ local function RefreshTrollTargetOptions()
     end
 end
 
--- ────────────────────────── TAB SWITCHING ──────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TAB SWITCHING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SwitchTab(key)
     CurrentTab = key
     RefreshTabVisuals()
@@ -5136,7 +4261,7 @@ function SwitchTab(key)
     UpdateRightContent()
 end
 
--- ────────────────────────── PLAYERS TAB ──────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PLAYERS TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CreatePlayerEntry(parent, player)
     local frame = Instance.new("Frame")
     frame.Parent = parent
@@ -5191,13 +4316,13 @@ function CreatePlayerEntry(parent, player)
         statusLabel.Text = "✦ You"
         statusLabel.TextColor3 = UITheme.Accent
     elseif IsPlayerDowned(player) then
-        statusLabel.Text = "💀 Down"
+        statusLabel.Text = "ðŸ’€ Down"
         statusLabel.TextColor3 = UITheme.RED
     elseif IsPlayerInLobby(player) then
-        statusLabel.Text = "🟤 Lobby"
+        statusLabel.Text = "ðŸŸ¤ Lobby"
         statusLabel.TextColor3 = UITheme.DIM
     else
-        statusLabel.Text = "●"
+        statusLabel.Text = "â—"
     end
 
     -- action buttons
@@ -5234,7 +4359,7 @@ function CreatePlayerEntry(parent, player)
             end)
             return btn
         end
-        actionBtn("🔗", UITheme.CYAN, function()
+        actionBtn("ðŸ”—", UITheme.CYAN, function()
             if bringActive then
                 StopBring()
             else
@@ -5301,17 +4426,17 @@ function UpdatePlayerList()
     end
 end
 
-local function RefreshPlayerSideTab()
+function RefreshPlayerSideTab()
     if trollTargetDD then RefreshTrollTargetOptions() end
 end
 
--- ────────────────────────── CUFF ITEM SPAWNER / GIVER ──────────────────────────
-local function IsCuffObject(obj)
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CUFF ITEM SPAWNER / GIVER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function IsCuffObject(obj)
     return (obj:IsA("Tool") or obj:IsA("Model") or obj:IsA("BasePart"))
         and string.lower(obj.Name):find("cuff", 1, true) ~= nil
 end
 
-local function GetAllCuffItemNames()
+function GetAllCuffItemNames()
     local seen = {}
     local results = {}
     local function scan(root)
@@ -5331,10 +4456,16 @@ local function GetAllCuffItemNames()
         local chr = player.Character
         if chr and chr.Parent then scan(chr) end
     end
+    for _, name in ipairs({"Cuffs", "Cuff", "Menottes", "Menotte", "Handcuffs", "Handcuff"}) do
+        if not seen[name] then
+            seen[name] = true
+            table.insert(results, name)
+        end
+    end
     return results
 end
 
-local function FindCuffObject(itemName)
+function FindCuffObject(itemName)
     local function findIn(root)
         if not root then return nil end
         return root:FindFirstChild(itemName, true)
@@ -5344,7 +4475,7 @@ local function FindCuffObject(itemName)
     return nil
 end
 
-local function PositionItemNearPlayer(item, target)
+function PositionItemNearPlayer(item, target)
     local base = item
     if item:IsA("Model") then
         base = item:FindFirstChild("PrimaryPart")
@@ -5366,7 +4497,7 @@ local function PositionItemNearPlayer(item, target)
     return ok
 end
 
-local function GiveCuffItemToPlayer(itemName, targetPlayer)
+function GiveCuffItemToPlayer(itemName, targetPlayer)
     local target = targetPlayer or lp
     if not target then
         notif("No target player", 2)
@@ -5395,18 +4526,18 @@ local function GiveCuffItemToPlayer(itemName, targetPlayer)
         end
     end)
     if ok then
-        notif("Gave 🔗 " .. itemName .. " ➜ " .. target.Name, 2)
+        notif("Gave ðŸ”— " .. itemName .. " âžœ " .. target.Name, 2)
     else
         notif("Could not give: " .. itemName, 2)
     end
     return ok
 end
 
-local function SpawnCuffItemForMe(itemName)
+function SpawnCuffItemForMe(itemName)
     return GiveCuffItemToPlayer(itemName, lp)
 end
 
-local function TakeCuffsFromTarget(target)
+function TakeCuffsFromTarget(target)
     local targetPlayer = target or lp
     local taken = 0
     local function grabFrom(root)
@@ -5423,14 +4554,14 @@ local function TakeCuffsFromTarget(target)
     if targetPlayer.Character then grabFrom(targetPlayer.Character) end
     grabFrom(targetPlayer:FindFirstChild("Backpack"))
     if taken > 0 then
-        notif("Took 🔗 " .. taken .. " cuff item(s) from " .. targetPlayer.Name, 2)
+        notif("Took ðŸ”— " .. taken .. " cuff item(s) from " .. targetPlayer.Name, 2)
     else
         notif("No cuffs found on " .. targetPlayer.Name, 2)
     end
     return taken
 end
 
-local function RemoveMyCuffs()
+function RemoveMyCuffs()
     local removed = 0
     local function clearFrom(root)
         if not root then return end
@@ -5443,20 +4574,698 @@ local function RemoveMyCuffs()
     end
     clearFrom(lp:FindFirstChild("Backpack"))
     if lp.Character then clearFrom(lp.Character) end
-    notif(removed > 0 and ("Removed 🔗 " .. removed .. " cuff item(s)") or "No cuffs to remove", 2)
+    notif(removed > 0 and ("Removed ðŸ”— " .. removed .. " cuff item(s)") or "No cuffs to remove", 2)
 end
--- ────────────────────────── END CUFF CODE ──────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ END CUFF CODE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
--- ────────────────────────── CONTENT BUILDER ──────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SPAWNER ENGINE (generic items) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function Normalize(s)
+    return string.lower((s or ""):gsub("[Ã Ã¡Ã¢Ã¤Ã£Ã¥]", "a"):gsub("[Ã¨Ã©ÃªÃ«]", "e"):gsub("[Ã¬Ã­Ã®Ã¯]", "i"):gsub("[Ã²Ã³Ã´Ã¶Ãµ]", "o"):gsub("[Ã¹ÃºÃ»Ã¼]", "u"):gsub("Ã§", "c"):gsub("Ã±", "n"):gsub("%s+", " "))
+end
+
+function ItemIcon(name)
+    local n = Normalize(name)
+    local map = {
+        { {"knife", "couteau", "cutter", "machete", "cleaver", "dart", "kunai", "stab"}, "ðŸ”ª" },
+        { {"gun", "pistol", "pistolet", "rifle", "fusil", "shotgun", "bazooka"}, "ðŸ”«" },
+        { {"axe", "hache", "hatchet", "hachoir"}, "ðŸª“" },
+        { {"hammer", "marteau", "mallet"}, "ðŸ”¨" },
+        { {"sword", "epee", "katana", "saber"}, "âš”ï¸" },
+        { {"bat", "batte", "club", "cricket"}, "ðŸ" },
+        { {"ring", "alliance"}, "ðŸ’" },
+        { {"dryer", "seche", "cheveux"}, "ðŸŒ¬ï¸" },
+        { {"cuff", "menotte"}, "ðŸ”—" },
+        { {"locker", "casier", "armoire"}, "ðŸ—„ï¸" },
+        { {"glove", "gant"}, "ðŸ§¤" },
+        { {"box", "boite"}, "ðŸ“¦" },
+        { {"key", "cle"}, "ðŸ—ï¸" },
+        { {"candle", "bougie"}, "ðŸ•¯ï¸" },
+        { {"soap", "savon"}, "ðŸ§¼" },
+        { {"coin", "cash", "money", "loot"}, "ðŸ’°" },
+        { {"med", "firstaid", "bandage", "kit", "soin"}, "ðŸ©¹" },
+        { {"armor", "armure", "vest", "gilet"}, "ðŸ¦º" },
+    }
+    for _, e in ipairs(map) do
+        for _, t in ipairs(e[1]) do
+            if n:find(t, 1, true) then return e[2] end
+        end
+    end
+    return "ðŸ“¦"
+end
+
+function ScanItemsByKeyword(keyword)
+    local seen = {}
+    local results = {}
+    local tokens = {}
+    for token in string.gmatch(keyword or "", "[^|]+") do
+        local t = Normalize(token):gsub(" ", "")
+        if t ~= "" then table.insert(tokens, t) end
+    end
+    if #tokens == 0 then return results end
+    local function scan(root)
+        if not root then return end
+        pcall(function()
+            for _, obj in ipairs(root:GetDescendants()) do
+                if (obj:IsA("Tool") or obj:IsA("Model") or obj:IsA("BasePart"))
+                    and not seen[obj.Name] then
+                    local norm = Normalize(obj.Name):gsub(" ", "")
+                    for _, t in ipairs(tokens) do
+                        if norm:find(t, 1, true) then
+                            seen[obj.Name] = true
+                            table.insert(results, obj.Name)
+                            break
+                        end
+                    end
+                end
+            end
+        end)
+    end
+    scan(workspace)
+    scan(game:GetService("ReplicatedStorage"))
+    scan(game:GetService("ReplicatedFirst"))
+    scan(game:GetService("ServerStorage"))
+    local players = PlayersSvc:GetPlayers()
+    for _, player in ipairs(players) do
+        scan(player:FindFirstChild("Backpack"))
+        local chr = player.Character
+        if chr and chr.Parent then scan(chr) end
+    end
+    return results
+end
+
+function FindSpawnObject(itemName)
+    local function findIn(root)
+        if not root then return nil end
+        local obj = root:FindFirstChild(itemName, true)
+        if obj and (obj:IsA("Tool") or obj:IsA("Model") or obj:IsA("BasePart")) then
+            return obj
+        end
+        return nil
+    end
+    return findIn(PlayersSvc) or findIn(workspace) or findIn(game:GetService("ReplicatedStorage"))
+        or findIn(game:GetService("ReplicatedFirst")) or findIn(game:GetService("ServerStorage"))
+end
+
+function GiveSpawnItemToPlayer(itemName, targetPlayer)
+    local target = targetPlayer or lp
+    if not target then
+        notif("No target player", 2)
+        return false
+    end
+    local source = FindSpawnObject(itemName)
+    if not source then
+        notif("Item not in game: " .. itemName, 2)
+        return false
+    end
+    local ok = pcall(function()
+        local item = source:Clone()
+        if item:IsA("Tool") then
+            local backpack = target:FindFirstChild("Backpack")
+            if backpack then
+                item.Parent = backpack
+                local hum = target.Character and target.Character:FindFirstChildOfClass("Humanoid")
+                if hum then pcall(function() hum:EquipTool(item) end) end
+            else
+                item.Parent = workspace
+                PositionItemNearPlayer(item, target)
+            end
+        else
+            for _, part in ipairs(item:GetDescendants()) do
+                if part:IsA("BasePart") then part.Anchored = false end
+            end
+            local base = item:FindFirstChild("PrimaryPart") or item:FindFirstChildWhichIsA("BasePart")
+            if base then base.Anchored = false end
+            item.Parent = workspace
+            PositionItemNearPlayer(item, target)
+        end
+    end)
+    if ok then
+        notif("Spawned ðŸ“¦ " .. itemName .. " âžœ " .. target.Name, 2)
+    else
+        notif("Could not spawn: " .. itemName, 2)
+    end
+    return ok
+end
+
+function SpawnSpawnItemForMe(itemName)
+    return GiveSpawnItemToPlayer(itemName, lp)
+end
+
+function TakeSpawnItemsFromTarget(target, keyword)
+    local targetPlayer = target or lp
+    local taken = 0
+    local lowerKey = string.lower(keyword or "cuff")
+    local function grabFrom(root)
+        if not root then return end
+        for _, obj in ipairs(root:GetChildren()) do
+            if (obj:IsA("Tool") or obj:IsA("Model") or obj:IsA("BasePart"))
+                and string.lower(obj.Name):find(lowerKey, 1, true) then
+                if GiveSpawnItemToPlayer(obj.Name, lp) then taken = taken + 1 end
+            end
+        end
+        for _, obj in ipairs(root:GetChildren()) do
+            if obj:IsA("Tool") then grabFrom(obj) end
+        end
+    end
+    if targetPlayer.Character then grabFrom(targetPlayer.Character) end
+    grabFrom(targetPlayer:FindFirstChild("Backpack"))
+    if taken > 0 then
+        notif("Took ðŸ“¦ " .. taken .. " item(s) from " .. targetPlayer.Name, 2)
+    else
+        notif("No matching items on " .. targetPlayer.Name, 2)
+    end
+    return taken
+end
+
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ITEM CATALOG + SNAPSHOT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- Live scan finds items currently in the server; the catalog fills in the
+-- known STK items so the spawner always shows a full list.
+local KNOWN_CATALOG = {
+    "SÃ¨che-Cheveux", "Seche-Cheveux", "Hair Dryer", "Hairdryer",
+    "Coupe-Cheveux", "Hair Cutter", "Rasoir", "Razor",
+    "Cuffs", "Cuff", "Menottes", "Menotte", "Handcuffs", "Handcuff",
+    "Couteau", "Couteaux", "Knife", "Butcher Knife", "Batte", "Bat", "Hache", "Axe",
+    "Pistolet", "Gun", "Pistol", "Marteau", "Hammer", "Ã‰pÃ©e", "Epee", "Sword", "Sabre", "Dague", "Dagger",
+    "Casier", "Casiers", "Locker", "Lockers",
+    "Gants", "Gant", "Gloves", "Boxing Gloves",
+    "Alliance", "Bougie", "Candle", "Savon", "Soap", "ClÃ©", "Cle", "Key",
+}
+local spawnerItemCache = {}
+function CollectItemSnapshot()
+    spawnerItemCache = {}
+    local function add(root)
+        if not root then return end
+        pcall(function()
+            for _, obj in ipairs(root:GetDescendants()) do
+                if obj:IsA("Tool") or obj:IsA("Model") or obj:IsA("BasePart") then
+                    spawnerItemCache[obj.Name] = true
+                end
+            end
+        end)
+    end
+    add(workspace)
+    add(game:GetService("ReplicatedStorage"))
+    add(game:GetService("ReplicatedFirst"))
+    add(game:GetService("ServerStorage"))
+    for _, player in ipairs(PlayersSvc:GetPlayers()) do
+        add(player:FindFirstChild("Backpack"))
+        local chr = player.Character
+        if chr and chr.Parent then add(chr) end
+    end
+end
+
+function TokensOf(keyword)
+    local tokens = {}
+    for token in string.gmatch(keyword or "", "[^|]+") do
+        local t = Normalize(token):gsub(" ", "")
+        if t ~= "" then table.insert(tokens, t) end
+    end
+    return tokens
+end
+
+function NameMatchesTokens(name, tokens)
+    local norm = Normalize(name):gsub(" ", "")
+    if norm:find("ringbox", 1, true) then return false end
+    for _, t in ipairs(tokens) do
+        if norm:find(t, 1, true) then return true end
+    end
+    return false
+end
+
+function FindItemsByKeyword(keyword, includeCatalog)
+    local tokens = TokensOf(keyword)
+    if #tokens == 0 then return {} end
+    local seen = {}
+    local results = {}
+    for name in pairs(spawnerItemCache) do
+        if NameMatchesTokens(name, tokens) and not seen[name] then
+            seen[name] = true
+            table.insert(results, name)
+        end
+    end
+    table.sort(results)
+    if includeCatalog then
+        for _, name in ipairs(KNOWN_CATALOG) do
+            if not seen[name] and NameMatchesTokens(name, tokens) then
+                seen[name] = true
+                table.insert(results, name)
+            end
+        end
+    end
+    return results
+end
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ END SPAWNER ENGINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+-- =====================================================================
+--  TSUNAMI ENGINE - auto helpers + Popcorn Burst minigame (world & GUI)
+-- =====================================================================
+local TsunamiVim = game:GetService("VirtualInputManager")
+
+tsunamiCfg = {
+    on = false,          -- auto collect coins/cash/loot
+    clicker = false,     -- auto clicker at mouse position
+    popcorn = false,     -- popcorn GUI auto-click
+    god = false,         -- god mode (health & stamina)
+    autojump = false,    -- auto jump
+    safe = false,        -- safe TP (back to grounded spot)
+    mgBot = false,       -- minigame bot (fish/cast/reel/play)
+    c4 = false,          -- C4 clicker (col/cell/slot/connect)
+    collectDelay = 0.35,
+    popCooldown = 0.35,
+    safeDelay = 2,
+    mgBotDelay = 0.8,
+    c4Delay = 1.2,
+    c4Col = 0,
+}
+tsunamiStatusLabel = nil
+local tsunamiConn = nil
+local tsunamiTimers = {}
+local tsunamiSafeSpot = nil
+
+local function TsunamiClickAt(x, y)
+    pcall(function()
+        TsunamiVim:SendMouseButtonEvent(x, y, 0, true, Enum.UserInputType.MouseButton1, 0)
+        TsunamiVim:SendMouseButtonEvent(x, y, 0, false, Enum.UserInputType.MouseButton1, 0)
+    end)
+end
+
+local function TsunamiGuiButtons()
+    local out = {}
+    local roots = { lp:FindFirstChild("PlayerGui"), CoreGui }
+    for _, root in ipairs(roots) do
+        if root then
+            pcall(function()
+                for _, obj in ipairs(root:GetDescendants()) do
+                    if obj:IsA("TextButton") and obj.Visible and obj.AbsoluteSize.X > 10 and obj.AbsoluteSize.Y > 10
+                        and NovaUI and not obj:IsDescendantOf(NovaUI) then
+                        table.insert(out, obj)
+                    end
+                end
+            end)
+        end
+    end
+    return out
+end
+
+function UpdateTsunamiStatus()
+    if not tsunamiStatusLabel or not tsunamiStatusLabel.Parent then return end
+    local parts = {}
+    if tsunamiCfg.on then table.insert(parts, "Collect") end
+    if tsunamiCfg.clicker then table.insert(parts, "Clicker") end
+    if tsunamiCfg.popcorn then table.insert(parts, "PopcornGUI") end
+    if tsunamiCfg.god then table.insert(parts, "God") end
+    if tsunamiCfg.autojump then table.insert(parts, "Jump") end
+    if tsunamiCfg.safe then table.insert(parts, "SafeTP") end
+    if tsunamiCfg.mgBot then table.insert(parts, "MG-Bot") end
+    if tsunamiCfg.c4 then table.insert(parts, "C4") end
+    tsunamiStatusLabel.Text = #parts > 0 and ("Active: " .. table.concat(parts, " | ")) or "All OFF"
+end
+
+local function TsunamiHeartbeat(dt)
+    local c = tsunamiCfg
+
+    if c.on then
+        tsunamiTimers.collect = (tsunamiTimers.collect or 0) + dt
+        if tsunamiTimers.collect >= c.collectDelay then
+            tsunamiTimers.collect = 0
+            local myRoot = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+            if myRoot then
+                local best, bestD = nil, math.huge
+                pcall(function()
+                    for _, obj in ipairs(workspace:GetDescendants()) do
+                        if obj:IsA("BasePart") and obj:IsDescendantOf(workspace) and not obj.Anchored and obj.Transparency < 0.8 then
+                            local n = string.lower(obj.Name)
+                            if n:find("coin") or n:find("cash") or n:find("loot") or n:find("token") or n:find("star") or n:find("money") then
+                                local d = (obj.Position - myRoot.Position).Magnitude
+                                if d < bestD then best, bestD = obj, d end
+                            end
+                        end
+                    end
+                end)
+                if best then
+                    myRoot.CFrame = CFrame.new(best.Position + Vector3.new(0, 3, 0))
+                end
+            end
+        end
+    end
+
+    if c.clicker then
+        tsunamiTimers.clicker = (tsunamiTimers.clicker or 0) + dt
+        if tsunamiTimers.clicker >= 0.06 then
+            tsunamiTimers.clicker = 0
+            local m = UserInputService:GetMouseLocation()
+            TsunamiClickAt(m.X, m.Y)
+        end
+    end
+
+    if c.popcorn then
+        tsunamiTimers.popcorn = (tsunamiTimers.popcorn or 0) + dt
+        if tsunamiTimers.popcorn >= c.popCooldown then
+            tsunamiTimers.popcorn = 0
+            for _, b in ipairs(TsunamiGuiButtons()) do
+                local n = string.lower(b.Name)
+                if n:find("pop") or n:find("ring") or n:find("circle") or n:find("grain") or n:find("corn") or n:find("kernel") then
+                    local p, s = b.AbsolutePosition, b.AbsoluteSize
+                    TsunamiClickAt(p.X + s.X / 2, p.Y + s.Y / 2)
+                    break
+                end
+            end
+        end
+    end
+
+    if c.god then
+        tsunamiTimers.god = (tsunamiTimers.god or 0) + dt
+        if tsunamiTimers.god >= 0.25 then
+            tsunamiTimers.god = 0
+            local chr = lp.Character
+            if chr then
+                local hum = chr:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health < hum.MaxHealth then pcall(function() hum.Health = hum.MaxHealth end) end
+                for _, v in ipairs(chr:GetDescendants()) do
+                    if v:IsA("IntValue") or v:IsA("NumberValue") then
+                        local n = string.lower(v.Name)
+                        if n:find("stamina") or n:find("energy") or n:find("thirst") or n:find("hunger") then
+                            pcall(function()
+                                if v:IsA("IntValue") then v.Value = 100 else v.Value = v.Value + 50 end
+                            end)
+                        end
+                    end
+                end
+                for k, _ in pairs(chr:GetAttributes()) do
+                    local n = string.lower(tostring(k))
+                    if n:find("stamina") or n:find("energy") or n:find("thirst") or n:find("hunger") then
+                        pcall(function() chr:SetAttribute(k, 100) end)
+                    end
+                end
+            end
+        end
+    end
+
+    if c.autojump then
+        tsunamiTimers.jump = (tsunamiTimers.jump or 0) + dt
+        if tsunamiTimers.jump >= 0.6 then
+            tsunamiTimers.jump = 0
+            pcall(function()
+                TsunamiVim:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                TsunamiVim:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+            end)
+        end
+    end
+
+    if c.safe then
+        local chr = lp.Character
+        if chr then
+            local hum = chr:FindFirstChildOfClass("Humanoid")
+            local rp = chr:FindFirstChild("HumanoidRootPart")
+            if hum and rp and hum.FloorMaterial ~= Enum.Material.Air then
+                tsunamiSafeSpot = rp.Position
+            end
+        end
+        tsunamiTimers.safe = (tsunamiTimers.safe or 0) + dt
+        if tsunamiTimers.safe >= c.safeDelay then
+            tsunamiTimers.safe = 0
+            if tsunamiSafeSpot and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                pcall(function()
+                    lp.Character.HumanoidRootPart.CFrame = CFrame.new(tsunamiSafeSpot + Vector3.new(0, 2, 0))
+                end)
+            end
+        end
+    end
+
+    if c.mgBot then
+        tsunamiTimers.mg = (tsunamiTimers.mg or 0) + dt
+        if tsunamiTimers.mg >= c.mgBotDelay then
+            tsunamiTimers.mg = 0
+            for _, b in ipairs(TsunamiGuiButtons()) do
+                local n = string.lower(b.Name)
+                if n:find("fish") or n:find("cast") or n:find("reel") or n:find("play") or n:find("next") or n:find("claim") then
+                    local p, s = b.AbsolutePosition, b.AbsoluteSize
+                    TsunamiClickAt(p.X + s.X / 2, p.Y + s.Y / 2)
+                    break
+                end
+            end
+        end
+    end
+
+    if c.c4 then
+        tsunamiTimers.c4 = (tsunamiTimers.c4 or 0) + dt
+        if tsunamiTimers.c4 >= c.c4Delay then
+            tsunamiTimers.c4 = 0
+            for _, b in ipairs(TsunamiGuiButtons()) do
+                local n = string.lower(b.Name)
+                if n:find("col") or n:find("cell") or n:find("slot") or n:find("connect") or n:find("bomb") then
+                    if c.c4Col <= 0 or n:find(tostring(c.c4Col), 1, true) then
+                        local p, s = b.AbsolutePosition, b.AbsoluteSize
+                        TsunamiClickAt(p.X + s.X / 2, p.Y + s.Y / 2)
+                        break
+                    end
+                end
+            end
+        end
+    end
+end
+
+function RebuildTsunami()
+    local any = tsunamiCfg.on or tsunamiCfg.clicker or tsunamiCfg.popcorn or tsunamiCfg.god
+        or tsunamiCfg.autojump or tsunamiCfg.safe or tsunamiCfg.mgBot or tsunamiCfg.c4
+    if any then
+        if not tsunamiConn then
+            tsunamiConn = RunService.Heartbeat:Connect(TsunamiHeartbeat)
+        end
+    else
+        if tsunamiConn then tsunamiConn:Disconnect(); tsunamiConn = nil end
+    end
+    UpdateTsunamiStatus()
+end
+
+-- -------------------------------------------------------------
+-- Popcorn Burst minigame (world table + kernel clicking)
+-- -------------------------------------------------------------
+PopcornBurstAPI = {
+    active = false, statusLabel = nil, conn = nil,
+    root = nil, center = Vector3.zero,
+    kernels = {}, indicator = nil, seat = nil,
+    throwCount = 0, myScore = 0, botScore = 0, tokens = 0,
+    roundLen = 10,
+}
+
+function PopcornBurstAPI.SetStatusLabel(label)
+    PopcornBurstAPI.statusLabel = label
+end
+
+function PopcornBurstAPI.IsActive()
+    return PopcornBurstAPI.active
+end
+
+function PopcornBurstAPI.UpdateStatus()
+    local api = PopcornBurstAPI
+    if not api.statusLabel or not api.statusLabel.Parent then return end
+    if api.active then
+        api.statusLabel.Text = "Popcorn Burst: ON | You: " .. api.myScore .. " | Bot: " .. api.botScore .. " | Tokens: " .. api.tokens
+    else
+        api.statusLabel.Text = "Popcorn Burst: OFF"
+    end
+end
+
+function PopcornBurstAPI.Start()
+    local api = PopcornBurstAPI
+    if api.active then return end
+    local myRoot = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then
+        notif("Need a character first", 2)
+        return
+    end
+    if api.root and api.root.Parent then pcall(function() api.root:Destroy() end) end
+    api.root = nil
+    api.kernels = {}
+    api.throwCount = 0
+    api.myScore = 0
+    api.botScore = 0
+
+    local model = Instance.new("Model")
+    model.Name = "PopcornTable"
+    model.Parent = workspace
+
+    local center = myRoot.Position + myRoot.CFrame.LookVector * 8
+    api.center = center
+
+    local top = Instance.new("Part")
+    top.Name = "TableTop"
+    top.Size = Vector3.new(12, 0.6, 12)
+    top.Position = center
+    top.Anchored = true
+    top.CanCollide = false
+    top.Material = Enum.Material.SmoothPlastic
+    top.Color = Color3.fromRGB(35, 38, 56)
+    top.Transparency = 0.15
+    top.Parent = model
+
+    local function makePart(name, size, pos, color)
+        local p = Instance.new("Part")
+        p.Name = name
+        p.Size = size
+        p.Position = pos
+        p.Anchored = true
+        p.CanCollide = false
+        p.Material = Enum.Material.Neon
+        p.Color = color
+        p.Transparency = 0.15
+        p.Parent = model
+        return p
+    end
+
+    for i = 1, 4 do
+        local ang = (i - 1) / 4 * math.pi * 2
+        local legPos = center + Vector3.new(math.cos(ang) * 5, -2.4, math.sin(ang) * 5)
+        makePart("Leg" .. i, Vector3.new(0.7, 4.2, 0.7), legPos, Color3.fromRGB(60, 64, 92))
+    end
+
+    local plate = makePart("Plate", Vector3.new(0.2, 10.8, 10.8), center + Vector3.new(0, 1.1, 0), Color3.fromRGB(28, 30, 44))
+    plate.Shape = Enum.PartType.Cylinder
+    plate.Orientation = Vector3.new(0, 0, 90)
+    plate.Transparency = 0.85
+
+    for i = 0, 15 do
+        local ang = i / 16 * math.pi * 2
+        makePart("RingBox", Vector3.new(0.45, 0.45, 0.45), center + Vector3.new(math.cos(ang) * 5, 1.35, math.sin(ang) * 5), Color3.fromRGB(0, 200, 255))
+    end
+
+    local kernelPositions = {
+        { math.cos(0) * 4.2, math.sin(0) * 4.2 },
+        { math.cos(math.pi / 2) * 4.2, math.sin(math.pi / 2) * 4.2 },
+        { math.cos(math.pi) * 4.2, math.sin(math.pi) * 4.2 },
+        { math.cos(math.pi * 1.5) * 4.2, math.sin(math.pi * 1.5) * 4.2 },
+    }
+    for i, kp in ipairs(kernelPositions) do
+        local kernel = makePart("Kernel" .. i, Vector3.new(1.4, 1.4, 1.4), center + Vector3.new(kp[1], 1.4, kp[2]), Color3.fromRGB(255, 200, 80))
+        kernel.Shape = Enum.PartType.Ball
+        api.kernels[i] = kernel
+    end
+
+    api.indicator = makePart("Indicator", Vector3.new(0.9, 0.9, 0.9), center + Vector3.new(4.5, 1.4, 0), Color3.fromRGB(255, 84, 108))
+    api.indicator.Shape = Enum.PartType.Ball
+
+    local seat = Instance.new("Part")
+    seat.Name = "PopcornSeat"
+    seat.Size = Vector3.new(6, 0.5, 6)
+    seat.Position = center - myRoot.CFrame.LookVector * 2 + Vector3.new(0, 0.2, 0)
+    seat.Anchored = true
+    seat.CanCollide = false
+    seat.Transparency = 1
+    seat.Parent = model
+    api.seat = seat
+
+    api.root = model
+    api.active = true
+    local lastStatus = 0
+    api.conn = RunService.RenderStepped:Connect(function()
+        if api.indicator and api.indicator.Parent and api.active then
+            local ang = tick() * 1.3
+            api.indicator.CFrame = CFrame.new(center + Vector3.new(math.cos(ang) * 4.5, 1.4, math.sin(ang) * 4.5))
+        end
+        if tick() - lastStatus > 0.5 then
+            lastStatus = tick()
+            api:UpdateStatus()
+        end
+    end)
+    notif("Popcorn Burst: ON - click kernels when the ring meets them (E = sit)", 4)
+    api:UpdateStatus()
+end
+
+function PopcornBurstAPI.TryHit(part)
+    local api = PopcornBurstAPI
+    if not api.active or not part then return false end
+    for i, k in ipairs(api.kernels) do
+        if k == part then
+            api:RegisterThrow(i)
+            return true
+        end
+    end
+    return false
+end
+
+function PopcornBurstAPI.TrySit()
+    local api = PopcornBurstAPI
+    if not api.active then return end
+    local myRoot = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+    local hum = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+    if myRoot and hum and api.seat and api.seat.Parent then
+        if (myRoot.Position - api.seat.Position).Magnitude < 12 then
+            pcall(function() hum:Sit(api.seat) end)
+        end
+    end
+end
+
+function PopcornBurstAPI.RegisterThrow(kernelIndex)
+    local api = PopcornBurstAPI
+    local kernel = api.kernels[kernelIndex]
+    local ind = api.indicator
+    if not (kernel and ind and ind.Parent) then return end
+    local vK = (kernel.Position - api.center).Unit
+    local vI = (ind.Position - api.center).Unit
+    local dot = math.clamp(vK:Dot(vI), -1, 1)
+    local deg = math.deg(math.acos(dot))
+    local score, tag = 0, "MISS"
+    if deg <= 8 then score, tag = 100, "PERFECT"
+    elseif deg <= 20 then score, tag = 50, "GREAT"
+    elseif deg <= 40 then score, tag = 20, "GOOD"
+    end
+    api.myScore = api.myScore + score
+    api.throwCount = api.throwCount + 1
+    api.botScore = api.botScore + math.random(0, 70)
+    notif("Popcorn: " .. tag .. " +" .. score .. " | you: " .. api.myScore .. " | bot: " .. api.botScore, 1.5)
+    pcall(function()
+        TweenService:Create(kernel, TweenInfo.new(0.3), {
+            Color = score >= 50 and Color3.fromRGB(64, 233, 142) or (score > 0 and Color3.fromRGB(255, 190, 62) or Color3.fromRGB(255, 84, 108)),
+            Transparency = 0,
+        }):Play()
+    end)
+    if api.throwCount >= api.roundLen then
+        local gain = api.myScore > api.botScore and 10 or (api.myScore == api.botScore and 5 or 2)
+        api.tokens = api.tokens + gain
+        notif("Popcorn round over | you: " .. api.myScore .. " | bot: " .. api.botScore .. " | +" .. gain .. " tokens", 3)
+        api.throwCount = 0
+        api.myScore = 0
+        api.botScore = 0
+        for _, k in ipairs(api.kernels) do
+            if k and k.Parent then
+                pcall(function()
+                    TweenService:Create(k, TweenInfo.new(0.3), { Color = Color3.fromRGB(255, 200, 80) }):Play()
+                end)
+            end
+        end
+    end
+    api:UpdateStatus()
+end
+
+function PopcornBurstAPI.Stop()
+    local api = PopcornBurstAPI
+    if not api.active then return end
+    api.active = false
+    if api.conn then api.conn:Disconnect(); api.conn = nil end
+    if api.root and api.root.Parent then pcall(function() api.root:Destroy() end) end
+    api.root = nil
+    api.kernels = {}
+    api.indicator = nil
+    api.seat = nil
+    if lp.Character then
+        local hum = lp.Character:FindFirstChildOfClass("Humanoid")
+        if hum and hum.Seated then pcall(function() hum.Sit = false end) end
+    end
+    api:UpdateStatus()
+    notif("Popcorn Burst: OFF", 2)
+end
+
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CONTENT BUILDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function UpdateRightContent()
     ClearContent()
 
-    -- ═══════════ HOME ═══════════
+    -- â•â•â•â•â•â•â•â•â•â•â• HOME â•â•â•â•â•â•â•â•â•â•â•
     if CurrentTab == "  Home" then
-        local hero = Section(ContentScroll, "Welcome back", "⌂")
-        local greet = Label(hero, "sa7loul V3 — Premium redesign", UITheme.TEXT, 17)
+        local hero = Section(ContentScroll, "Welcome back", "âŒ‚")
+        local greet = Label(hero, "sa7loul V3 â€” Premium redesign", UITheme.TEXT, 17)
         greet.Font = Enum.Font.GothamBold
-        Label(hero, "Survive the Killer • full feature suite • press RightShift to hide UI", UITheme.SUBTEXT, 11)
+        Label(hero, "Survive the Killer â€¢ full feature suite â€¢ press RightShift to hide UI", UITheme.SUBTEXT, 11)
         Label(hero, "", UITheme.DIM, 5)
         local statsLabel = Label(hero, "FPS: --  |  Ping: --ms  |  Players: --", UITheme.CYAN, 12)
         UITheme:RegisterAccent(function(c) statsLabel.TextColor3 = c end)
@@ -5471,30 +5280,35 @@ function UpdateRightContent()
             end
         end)
 
-        local quick = Section(ContentScroll, "Quick access", "⚡")
-        Button(quick, "☄ Player features", function() SwitchTab("  Player") end)
-        Button(quick, "☠ Troll features", function() SwitchTab("  Troll") end)
-        Button(quick, "☰ Player list", function() SwitchTab("  Players") end)
-        Button(quick, "⚙ Settings", function() SwitchTab("  Settings") end)
+        local quick = Section(ContentScroll, "Quick access", "âš¡")
+        Button(quick, "â˜„ Player features", function() SwitchTab("  Player") end)
+        Button(quick, "â˜  Troll features", function() SwitchTab("  Troll") end)
+        Button(quick, "ðŸ”§ Item spawner", function() SwitchTab("  Spawner") end)
+        Button(quick, "â˜° Player list", function() SwitchTab("  Players") end)
+        Button(quick, "âš™ Settings", function() SwitchTab("  Settings") end)
 
-        local info = Section(ContentScroll, "Changelog V3", "📋")
+        local info = Section(ContentScroll, "Changelog V3", "ðŸ“‹")
         local changelog = {
-            "✦ V3 — Full premium redesign (Nova UI)",
-            "✦ Global keybind system for every toggle",
-            "✦ NEW: Troll tab (fling, annoy, fake admin, jumpcare,",
-            "  ghost mode, sneaky seat, earrape, click-TP)",
-            "✦ RGB mode, search bar, draggable header",
-            "✦ All V2 logic preserved & merged",
+            "âœ¦ V3.2 â€” Design rework & stability",
+            "âœ¦ FIXED: full UI not building on some executors (load error)",
+            "âœ¦ Reordered tabs: Home Â· Player Â· Revive Â· World Â· Players",
+            "âœ¦ Minimize: small bar stays with âœš restore button",
+            "âœ¦ NEW: Spawner tab (Ring Box / SÃ¨che-cheveux / Cuffs / Lockers)",
+            "âœ¦ NEW: Jump Power, FOV, Fly+NoClip, TP to downed, random loot TP",
+            "âœ¦ NEW: TP to target Â· Copy tools Â· Attack target",
+            "âœ¦ Redesigned section cards + live status bar (FPS/Ping)",
+            "âœ¦ Keybinds on every toggle Â· RGB mode Â· search bar",
+            "âœ¦ Troll tab (fling, annoy, fake admin, ghost, earrape, click-TP)",
         }
         for _, line in ipairs(changelog) do
             Label(info, line, UITheme.SUBTEXT, 11)
         end
         Label(hero, "", UITheme.DIM, 5)
-        Label(hero, "Developer: sa7loul  •  Tailored for STK v2.31.0", UITheme.DIM, 10)
+        Label(hero, "Developer: sa7loul  â€¢  Tailored for STK v2.31.0", UITheme.DIM, 10)
 
-    -- ═══════════ PLAYER ═══════════
+    -- â•â•â•â•â•â•â•â•â•â•â• PLAYER â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Player" then
-        local movement = Section(ContentScroll, "Movement", "☄")
+        local movement = Section(ContentScroll, "Movement", "â˜„")
         local speedHandle = ToggleRow(movement, {
             text = "Speed Boost", id = "speed",
             state = settings.speedEnabled,
@@ -5551,6 +5365,27 @@ function UpdateRightContent()
                 end
             end
         })
+        Slider(movement, {
+            text = "Gravity", min = 0, max = 196.2, def = 196.2, decimals = 1,
+            onChanged = function(val)
+                pcall(function() workspace.Gravity = val end)
+            end
+        })
+        Slider(movement, {
+            text = "Swim Speed", min = 10, max = 100, def = 50,
+            onChanged = function(val)
+                pcall(function()
+                    if lp.Character then
+                        local hum = lp.Character:FindFirstChildOfClass("Humanoid")
+                        if hum then hum.SwimSpeed = val end
+                    end
+                end)
+            end
+        })
+        Button(movement, "â†º Reset gravity (196.2)", function()
+            pcall(function() workspace.Gravity = 196.2 end)
+            notif("Gravity reset", 2)
+        end)
         ToggleRow(movement, {
             text = "Auto Escape", id = "autoesc", state = settings.AutoEscape,
             desc = "Teleports to exit when the timer starts",
@@ -5580,7 +5415,7 @@ function UpdateRightContent()
             end
         })
 
-        local bypass = Section(ContentScroll, "Bypass", "🎫")
+        local bypass = Section(ContentScroll, "Bypass", "ðŸŽ«")
         ToggleRow(bypass, {
             text = "Double Jump", id = "dbljump", state = settings.DoubleJump,
             onToggle = function(val)
@@ -5596,7 +5431,7 @@ function UpdateRightContent()
             end
         })
 
-        local combat = Section(ContentScroll, "Combat", "⚔")
+        local combat = Section(ContentScroll, "Combat", "âš”")
         local killauraHandle = ToggleRow(combat, {
             text = "Kill Aura", id = "killaura", state = settings.KillAura,
             onToggle = function(val)
@@ -5618,9 +5453,42 @@ function UpdateRightContent()
             onChanged = function(val) settings.killAuraRadius = val end
         })
 
-    -- ═══════════ WORLD ═══════════
+        local powers = Section(ContentScroll, "Powers", "âš¡")
+        Slider(powers, {
+            text = "Jump Power", min = 20, max = 160, def = 50,
+            onChanged = function(val)
+                pcall(function()
+                    if lp.Character then
+                        local hum = lp.Character:FindFirstChildOfClass("Humanoid")
+                        if hum then
+                            hum.UseJumpPower = true
+                            hum.JumpPower = val
+                        end
+                    end
+                end)
+            end
+        })
+        local flyRow = Instance.new("Frame")
+        flyRow.Parent = powers
+        flyRow.BackgroundTransparency = 1
+        flyRow.Size = UDim2.new(1, 0, 0, 34)
+        local flyLay = Instance.new("UIListLayout", flyRow)
+        flyLay.FillDirection = Enum.FillDirection.Horizontal
+        flyLay.Padding = UDim.new(0, 6)
+        Button(flyRow, { text = "ðŸ¦… Fly + NoClip", size = UDim2.new(0.48, 0, 0, 30), accent = true, callback = GiveFlyNoClip })
+        Button(flyRow, { text = "ðŸ”„ Reset jump", size = UDim2.new(0.48, 0, 0, 30), callback = function()
+            pcall(function()
+                if lp.Character then
+                    local hum = lp.Character:FindFirstChildOfClass("Humanoid")
+                    if hum then hum.JumpPower = 50 end
+                    notif("Jump power reset to 50", 2)
+                end
+            end)
+        end })
+
+    -- â•â•â•â•â•â•â•â•â•â•â• WORLD â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  World" then
-        local visuals = Section(ContentScroll, "Visuals", "✺")
+        local visuals = Section(ContentScroll, "Visuals", "âœº")
         ToggleRow(visuals, {
             text = "Player ESP", id = "esp", state = settings.ESP,
             onToggle = function(val)
@@ -5683,7 +5551,7 @@ function UpdateRightContent()
             end
         })
 
-        local loot = Section(ContentScroll, "Auto Loot", "📦")
+        local loot = Section(ContentScroll, "Auto Loot", "ðŸ“¦")
         ToggleRow(loot, {
             text = "Auto collect loot", id = "loot", state = settings.AutoLoot,
             onToggle = function(val)
@@ -5708,7 +5576,7 @@ function UpdateRightContent()
             onToggle = function(val) settings.returnHomeAfterLoot = val end
         })
 
-        local tp = Section(ContentScroll, "Teleport", "🌀")
+        local tp = Section(ContentScroll, "Teleport", "ðŸŒ€")
         Button(tp, "Teleport to exit", TeleportToExit)
         Button(tp, "Teleport to lobby", function()
             local lobby = workspace:FindFirstChild("_Lobby")
@@ -5724,10 +5592,59 @@ function UpdateRightContent()
             end
         end)
 
-    -- ═══════════ PLAYERS ═══════════
+        local camera = Section(ContentScroll, "Camera", "ðŸ“·")
+        Slider(camera, {
+            text = "Field of View", min = 55, max = 120, def = 70,
+            onChanged = function(val)
+                pcall(function() workspace.CurrentCamera.FieldOfView = val end)
+            end
+        })
+        Button(camera, "â†º Reset FOV (70)", function()
+            pcall(function() workspace.CurrentCamera.FieldOfView = 70 end)
+            notif("FOV reset to 70", 2)
+        end)
+
+        local quickTP = Section(ContentScroll, "Quick teleports", "ðŸ“¡")
+        Button(quickTP, "ðŸ§ Nearest downed player", function()
+            local best, bestDist = nil, math.huge
+            for _, p in ipairs(PlayersSvc:GetPlayers()) do
+                if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and IsPlayerDowned(p) then
+                    local d = (p.Character.HumanoidRootPart.Position - lp.Character.HumanoidRootPart.Position).Magnitude
+                    if d < bestDist then best, bestDist = p, d end
+                end
+            end
+            if best and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                lp.Character.HumanoidRootPart.CFrame = best.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 3)
+                notif("TP to downed: " .. best.Name, 2)
+            else
+                notif("No downed players found", 2)
+            end
+        end)
+        Button(quickTP, "ðŸŽ² Random loot spot", function()
+            if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then return end
+            local loot = {}
+            local map = nil
+            for _, child in ipairs(workspace:GetChildren()) do
+                if child:FindFirstChild("LootSpawns") then map = child break end
+            end
+            if map and map:FindFirstChild("LootSpawns") then
+                for _, spot in ipairs(map.LootSpawns:GetChildren()) do
+                    if spot:IsA("BasePart") then table.insert(loot, spot.Position) end
+                end
+            end
+            if #loot == 0 then
+                notif("No loot spots found", 2)
+                return
+            end
+            local pos = loot[math.random(1, #loot)]
+            lp.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+            notif("TP to random loot!", 2)
+        end)
+
+    -- â•â•â•â•â•â•â•â•â•â•â• PLAYERS â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Players" then
-        playerListContainer = Section(ContentScroll, "Player list", "☰")
-        Note(playerListContainer, "Click a row to select · 🔗 bring · 🌀 TP · 🦅 fly · 👁 view · ❄ freeze")
+        playerListContainer = Section(ContentScroll, "Player list", "â˜°")
+        Note(playerListContainer, "Click a row to select Â· ðŸ”— bring Â· ðŸŒ€ TP Â· ðŸ¦… fly Â· ðŸ‘ view Â· â„ freeze")
         local row = Instance.new("Frame")
         row.Parent = ContentScroll
         row.BackgroundTransparency = 1
@@ -5735,8 +5652,8 @@ function UpdateRightContent()
         local rowLay = Instance.new("UIListLayout", row)
         rowLay.FillDirection = Enum.FillDirection.Horizontal
         rowLay.Padding = UDim.new(0, 6)
-        Button(row, { text = "🔄 Refresh", size = UDim2.new(0.48, 0, 0, 30), callback = UpdatePlayerList })
-        Button(row, { text = "⏹ Stop all", size = UDim2.new(0.48, 0, 0, 30), callback = function()
+        Button(row, { text = "ðŸ”„ Refresh", size = UDim2.new(0.48, 0, 0, 30), callback = UpdatePlayerList })
+        Button(row, { text = "â¹ Stop all", size = UDim2.new(0.48, 0, 0, 30), callback = function()
             StopView()
             StopBring()
             StopBringAll()
@@ -5744,9 +5661,9 @@ function UpdateRightContent()
         end })
         UpdatePlayerList()
 
-    -- ═══════════ REVIVE ═══════════
+    -- â•â•â•â•â•â•â•â•â•â•â• REVIVE â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Revive" then
-        local revive = Section(ContentScroll, "Revive modes", "✚")
+        local revive = Section(ContentScroll, "Revive modes", "âœš")
         ToggleRow(revive, {
             text = "Auto revive (Safe)", id = "autoRevive", state = settings.AutoReviveLegit,
             desc = "Revives the nearest downed survivor when safe",
@@ -5760,9 +5677,9 @@ function UpdateRightContent()
                 end
             end
         })
-        Button(revive, "⚡ Risky revive (one-time)", function() AutoReviveRiskyOneUse() end)
+        Button(revive, "âš¡ Risky revive (one-time)", function() AutoReviveRiskyOneUse() end)
 
-        local selfRevive = Section(ContentScroll, "Self revive", "🔄")
+        local selfRevive = Section(ContentScroll, "Self revive", "ðŸ”„")
         ToggleRow(selfRevive, {
             text = "Auto self revive", id = "selfRevive", state = settings.AutoReviveSelf,
             desc = "Teleports you to a survivor while downed",
@@ -5787,24 +5704,24 @@ function UpdateRightContent()
         local modeLay = Instance.new("UIListLayout", modeRow)
         modeLay.FillDirection = Enum.FillDirection.Horizontal
         modeLay.Padding = UDim.new(0, 6)
-        Button(modeRow, { text = "🔄 Random", size = UDim2.new(0.48, 0, 0, 30), callback = function()
+        Button(modeRow, { text = "ðŸ”„ Random", size = UDim2.new(0.48, 0, 0, 30), callback = function()
             settings.selfReviveMode = "Random"
             notif("Revive mode: Random", 2)
         end })
-        Button(modeRow, { text = "📏 Farthest", size = UDim2.new(0.48, 0, 0, 30), callback = function()
+        Button(modeRow, { text = "ðŸ“ Farthest", size = UDim2.new(0.48, 0, 0, 30), callback = function()
             settings.selfReviveMode = "Farthest"
             notif("Revive mode: Farthest", 2)
         end })
 
-    -- ═══════════ FUN ═══════════
+    -- â•â•â•â•â•â•â•â•â•â•â• FUN â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Fun" then
-        local fun = Section(ContentScroll, "Target", "🎯")
+        local fun = Section(ContentScroll, "Target", "ðŸŽ¯")
         selectedPlayerLabel = Instance.new("TextButton")
         selectedPlayerLabel.Parent = fun
         selectedPlayerLabel.BorderSizePixel = 0
         selectedPlayerLabel.Size = UDim2.new(1, 0, 0, 32)
         selectedPlayerLabel.Font = Enum.Font.GothamBold
-        selectedPlayerLabel.Text = "👤 Player: None"
+        selectedPlayerLabel.Text = "ðŸ‘¤ Player: None"
         selectedPlayerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         selectedPlayerLabel.TextSize = 12
         selectedPlayerLabel.BackgroundColor3 = UITheme.Accent
@@ -5816,7 +5733,7 @@ function UpdateRightContent()
         AddPressAnim(selectedPlayerLabel)
         if not GetSelectedPlayer() then CyclePlayer() end
 
-        local actions = Section(ContentScroll, "Actions", "✿")
+        local actions = Section(ContentScroll, "Actions", "âœ¿")
         local row1 = Instance.new("Frame")
         row1.Parent = actions
         row1.BackgroundTransparency = 1
@@ -5824,7 +5741,7 @@ function UpdateRightContent()
         local lay1 = Instance.new("UIListLayout", row1)
         lay1.FillDirection = Enum.FillDirection.Horizontal
         lay1.Padding = UDim.new(0, 6)
-        Button(row1, { text = "🚀 Fling", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row1, { text = "ðŸš€ Fling", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if not target then notif("Select a player first", 2) return end
             if FlingActive then notif("Fling already active", 2) return end
@@ -5833,7 +5750,7 @@ function UpdateRightContent()
             local thrust = nil
             pcall(function()
                 thrust = Instance.new("BodyThrust", lp.Character.HumanoidRootPart)
-                thrust.Force = Vector3.new(9999, 9999, 9999)
+                thrust.Force = Vector3.new(flingForce, flingForce, flingForce)
                 thrust.Name = "YeetForce"
             end)
             coroutine.wrap(function()
@@ -5846,7 +5763,7 @@ function UpdateRightContent()
                 FlingActive = false
             end)()
         end })
-        Button(row1, { text = "⏹ Stop fling", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row1, { text = "â¹ Stop fling", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             FlingActive = false
             if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
                 local thrust = lp.Character.HumanoidRootPart:FindFirstChild("YeetForce")
@@ -5862,11 +5779,11 @@ function UpdateRightContent()
         local lay2 = Instance.new("UIListLayout", row2)
         lay2.FillDirection = Enum.FillDirection.Horizontal
         lay2.Padding = UDim.new(0, 6)
-        Button(row2, { text = "❄ Freeze", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row2, { text = "â„ Freeze", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if target then FreezePlayer(target.Name) else notif("Select a player first", 2) end
         end })
-        Button(row2, { text = "🔥 Unfreeze", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row2, { text = "ðŸ”¥ Unfreeze", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if target then ThawPlayer(target.Name) else notif("Select a player first", 2) end
         end })
@@ -5878,11 +5795,11 @@ function UpdateRightContent()
         local lay3 = Instance.new("UIListLayout", row3)
         lay3.FillDirection = Enum.FillDirection.Horizontal
         lay3.Padding = UDim.new(0, 6)
-        Button(row3, { text = "👁 View", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row3, { text = "ðŸ‘ View", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if target then StartView(target.Name) else notif("Select a player first", 2) end
         end })
-        Button(row3, { text = "⏹ Stop view", size = UDim2.new(0.48, 0, 0, 32), callback = StopView })
+        Button(row3, { text = "â¹ Stop view", size = UDim2.new(0.48, 0, 0, 32), callback = StopView })
 
         local row4 = Instance.new("Frame")
         row4.Parent = actions
@@ -5891,11 +5808,11 @@ function UpdateRightContent()
         local lay4 = Instance.new("UIListLayout", row4)
         lay4.FillDirection = Enum.FillDirection.Horizontal
         lay4.Padding = UDim.new(0, 6)
-        Button(row4, { text = "🔗 Bring", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row4, { text = "ðŸ”— Bring", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if target then StartBring(target.Name) else notif("Select a player first", 2) end
         end })
-        Button(row4, { text = "⏹ Stop bring", size = UDim2.new(0.48, 0, 0, 32), callback = StopBring })
+        Button(row4, { text = "â¹ Stop bring", size = UDim2.new(0.48, 0, 0, 32), callback = StopBring })
 
         local row5 = Instance.new("Frame")
         row5.Parent = actions
@@ -5904,11 +5821,92 @@ function UpdateRightContent()
         local lay5 = Instance.new("UIListLayout", row5)
         lay5.FillDirection = Enum.FillDirection.Horizontal
         lay5.Padding = UDim.new(0, 6)
-        Button(row5, { text = "🔗 Bring All", size = UDim2.new(0.31, 0, 0, 32), callback = StartBringAll })
-        Button(row5, { text = "🔙 Unbring", size = UDim2.new(0.31, 0, 0, 32), callback = UnbringSelected })
-        Button(row5, { text = "⏹ Stop", size = UDim2.new(0.31, 0, 0, 32), callback = StopBringAll })
+        Button(row5, { text = "ðŸ”— Bring All", size = UDim2.new(0.31, 0, 0, 32), callback = StartBringAll })
+        Button(row5, { text = "ðŸ”™ Unbring", size = UDim2.new(0.31, 0, 0, 32), callback = UnbringSelected })
+        Button(row5, { text = "â¹ Stop", size = UDim2.new(0.31, 0, 0, 32), callback = StopBringAll })
 
-        local spinSection = Section(ContentScroll, "Party", "🌀")
+        local row6 = Instance.new("Frame")
+        row6.Parent = actions
+        row6.BackgroundTransparency = 1
+        row6.Size = UDim2.new(1, 0, 0, 34)
+        local lay6 = Instance.new("UIListLayout", row6)
+        lay6.FillDirection = Enum.FillDirection.Horizontal
+        lay6.Padding = UDim.new(0, 6)
+        Button(row6, { text = "ðŸŒ€ TP to target", size = UDim2.new(0.31, 0, 0, 32), callback = function()
+            local target = GetSelectedPlayer()
+            if not target then notif("Select a player first", 2) return end
+            if target.Character and target.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                lp.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 3)
+                notif("TP to: " .. target.Name, 2)
+            else
+                notif("Player not found", 2)
+            end
+        end })
+        Button(row6, { text = "ðŸªž Copy tools", size = UDim2.new(0.31, 0, 0, 32), callback = function()
+            local target = GetSelectedPlayer()
+            if not target then notif("Select a player first", 2) return end
+            local copied = 0
+            local backpack = target:FindFirstChild("Backpack")
+            if backpack then
+                for _, tool in ipairs(backpack:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        pcall(function()
+                            tool:Clone().Parent = lp:FindFirstChild("Backpack")
+                            copied = copied + 1
+                        end)
+                    end
+                end
+            end
+            if target.Character then
+                for _, tool in ipairs(target.Character:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        pcall(function()
+                            tool:Clone().Parent = lp:FindFirstChild("Backpack")
+                            copied = copied + 1
+                        end)
+                    end
+                end
+            end
+            notif(copied > 0 and ("Copied " .. copied .. " tool(s) from " .. target.Name) or "No tools found on " .. target.Name, 2)
+        end })
+        Button(row6, { text = "âš¡ Attack target", size = UDim2.new(0.31, 0, 0, 32), callback = function()
+            local target = GetSelectedPlayer()
+            if not target then notif("Select a player first", 2) return end
+            if target.Character and target.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                local forward = lp.Character.HumanoidRootPart.CFrame.LookVector
+                target.Character.HumanoidRootPart.CFrame = lp.Character.HumanoidRootPart.CFrame + (forward * 3)
+                task.wait(0.05)
+                local vim = game:GetService("VirtualInputManager")
+                vim:SendMouseButtonEvent(0, 0, 0, true, Enum.UserInputType.MouseButton1, 0)
+                task.wait()
+                vim:SendMouseButtonEvent(0, 0, 0, false, Enum.UserInputType.MouseButton1, 0)
+                notif("Attack: " .. target.Name, 2)
+            else
+                notif("Player not found", 2)
+            end
+        end })
+
+        local row7 = Instance.new("Frame")
+        row7.Parent = actions
+        row7.BackgroundTransparency = 1
+        row7.Size = UDim2.new(1, 0, 0, 34)
+        local lay7 = Instance.new("UIListLayout", row7)
+        lay7.FillDirection = Enum.FillDirection.Horizontal
+        lay7.Padding = UDim.new(0, 6)
+        Button(row7, { text = "ðŸ¦… Admin fly/no-clip (remotes)", size = UDim2.new(1, 0, 0, 32), accent = true, callback = function()
+            local target = GetSelectedPlayer()
+            if not target then
+                notif("Select a player first", 2)
+                return
+            end
+            if TryFireAdminRemote(target) then
+                notif("Admin remotes fired â†’ " .. target.Name, 2)
+            else
+                notif("No admin remotes found", 3)
+            end
+        end })
+
+        local spinSection = Section(ContentScroll, "Party", "ðŸŒ€")
         local spinHandle = ToggleRow(spinSection, {
             text = "Spin", id = "spin", state = spinActive,
             onToggle = function(val)
@@ -5926,10 +5924,32 @@ function UpdateRightContent()
                 end
             end
         })
+        Slider(spinSection, {
+            text = "Bring distance", min = 1, max = 12, def = bringDistance,
+            onChanged = function(val) bringDistance = val end
+        })
+        Slider(spinSection, {
+            text = "Fling force", min = 1000, max = 50000, def = flingForce,
+            onChanged = function(val) flingForce = val end
+        })
 
-        -- 🔗 CUFF ITEMS — spawner / giver
-        local cuffSection = Section(ContentScroll, "Cuff Items — Spawn / Give / Take", "🔗")
+        -- ðŸ”— CUFF ITEMS â€” spawner / giver
+        local cuffSection = Section(ContentScroll, "Cuff Items â€” Spawn / Give / Take", "ðŸ”—")
         local cuffStatus = Label(cuffSection, "Scanning for cuffs...", UITheme.SUBTEXT, 11)
+        local cuffPlayerOptions = {}
+        for i = #cuffPlayerOptions, 1, -1 do cuffPlayerOptions[i] = nil end
+        for _, p in ipairs(PlayersSvc:GetPlayers()) do
+            table.insert(cuffPlayerOptions, { text = p.Name, value = p })
+        end
+        Dropdown(cuffSection, {
+            text = "Give to player",
+            options = cuffPlayerOptions,
+            default = 1,
+            onChanged = function(value)
+                SetSelectedPlayer(value)
+                notif("Cuff target: " .. (value and value.Name or "None"), 2)
+            end
+        })
         local cuffRows = Instance.new("Frame")
         cuffRows.Parent = cuffSection
         cuffRows.BackgroundTransparency = 1
@@ -5948,11 +5968,11 @@ function UpdateRightContent()
             end
             local names = GetAllCuffItemNames()
             if #names == 0 then
-                cuffStatus.Text = "🔗 No cuffs found — start a round & rescan"
+                cuffStatus.Text = "ðŸ”— No cuffs found â€” start a round & rescan"
                 Label(cuffRows, "No cuff items in the game right now", UITheme.DIM, 11)
                 return
             end
-            cuffStatus.Text = "🔗 Found " .. #names .. " cuff item(s)"
+            cuffStatus.Text = "ðŸ”— Found " .. #names .. " cuff item(s)"
             local selTarget = GetSelectedPlayer()
             for _, itemName in ipairs(names) do
                 local row = Instance.new("Frame")
@@ -5978,17 +5998,17 @@ function UpdateRightContent()
                 nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 
                 Button(row, {
-                    text = "🛠 Spawn me", size = UDim2.new(0.3, 0, 0, 28), accent = true,
+                    text = "ðŸ›  Spawn me", size = UDim2.new(0.3, 0, 0, 28), accent = true,
                     callback = function() SpawnCuffItemForMe(itemName) end
                 })
 
                 Button(row, {
-                    text = "Give ➜ " .. (selTarget and selTarget.Name or "None"),
+                    text = "Give âžœ " .. (selTarget and selTarget.Name or "None"),
                     size = UDim2.new(0.3, 0, 0, 28),
                     callback = function()
                         local target = GetSelectedPlayer()
                         if not target then
-                            notif("Select a player first (👤 Player button)", 2)
+                            notif("Select a player first (ðŸ‘¤ Player button)", 2)
                         else
                             GiveCuffItemToPlayer(itemName, target)
                         end
@@ -5997,10 +6017,10 @@ function UpdateRightContent()
             end
         end
 
-        Button(cuffSection, "🔍 Rescan cuffs", RebuildCuffList)
+        Button(cuffSection, "ðŸ” Rescan cuffs", RebuildCuffList)
 
         local cuffTargetBox = TextBox(cuffSection, { placeholder = "Give to player name (empty = selected)" })
-        Button(cuffSection, "🎁 Give every cuff to target", function()
+        Button(cuffSection, "ðŸŽ Give every cuff to target", function()
             local name = cuffTargetBox.Text ~= "" and cuffTargetBox.Text or nil
             local target = name and GetPlayerByName(name) or GetSelectedPlayer() or lp
             if not target then
@@ -6016,21 +6036,186 @@ function UpdateRightContent()
             for _, itemName in ipairs(names) do
                 if GiveCuffItemToPlayer(itemName, target) then given = given + 1 end
             end
-            notif("Gave 🔗 " .. given .. " cuff item(s) ➜ " .. target.Name, 2)
+            notif("Gave ðŸ”— " .. given .. " cuff item(s) âžœ " .. target.Name, 2)
         end)
 
-        Button(cuffSection, "🛠 Take cuffs from selected player", function()
+        Button(cuffSection, "ðŸ›  Take cuffs from selected player", function()
             TakeCuffsFromTarget(GetSelectedPlayer())
         end)
 
-        Button(cuffSection, "🗑 Remove my cuffs", RemoveMyCuffs)
+        Button(cuffSection, "ðŸ—‘ Remove my cuffs", RemoveMyCuffs)
 
-        Note(cuffSection, "Auto-detects every item named with 'cuff' (backpacks, hands, map). Pick the target with ⌂ Home's player chip or the 👤 button in Actions.")
+        Note(cuffSection, "Auto-detects every item named with 'cuff' (backpacks, hands, map). Pick the target with âŒ‚ Home's player chip or the ðŸ‘¤ button in Actions.")
         task.defer(RebuildCuffList)
 
-    -- ═══════════ TROLL ═══════════
+    -- â•â•â•â•â•â•â•â•â•â•â• SPAWNER â•â•â•â•â•â•â•â•â•â•â•
+    elseif CurrentTab == "  Spawner" then
+        local function MakeTargetChip(section)
+            local chip = Instance.new("TextButton")
+            chip.Parent = section
+            chip.BorderSizePixel = 0
+            chip.Size = UDim2.new(1, 0, 0, 32)
+            chip.Font = Enum.Font.GothamBold
+            chip.Text = "ðŸ‘¤ Give to: " .. (GetSelectedPlayer() and GetSelectedPlayer().Name or "None (click me)")
+            chip.TextColor3 = Color3.fromRGB(255, 255, 255)
+            chip.TextSize = 12
+            chip.AutoButtonColor = false
+            chip.BackgroundColor3 = UITheme.Accent
+            chip.BackgroundTransparency = 0.2
+            Instance.new("UICorner", chip).CornerRadius = UDim.new(0, 8)
+            UITheme:RegisterAccent(function(c) chip.BackgroundColor3 = c end)
+            chip.MouseButton1Click:Connect(function()
+                CyclePlayer()
+                chip.Text = "ðŸ‘¤ Give to: " .. (GetSelectedPlayer() and GetSelectedPlayer().Name or "None")
+            end)
+            AddPressAnim(chip)
+            return chip
+        end
+
+        local function MakeItemRow(parent, itemName)
+            local row = Instance.new("Frame")
+            row.Parent = parent
+            row.BackgroundTransparency = 1
+            row.Size = UDim2.new(1, 0, 0, 34)
+            row.LayoutOrder = #parent:GetChildren()
+            local rowLayout = Instance.new("UIListLayout", row)
+            rowLayout.FillDirection = Enum.FillDirection.Horizontal
+            rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+            rowLayout.Padding = UDim.new(0, 6)
+
+            local nameLabel = Instance.new("TextLabel")
+            nameLabel.Parent = row
+            nameLabel.BackgroundTransparency = 1
+            nameLabel.Size = UDim2.new(0.36, 0, 1, 0)
+            nameLabel.Font = Enum.Font.Gotham
+            nameLabel.Text = ItemIcon(itemName) .. "  " .. itemName
+            nameLabel.TextColor3 = UITheme.TEXT
+            nameLabel.TextSize = 11
+            nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+            nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+
+            Button(row, {
+                text = "Spawn", size = UDim2.new(0.3, 0, 0, 28), accent = true,
+                callback = function() SpawnSpawnItemForMe(itemName) end
+            })
+            Button(row, {
+                text = "Give âžœ", size = UDim2.new(0.3, 0, 0, 28),
+                callback = function()
+                    local target = GetSelectedPlayer()
+                    if not target then
+                        notif("Pick a target first (ðŸ‘¤ chip)", 2)
+                    else
+                        GiveSpawnItemToPlayer(itemName, target)
+                    end
+                end
+            })
+        end
+
+        local function BuildSpawnerCategory(title, icon, keyword)
+            local section = Section(ContentScroll, title, icon)
+            local status = Label(section, "Scanning...", UITheme.SUBTEXT, 11)
+            local rows = Instance.new("Frame")
+            rows.Parent = section
+            rows.BackgroundTransparency = 1
+            rows.Size = UDim2.new(1, 0, 0, 0)
+            rows.AutomaticSize = Enum.AutomaticSize.Y
+            rows.LayoutOrder = #section:GetChildren()
+            local rowsLayout = Instance.new("UIListLayout", rows)
+            rowsLayout.Padding = UDim.new(0, 6)
+            rowsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            local function rebuild()
+                for _, child in ipairs(rows:GetChildren()) do
+                    if child:IsA("Frame") or child:IsA("TextLabel") then child:Destroy() end
+                end
+                local names = FindItemsByKeyword(keyword, true)
+                if #names == 0 then
+                    status.Text = title .. " â€” nothing found (start a round & rescan)"
+                    Label(rows, "No items found for: " .. keyword, UITheme.DIM, 11)
+                    return
+                end
+                status.Text = "Found " .. #names .. " item(s): " .. keyword
+                for _, itemName in ipairs(names) do
+                    MakeItemRow(rows, itemName)
+                end
+            end
+            Button(section, "ðŸ” Rescan", function() CollectItemSnapshot(); rebuild() end)
+            task.defer(rebuild)
+            return section
+        end
+
+        local targetChipSection = Section(ContentScroll, "Target", "ðŸ‘¤")
+        local targetChip = MakeTargetChip(targetChipSection)
+        local spawnerPlayerOptions = {}
+        for i = #spawnerPlayerOptions, 1, -1 do spawnerPlayerOptions[i] = nil end
+        for _, p in ipairs(PlayersSvc:GetPlayers()) do
+            table.insert(spawnerPlayerOptions, { text = p.Name, value = p })
+        end
+        Dropdown(targetChipSection, {
+            text = "Give to player",
+            options = spawnerPlayerOptions,
+            default = 1,
+            onChanged = function(value)
+                SetSelectedPlayer(value)
+                if targetChip then
+                    targetChip.Text = "ðŸ‘¤ Give to: " .. (value and value.Name or "None (click me)")
+                end
+                notif("Give target: " .. (value and value.Name or "None"), 2)
+            end
+        })
+        Note(targetChipSection, "Pick from the list â€” scroll it if there are many players")
+
+        CollectItemSnapshot()
+
+        BuildSpawnerCategory("SÃ¨che-cheveux (Hair Dryer)", "ðŸŒ¬", "dryer|seche|cheveux|hair")
+        BuildSpawnerCategory("Coupe-cheveux (Hair Cutter)", "âœ‚", "cutter|coupe|rasoir|razor")
+        BuildSpawnerCategory("Cuffs", "ðŸ”—", "cuff|menotte")
+        BuildSpawnerCategory("Lockers", "ðŸ—„", "locker|casier")
+        BuildSpawnerCategory("Gloves", "ðŸ§¤", "glove|gant")
+        BuildSpawnerCategory("Weapons", "ðŸ—¡", "knife|cutter|couteau|couteaux|axe|hache|hatchet|bat|batte|hammer|marteau|sword|epee|blade|gun|pistol|pistolet|rifle|fusil|shotgun|machete|machette|cleaver|wrench|dart|kunai|katana|weapon|arme|dague|sabre")
+
+        local customSection = Section(ContentScroll, "Custom search", "ðŸ”Ž")
+        local customBox = TextBox(customSection, { placeholder = "Item keyword: e.g. key, candle, soap ..." })
+        local customRows = Instance.new("Frame")
+        customRows.Parent = customSection
+        customRows.BackgroundTransparency = 1
+        customRows.Size = UDim2.new(1, 0, 0, 0)
+        customRows.AutomaticSize = Enum.AutomaticSize.Y
+        customRows.LayoutOrder = #customSection:GetChildren()
+        local customRowsLayout = Instance.new("UIListLayout", customRows)
+        customRowsLayout.Padding = UDim.new(0, 6)
+        customRowsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        local function RebuildCustomBox()
+            for _, child in ipairs(customRows:GetChildren()) do
+                if child:IsA("Frame") or child:IsA("TextLabel") then child:Destroy() end
+            end
+            local kw = customBox.Text ~= "" and customBox.Text or nil
+            if not kw then
+                Label(customRows, "Type a keyword then press search", UITheme.DIM, 11)
+                return
+            end
+            local names = ScanItemsByKeyword(kw)
+            if #names == 0 then
+                Label(customRows, "Nothing found for: " .. kw, UITheme.DIM, 11)
+                return
+            end
+            for _, itemName in ipairs(names) do
+                MakeItemRow(customRows, itemName)
+            end
+        end
+        Button(customSection, "ðŸ” Search", RebuildCustomBox)
+
+        local takeSection = Section(ContentScroll, "Take from target", "ðŸ› ")
+        local takeBox = TextBox(takeSection, { placeholder = "Take keyword (empty = cuff), from selected player" })
+        Button(takeSection, "ðŸ›  Take items", function()
+            TakeSpawnItemsFromTarget(GetSelectedPlayer(), takeBox.Text ~= "" and takeBox.Text or "cuff")
+        end)
+
+        Note(ContentScroll, "Spawner clones the real in-game item for you or the chosen player. The ðŸ‘¤ chip above sets the give target.")
+
+    -- â•â•â•â•â•â•â•â•â•â•â• TROLL â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Troll" then
-        local targetSection = Section(ContentScroll, "Troll Target", "🎯")
+        local targetSection = Section(ContentScroll, "Troll Target", "ðŸŽ¯")
         trollTargetDD = Dropdown(targetSection, {
             text = "Target",
             options = trollTargetOptions,
@@ -6041,9 +6226,9 @@ function UpdateRightContent()
             end
         })
         RefreshTrollTargetOptions()
-        Button(targetSection, "🔄 Refresh players", RefreshTrollTargetOptions)
+        Button(targetSection, "ðŸ”„ Refresh players", RefreshTrollTargetOptions)
 
-        local flingSection = Section(ContentScroll, "Annoy & Fling", "🚀")
+        local flingSection = Section(ContentScroll, "Annoy & Fling", "ðŸš€")
         TrollHandles.fling = ToggleRow(flingSection, {
             text = "Troll Fling", id = "trollfling", state = TrollCfg.fling,
             desc = "Physics yeet: angular velocity + random force on target",
@@ -6058,33 +6243,33 @@ function UpdateRightContent()
                 if val then TrollAnnoyStart() else TrollAnnoyStop() end
             end
         })
-        Button(flingSection, "⏹ Stop all troll actions", function()
+        Button(flingSection, "â¹ Stop all troll actions", function()
             TrollFlingStop()
             TrollAnnoyStop()
             notif("Troll actions stopped", 2)
         end)
 
-        local chatSection = Section(ContentScroll, "Fake Admin / System Chat", "💬")
+        local chatSection = Section(ContentScroll, "Fake Admin / System Chat", "ðŸ’¬")
         local function fakeTargetName()
             local t = TrollGetTarget()
             return t and t.Name or "Player"
         end
-        Button(chatSection, "⚠ Fake ban notice", function()
+        Button(chatSection, "âš  Fake ban notice", function()
             FakeSystemMessage("[SYSTEM] " .. fakeTargetName() .. " has been banned by an administrator.", Color3.fromRGB(255, 90, 90))
             FakeNotification("Administrator", fakeTargetName() .. " was banned. Reason: Toxic Behavior", 4)
         end)
-        Button(chatSection, "🛑 Fake kick notice", function()
+        Button(chatSection, "ðŸ›‘ Fake kick notice", function()
             FakeSystemMessage("[SYSTEM] " .. fakeTargetName() .. " was kicked from the server.", Color3.fromRGB(255, 170, 70))
         end)
-        Button(chatSection, "⏳ Fake server restart", function()
+        Button(chatSection, "â³ Fake server restart", function()
             FakeSystemMessage("[SYSTEM] Server restarting in 10 seconds. Reason: scheduled maintenance.", Color3.fromRGB(255, 120, 60))
             FakeNotification("Server", "Restarting in 10s...", 5)
         end)
-        Button(chatSection, "🗣 Fake admin join", function()
-            FakeSystemMessage("🔧 sa7loul joined the server. Commands available: !fly !noclip !ban", UITheme.CYAN)
+        Button(chatSection, "ðŸ—£ Fake admin join", function()
+            FakeSystemMessage("ðŸ”§ sa7loul joined the server. Commands available: !fly !noclip !ban", UITheme.CYAN)
         end)
         local fakeBox = TextBox(chatSection, { placeholder = "Custom fake system message..." })
-        Button(chatSection, "📨 Send fake message", function()
+        Button(chatSection, "ðŸ“¨ Send fake message", function()
             if fakeBox.Text ~= "" then
                 FakeSystemMessage(fakeBox.Text, Color3.fromRGB(255, 255, 255))
                 fakeBox.Text = ""
@@ -6094,7 +6279,21 @@ function UpdateRightContent()
         end)
         Note(chatSection, "Messages are client-side (only you see them)")
 
-        local ghostSection = Section(ContentScroll, "Ghost & Tools", "👻")
+        local adminRemoteSection = Section(ContentScroll, "Fake Admin (remotes)", "ðŸ–¥")
+        local adminCmdBox = TextBox(adminRemoteSection, { placeholder = "Command: fly / noclip / ban ... (empty = raw fire)" })
+        Button(adminRemoteSection, "ðŸ“¡ Fire to troll target", function()
+            local t = TrollGetTarget()
+            if not t then
+                notif("Set a troll target first", 2)
+                return
+            end
+            local cmd = adminCmdBox.Text ~= "" and adminCmdBox.Text or nil
+            local fired = FakeAdminCommand(cmd, t.Name)
+            notif(cmd and ("Fired '" .. cmd .. "' â†’ " .. t.Name .. " (" .. fired .. " ok)") or ("Raw fire â†’ " .. t.Name .. " (" .. fired .. " ok)"), 3)
+        end)
+        Note(adminRemoteSection, "Sends the command through every admin-looking remote it finds")
+
+        local ghostSection = Section(ContentScroll, "Ghost & Tools", "ðŸ‘»")
         ToggleRow(ghostSection, {
             text = "Ghost Mode", id = "ghost", state = TrollCfg.invis,
             desc = "Client-side invisibility for your character",
@@ -6104,7 +6303,7 @@ function UpdateRightContent()
         })
         ToggleRow(ghostSection, {
             text = "Sneaky Seat", id = "sneakyseat", state = TrollCfg.sneakySeat,
-            desc = "Invisible seat — hidden while seated",
+            desc = "Invisible seat â€” hidden while seated",
             onToggle = function(val)
                 if val then TrollSneakySeatStart() else TrollSneakySeatStop() end
             end
@@ -6116,7 +6315,7 @@ function UpdateRightContent()
                 if val then TrollClickTPStart() else TrollClickTPStop() end
             end
         })
-        Button(ghostSection, "🔗 Bring Target", function()
+        Button(ghostSection, "ðŸ”— Bring Target", function()
             local t = TrollGetTarget()
             if t then
                 StartBring(t.Name)
@@ -6125,7 +6324,7 @@ function UpdateRightContent()
             end
         end)
 
-        local screenSection = Section(ContentScroll, "Screen Chaos", "💥")
+        local screenSection = Section(ContentScroll, "Screen Chaos", "ðŸ’¥")
         ToggleRow(screenSection, {
             text = "Blur Pulse", id = "blurfx", state = ScreenFx.blurOn,
             desc = "Extreme pulsing blur",
@@ -6146,9 +6345,9 @@ function UpdateRightContent()
             desc = "Constant camera shaking",
             onToggle = function(val) SfxSet("shakeOn", val) end
         })
-        Button(screenSection, "😱 JUMPSCARE!", JumpScareBurst)
+        Button(screenSection, "ðŸ˜± JUMPSCARE!", JumpScareBurst)
 
-        local audioSection = Section(ContentScroll, "Earrape Audio", "🔊")
+        local audioSection = Section(ContentScroll, "Earrape Audio", "ðŸ”Š")
         local earrapeDD = Dropdown(audioSection, {
             text = "Sound",
             options = (function()
@@ -6185,67 +6384,161 @@ function UpdateRightContent()
         })
         Note(audioSection, "All effects are client-side & local (FE-safe)")
 
-    -- ═══════════ BAN ═══════════
+    -- â•â•â•â•â•â•â•â•â•â•â• BAN â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Ban" then
-        local banSection = Section(ContentScroll, "Ban Manager", "⛔")
-        Button(banSection, "📜 Fetch ban list", FetchBanList)
-        Button(banSection, "🔓 Unban all (list)", UnbanAllFromList)
-        Button(banSection, "🔍 Scan storage", StorageScan)
-        Button(banSection, "💥 Blast unban (all remotes)", BlastUnban)
+        local banSection = Section(ContentScroll, "Ban Manager", "â›”")
+        Button(banSection, "ðŸ“œ Fetch ban list", FetchBanList)
+        Button(banSection, "ðŸ”“ Unban all (list)", UnbanAllFromList)
+        Button(banSection, "ðŸ” Scan storage", StorageScan)
+        Button(banSection, "ðŸ’¥ Blast unban (all remotes)", BlastUnban)
         banBox = TextBox(banSection, { placeholder = "Unban by name / ID" })
-        Button(banSection, "🔓 Unban this", function() DoUnban(banBox.Text) end)
+        Button(banSection, "ðŸ”“ Unban this", function() DoUnban(banBox.Text) end)
         ToggleRow(banSection, {
-            text = "⚡ Auto-unban on join", id = "autounban", state = autoUnbanOn,
+            text = "âš¡ Auto-unban on join", id = "autounban", state = autoUnbanOn,
             keybind = false,
             onToggle = function(val) autoUnbanOn = val end
         })
         ToggleRow(banSection, {
-            text = "🔄 Auto rejoin on kick", id = "autorejoin", state = autoRejoinOn,
+            text = "ðŸ”„ Auto rejoin on kick", id = "autorejoin", state = autoRejoinOn,
             keybind = false,
             onToggle = function(val) autoRejoinOn = val end
         })
         customBox = TextBox(banSection, { placeholder = "Fire custom: RemoteName,arg1,arg2" })
-        Button(banSection, "🔥 Fire custom remote", FireCustomRemote)
+        Button(banSection, "ðŸ”¥ Fire custom remote", FireCustomRemote)
 
-        banListContainer = Section(ContentScroll, "Banned players", "📋")
+        banListContainer = Section(ContentScroll, "Banned players", "ðŸ“‹")
         if #bannedCache > 0 then
             for _, name in ipairs(bannedCache) do
-                Button(banListContainer, "🔓 " .. name, function() DoUnban(name) end)
+                Button(banListContainer, "ðŸ”“ " .. name, function() DoUnban(name) end)
             end
         else
-            Label(banListContainer, "List empty — press Fetch", UITheme.DIM, 11)
+            Label(banListContainer, "List empty â€” press Fetch", UITheme.DIM, 11)
         end
         if #storageDump > 0 then
-            local storageSection = Section(ContentScroll, "Storage scan", "🗂")
+            local storageSection = Section(ContentScroll, "Storage scan", "ðŸ—‚")
             for _, line in ipairs(storageDump) do
                 Label(storageSection, line, UITheme.SUBTEXT, 10)
             end
         end
         Note(ContentScroll, "You must be inside the server to fire bans (rejoin before kick)")
 
-    -- ═══════════ TSUNAMI ═══════════
+    -- â•â•â•â•â•â•â•â•â•â•â• TSUNAMI â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Tsunami" then
-        local popcornMain = Section(ContentScroll, "Popcorn Burst", "◉")
-        local stLabel = Label(popcornMain, "🍿 Minigame: OFF", UITheme.CYAN, 12)
+        local popcornMain = Section(ContentScroll, "Popcorn Burst", "â—‰")
+        local stLabel = Label(popcornMain, "ðŸ¿ Minigame: OFF", UITheme.CYAN, 12)
         PopcornBurstAPI.SetStatusLabel(stLabel)
         PopcornBurstAPI.UpdateStatus()
         ToggleRow(popcornMain, {
-            text = "🍿 Play Popcorn Burst", id = "popcorn", state = PopcornBurstAPI.IsActive(),
+            text = "ðŸ¿ Play Popcorn Burst", id = "popcorn", state = PopcornBurstAPI.IsActive(),
             keybind = false,
             onToggle = function(val)
                 local ok, err = pcall((val and PopcornBurstAPI.Start or PopcornBurstAPI.Stop))
                 if not ok then
-                    notif("🍿 Error: " .. tostring(err), 6)
+                    notif("ðŸ¿ Error: " .. tostring(err), 6)
                 end
             end
         })
-        Note(popcornMain, "3D table builds in-world — walk to it and press E to sit")
+        Note(popcornMain, "3D table builds in-world â€” walk to it and press E to sit")
         Note(popcornMain, "Click kernels when the ring meets the target: Perfect +100 | Great +50 | Good +20")
-        Note(popcornMain, "1v1 vs Brainrot Bot · +10 win / +2 lose / +5 tie Tokens")
+        Note(popcornMain, "1v1 vs Brainrot Bot Â· +10 win / +2 lose / +5 tie Tokens")
 
-    -- ═══════════ EXTRAS ═══════════
+        local legacySection = Section(ContentScroll, "Legacy auto-helpers", "ðŸ› ")
+        local tsStatusLabel = Label(legacySection, "All OFF", UITheme.SUBTEXT, 11)
+        tsunamiStatusLabel = tsStatusLabel
+        pcall(RebuildTsunami)
+        local function TsSet(field, val)
+            tsunamiCfg[field] = val
+            pcall(RebuildTsunami)
+        end
+        ToggleRow(legacySection, {
+            text = "Auto Collect", id = "tscollect", state = tsunamiCfg.on,
+            desc = "TPs to the nearest coin/cash/loot part",
+            keybind = false,
+            onToggle = function(val) TsSet("on", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Auto Clicker", id = "tsclicker", state = tsunamiCfg.clicker,
+            desc = "Clicks non-stop at the mouse position",
+            keybind = false,
+            onToggle = function(val) TsSet("clicker", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Popcorn auto-click (GUI)", id = "tspopcorn", state = tsunamiCfg.popcorn,
+            desc = "Spam-clicks green circle/ring UI elements",
+            keybind = false,
+            onToggle = function(val) TsSet("popcorn", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "God Mode", id = "tsgod", state = tsunamiCfg.god,
+            desc = "Keeps your health & stamina full",
+            keybind = false,
+            onToggle = function(val) TsSet("god", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Auto Jump", id = "tsjump", state = tsunamiCfg.autojump,
+            desc = "Jumps every 0.6s",
+            keybind = false,
+            onToggle = function(val) TsSet("autojump", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Safe TP", id = "tssafe", state = tsunamiCfg.safe,
+            desc = "Teleports you to a safe spot every 2s",
+            keybind = false,
+            onToggle = function(val) TsSet("safe", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "Minigame Bot", id = "tsmg", state = tsunamiCfg.mgBot,
+            desc = "Clicks fish/cast/reel/play buttons automatically",
+            keybind = false,
+            onToggle = function(val) TsSet("mgBot", val) end
+        })
+        ToggleRow(legacySection, {
+            text = "C4 Clicker", id = "tsc4", state = tsunamiCfg.c4,
+            desc = "Actives col/cell/slot/connect buttons",
+            keybind = false,
+            onToggle = function(val) TsSet("c4", val) end
+        })
+        Slider(legacySection, {
+            text = "Collect delay", min = 5, max = 100, def = 35,
+            onChanged = function(val) tsunamiCfg.collectDelay = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "Popcorn cooldown", min = 5, max = 100, def = 35,
+            onChanged = function(val) tsunamiCfg.popCooldown = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "Safe TP delay", min = 50, max = 500, def = 200,
+            onChanged = function(val) tsunamiCfg.safeDelay = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "Minigame bot delay", min = 20, max = 300, def = 80,
+            onChanged = function(val) tsunamiCfg.mgBotDelay = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "C4 delay", min = 20, max = 300, def = 120,
+            onChanged = function(val) tsunamiCfg.c4Delay = val / 100 end
+        })
+        Slider(legacySection, {
+            text = "C4 column (0 = random)", min = 0, max = 7, def = 0,
+            onChanged = function(val) tsunamiCfg.c4Col = val end
+        })
+        Button(legacySection, "â¹ Stop all helpers", function()
+            tsunamiCfg.on = false
+            tsunamiCfg.clicker = false
+            tsunamiCfg.popcorn = false
+            tsunamiCfg.god = false
+            tsunamiCfg.autojump = false
+            tsunamiCfg.safe = false
+            tsunamiCfg.mgBot = false
+            tsunamiCfg.c4 = false
+            pcall(RebuildTsunami)
+            notif("Tsunami helpers stopped", 2)
+        end)
+        Note(legacySection, "Generic auto-clickers â€” work in any game with GUI buttons. Status refreshes every second.")
+
+    -- â•â•â•â•â•â•â•â•â•â•â• EXTRAS â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Extras" then
-        local scriptsSection = Section(ContentScroll, "External scripts", "▤")
+        local scriptsSection = Section(ContentScroll, "External scripts", "â–¤")
         local addRow = Instance.new("Frame")
         addRow.Parent = scriptsSection
         addRow.BackgroundTransparency = 1
@@ -6296,7 +6589,7 @@ function UpdateRightContent()
         end })
 
         for _, scriptData in ipairs(more_scripts) do
-            Button(scriptsSection, "📜 " .. scriptData.name, function()
+            Button(scriptsSection, "ðŸ“œ " .. scriptData.name, function()
                 notif("Loading: " .. scriptData.name, 2)
                 local success, err = pcall(function()
                     local func = loadstring(scriptData.script)
@@ -6309,7 +6602,7 @@ function UpdateRightContent()
         end
 
         if #userScripts > 0 then
-            local userSection = Section(ContentScroll, "Your scripts", "📁")
+            local userSection = Section(ContentScroll, "Your scripts", "ðŸ“")
             for i, scriptData in ipairs(userScripts) do
                 local frameRow = Instance.new("Frame")
                 frameRow.Parent = userSection
@@ -6318,7 +6611,7 @@ function UpdateRightContent()
                 local sLay = Instance.new("UIListLayout", frameRow)
                 sLay.FillDirection = Enum.FillDirection.Horizontal
                 sLay.Padding = UDim.new(0, 6)
-                Button(frameRow, { text = "📜 " .. scriptData.name, size = UDim2.new(0.8, 0, 1, 0), callback = function()
+                Button(frameRow, { text = "ðŸ“œ " .. scriptData.name, size = UDim2.new(0.8, 0, 1, 0), callback = function()
                     notif("Loading: " .. scriptData.name, 2)
                     local success, err = pcall(function()
                         local func = loadstring(scriptData.script)
@@ -6326,16 +6619,16 @@ function UpdateRightContent()
                     end)
                     if not success and err then notif("Error: " .. tostring(err), 3) end
                 end })
-                Button(frameRow, { text = "✕", size = UDim2.new(0.18, 0, 1, 0), callback = function()
+                Button(frameRow, { text = "âœ•", size = UDim2.new(0.18, 0, 1, 0), callback = function()
                     RemoveUserScript(i)
                 end })
             end
         end
 
-    -- ═══════════ SETTINGS ═══════════
+    -- â•â•â•â•â•â•â•â•â•â•â• SETTINGS â•â•â•â•â•â•â•â•â•â•â•
     elseif CurrentTab == "  Settings" then
-        local keySection = Section(ContentScroll, "Keybinds", "⌨")
-        Note(keySection, "Click a chip on any toggle → press the key you want. Backspace/Delete = clear.")
+        local keySection = Section(ContentScroll, "Keybinds", "âŒ¨")
+        Note(keySection, "Click a chip on any toggle â†’ press the key you want. Backspace/Delete = clear.")
         ToggleRow(keySection, {
             text = "Menu Keybind", id = "menu", state = true,
             desc = "Hides / shows this menu (default RightShift)",
@@ -6344,18 +6637,18 @@ function UpdateRightContent()
                 Window.Visible = val
             end
         })
-        Button(keySection, "🗑 Reset ALL keybinds", function()
+        Button(keySection, "ðŸ—‘ Reset ALL keybinds", function()
             KeybindsLib:ResetAll()
             notif("All keybinds cleared", 2)
         end)
 
-        local themeSection = Section(ContentScroll, "Theme", "🎨")
+        local themeSection = Section(ContentScroll, "Theme", "ðŸŽ¨")
         ToggleRow(themeSection, {
             text = "RGB Mode", id = "rgb", state = UITheme.RGB,
             keybind = false,
             onToggle = function(val)
                 UITheme.RGB = val
-                rgbQuick.Text = "⚡ RGB Mode: " .. (val and "ON" or "OFF")
+                rgbQuick.Text = "âš¡ RGB Mode: " .. (val and "ON" or "OFF")
                 rgbQuick.TextColor3 = val and UITheme.Accent or UITheme.SUBTEXT
                 if not val then
                     UITheme.Accent = UITheme.CYAN
@@ -6364,7 +6657,7 @@ function UpdateRightContent()
             end
         })
 
-        local configSection = Section(ContentScroll, "Configs", "⚙")
+        local configSection = Section(ContentScroll, "Configs", "âš™")
         local configNameBox = TextBox(configSection, { placeholder = "Config name", initial = "Default" })
         local configRow = Instance.new("Frame")
         configRow.Parent = configSection
@@ -6378,19 +6671,19 @@ function UpdateRightContent()
             if n == "" then n = "Default" end
             return n
         end
-        Button(configRow, { text = "💾 Save", size = UDim2.new(0.32, -4, 1, 0), callback = function() SaveConfig(cfgName()) end })
-        Button(configRow, { text = "📂 Load", size = UDim2.new(0.32, -4, 1, 0), callback = function()
+        Button(configRow, { text = "ðŸ’¾ Save", size = UDim2.new(0.32, -4, 1, 0), callback = function() SaveConfig(cfgName()) end })
+        Button(configRow, { text = "ðŸ“‚ Load", size = UDim2.new(0.32, -4, 1, 0), callback = function()
             LoadConfig(cfgName())
             KeybindsLib:Restore(settings.keybinds)
             UpdateRightContent()
         end })
-        Button(configRow, { text = "🗑 Delete", size = UDim2.new(0.32, -4, 1, 0), callback = function() DeleteConfig(cfgName()) end })
+        Button(configRow, { text = "ðŸ—‘ Delete", size = UDim2.new(0.32, -4, 1, 0), callback = function() DeleteConfig(cfgName()) end })
 
-        local configListSection = Section(ContentScroll, "Saved configs", "📋")
+        local configListSection = Section(ContentScroll, "Saved configs", "ðŸ“‹")
         local configsList = GetConfigList()
         if #configsList > 0 then
             for _, name in ipairs(configsList) do
-                Button(configListSection, "📄 " .. name, function()
+                Button(configListSection, "ðŸ“„ " .. name, function()
                     configNameBox.Text = name
                     LoadConfig(name)
                     KeybindsLib:Restore(settings.keybinds)
@@ -6401,12 +6694,12 @@ function UpdateRightContent()
             Label(configListSection, "No saved configs", UITheme.SUBTEXT, 11)
         end
 
-        local unbanSection = Section(ContentScroll, "Account", "🛡")
-        Button(unbanSection, "🛡 Try Unban", TryUnban)
-        Button(unbanSection, "🔁 Rejoin fresh", RejoinFresh)
+        local unbanSection = Section(ContentScroll, "Account", "ðŸ›¡")
+        Button(unbanSection, "ðŸ›¡ Try Unban", TryUnban)
+        Button(unbanSection, "ðŸ” Rejoin fresh", RejoinFresh)
         Note(unbanSection, "Only works vs remote-based bans")
 
-        local otherSection = Section(ContentScroll, "Other", "🔧")
+        local otherSection = Section(ContentScroll, "Other", "ðŸ”§")
         ToggleRow(otherSection, {
             text = "Anti-AFK", id = "antiafk", state = settings.AntiAFK,
             onToggle = function(val)
@@ -6427,29 +6720,51 @@ function UpdateRightContent()
                 end
             end
         })
-        Button(otherSection, "🎤 Mic Bypass", ToggleMicBypass)
-        Button(otherSection, "🔓 Unmute mic", UnmuteMic)
+        Button(otherSection, "ðŸŽ¤ Mic Bypass", ToggleMicBypass)
+        Button(otherSection, "ðŸ”“ Unmute mic", UnmuteMic)
 
         local footer = Instance.new("Frame")
         footer.Parent = ContentScroll
         footer.BackgroundTransparency = 1
         footer.Size = UDim2.new(1, 0, 0, 60)
         footer.LayoutOrder = 999999
-        Label(footer, "Supports STK v2.31.0  •  sa7loul V3 Premium", UITheme.SUBTEXT, 11)
-        Label(footer, "Keep it cute, keep it clean 🖤", UITheme.CYAN, 11)
+        Label(footer, "Supports STK v2.31.0  â€¢  sa7loul V3 Premium", UITheme.SUBTEXT, 11)
+        Label(footer, "Keep it cute, keep it clean ðŸ–¤", UITheme.CYAN, 11)
     end
 end
 
--- ────────────────────────── INIT ──────────────────────────
+-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ INIT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 BuildSidebar()
 CurrentTab = "  Home"
 RefreshTabVisuals()
 UpdateRightContent()
 
--- click-TP dispatcher
+-- click-TP dispatcher + popcorn burst clicks
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode == Enum.KeyCode.E and PopcornBurstAPI.active then
+            PopcornBurstAPI.TrySit()
+        end
+        return
+    end
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if PopcornBurstAPI.active then
+            local cam = workspace.CurrentCamera
+            local m = UserInputService:GetMouseLocation()
+            if cam then
+                local ray = cam:ViewportPointToRay(m.X, m.Y)
+                local params = RaycastParams.new()
+                params.FilterType = Enum.RaycastFilterType.Exclude
+                local chr = lp.Character
+                if chr then params.FilterDescendantsInstances = { chr } end
+                params.RespectCanCollide = false
+                local res = workspace:Raycast(ray.Origin, ray.Direction * 500, params)
+                if res and PopcornBurstAPI.TryHit(res.Instance) then
+                    return
+                end
+            end
+        end
         if TrollCfg.clickTP then
             TrollClickTPFire()
         end
@@ -6463,11 +6778,13 @@ end)
 PlayersSvc.PlayerAdded:Connect(function()
     task.wait(0.3)
     if CurrentTab == "  Players" then UpdatePlayerList() end
+    if CurrentTab == "  Spawner" or CurrentTab == "  Fun" then pcall(UpdateRightContent) end
     RefreshTrollTargetOptions()
 end)
 PlayersSvc.PlayerRemoving:Connect(function(player)
     task.wait(0.3)
     if CurrentTab == "  Players" then UpdatePlayerList() end
+    if CurrentTab == "  Spawner" or CurrentTab == "  Fun" then pcall(UpdateRightContent) end
     if TrollTargetSel == player then
         TrollTargetSel = nil
         RefreshTrollTargetOptions()
@@ -6549,4 +6866,4 @@ UpdateDoubleJump()
 UpdateKillerChance()
 UpdateAllFeatures()
 
-notif("✨ sa7loul V3 Premium — loaded | RightShift hides menu", 4)
+notif("âœ¨ sa7loul V3 Premium â€” loaded | RightShift hides menu", 4)
