@@ -1,15 +1,255 @@
 -- sa7loul | Survive the Killer V2
 -- Support version v2.31.0
--- WITH CESAR/SECHOIR SPAWNER, MIC BYPASS
+-- WITH SAHLOUL AUTH, CESAR/SECHOIR SPAWNER, MIC BYPASS
 
 print("SA7LOUL SCRIPT STARTING...")
+
+-- ============================================
+-- SAHLOUL AUTH SYSTEM
+-- ============================================
+
+local SAHLOUL_APP_NAME = "s7roblox"
+local SAHLOUL_SECRET = "5UQZZajX4YOrEnjTS9GwHKFNhM7rQ7tQ"
+local SAHLOUL_API_URL = "https://auth.sahloul.dev/api/v1"
+
+local function GenerateHWID()
+    local hwid = game:GetService("RbxAnalyticsService"):GetClientId()
+    return hwid
+end
+
+local function SahloulAuthLogin(license)
+    local hwid = GenerateHWID()
+    
+    local success, result = pcall(function()
+        local response = game:GetService("HttpService"):RequestAsync({
+            Url = SAHLOUL_API_URL .. "/liclogin",
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json",
+                ["X-Sahloul-App"] = SAHLOUL_APP_NAME,
+                ["X-Sahloul-Secret"] = SAHLOUL_SECRET
+            },
+            Body = game:GetService("HttpService"):JSONEncode({
+                appname = SAHLOUL_APP_NAME,
+                license = license,
+                hwid = hwid
+            })
+        })
+        
+        if response.Success then
+            local data = game:GetService("HttpService"):JSONDecode(response.Body)
+            if data.success then
+                return data.data
+            else
+                return nil, data.message or "Authentication failed"
+            end
+        else
+            return nil, "Network error: " .. tostring(response.StatusCode)
+        end
+    end)
+    
+    return success and result or nil, not success and result or "Unknown error"
+end
+
+-- ============================================
+-- AUTHENTICATION GUI
+-- ============================================
+
+local LoginGui = {
+    screenGui = nil,
+    mainFrame = nil,
+    authenticated = false,
+    session = nil
+}
+
+local function CreateLoginGui()
+    local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+    
+    -- Remove existing login GUI if present
+    local existingGui = PlayerGui:FindFirstChild("SahloulAuthGUI")
+    if existingGui then
+        existingGui:Destroy()
+    end
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "SahloulAuthGUI"
+    screenGui.ResetOnSpawn = false
+    screenGui.IgnoreGuiInset = true
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.Parent = PlayerGui
+    
+    -- Main Container
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 400, 0, 350)
+    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -175)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Visible = true
+    mainFrame.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 15)
+    corner.Parent = mainFrame
+    
+    -- Header
+    local header = Instance.new("Frame")
+    header.Name = "Header"
+    header.Size = UDim2.new(1, 0, 0, 60)
+    header.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+    header.BorderSizePixel = 0
+    header.Parent = mainFrame
+    
+    local headerCorner = Instance.new("UICorner")
+    headerCorner.CornerRadius = UDim.new(0, 15)
+    headerCorner.Parent = header
+    
+    local title = Instance.new("TextLabel")
+    title.Name = "Title"
+    title.Size = UDim2.new(1, 0, 1, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "sa7loul Auth"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.TextSize = 24
+    title.Font = Enum.Font.GothamBold
+    title.TextXAlignment = Enum.TextXAlignment.Center
+    title.TextYAlignment = Enum.TextYAlignment.Center
+    title.Parent = header
+    
+    -- License Input
+    local licenseLabel = Instance.new("TextLabel")
+    licenseLabel.Name = "LicenseLabel"
+    licenseLabel.Size = UDim2.new(1, -40, 0, 25)
+    licenseLabel.Position = UDim2.new(0, 20, 0, 80)
+    licenseLabel.BackgroundTransparency = 1
+    licenseLabel.Text = "License Key"
+    licenseLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+    licenseLabel.TextSize = 14
+    licenseLabel.Font = Enum.Font.Gotham
+    licenseLabel.TextXAlignment = Enum.TextXAlignment.Left
+    licenseLabel.Parent = mainFrame
+    
+    local licenseBox = Instance.new("TextBox")
+    licenseBox.Name = "LicenseBox"
+    licenseBox.Size = UDim2.new(1, -40, 0, 40)
+    licenseBox.Position = UDim2.new(0, 20, 0, 105)
+    licenseBox.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+    licenseBox.BorderSizePixel = 0
+    licenseBox.Text = ""
+    licenseBox.PlaceholderText = "XXXX-XXXX-XXXX-XXXX"
+    licenseBox.PlaceholderColor3 = Color3.fromRGB(95, 98, 125)
+    licenseBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    licenseBox.TextSize = 16
+    licenseBox.Font = Enum.Font.Gotham
+    licenseBox.Parent = mainFrame
+    
+    local licenseCorner = Instance.new("UICorner")
+    licenseCorner.CornerRadius = UDim.new(0, 8)
+    licenseCorner.Parent = licenseBox
+    
+    local licensePadding = Instance.new("UIPadding")
+    licensePadding.PaddingLeft = UDim.new(0, 15)
+    licensePadding.PaddingRight = UDim.new(0, 15)
+    licensePadding.Parent = licenseBox
+    
+    -- Status Label
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Name = "StatusLabel"
+    statusLabel.Size = UDim2.new(1, -40, 0, 30)
+    statusLabel.Position = UDim2.new(0, 20, 0, 155)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Text = ""
+    statusLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+    statusLabel.TextSize = 14
+    statusLabel.Font = Enum.Font.Gotham
+    statusLabel.Parent = mainFrame
+    
+    -- Login Button
+    local loginButton = Instance.new("TextButton")
+    loginButton.Name = "LoginButton"
+    loginButton.Size = UDim2.new(1, -40, 0, 45)
+    loginButton.Position = UDim2.new(0, 20, 0, 195)
+    loginButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+    loginButton.BorderSizePixel = 0
+    loginButton.Text = "Login"
+    loginButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    loginButton.TextSize = 18
+    loginButton.Font = Enum.Font.GothamBold
+    loginButton.Parent = mainFrame
+    
+    local loginCorner = Instance.new("UICorner")
+    loginCorner.CornerRadius = UDim.new(0, 10)
+    loginCorner.Parent = loginButton
+    
+    LoginGui.screenGui = screenGui
+    LoginGui.mainFrame = mainFrame
+    
+    -- Login Function
+    loginButton.MouseButton1Click:Connect(function()
+        local license = licenseBox.Text
+        if license == "" then
+            statusLabel.Text = "Please enter a license key"
+            statusLabel.TextColor3 = Color3.fromRGB(244, 67, 54)
+            return
+        end
+        
+        statusLabel.Text = "Authenticating..."
+        statusLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+        
+        local session, error = SahloulAuthLogin(license)
+        
+        if session then
+            LoginGui.authenticated = true
+            LoginGui.session = session
+            statusLabel.Text = "Success! Welcome, " .. (session.username or "User")
+            statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
+            
+            wait(1)
+            
+            -- Destroy login GUI
+            screenGui:Destroy()
+            LoginGui.screenGui = nil
+            LoginGui.mainFrame = nil
+        else
+            statusLabel.Text = "Error: " .. tostring(error)
+            statusLabel.TextColor3 = Color3.fromRGB(244, 67, 54)
+        end
+    end)
+    
+    -- Enter key support
+    licenseBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            loginButton.MouseButton1Click:Fire()
+        end
+    end)
+end
+
+local function WaitForAuthentication()
+    CreateLoginGui()
+    
+    -- Wait for authentication
+    while not LoginGui.authenticated do
+        if not LoginGui.screenGui or not LoginGui.screenGui.Parent then
+            -- GUI was destroyed, recreate it
+            CreateLoginGui()
+        end
+        wait(0.1)
+    end
+    
+    return LoginGui.session
+end
+
+-- ============================================
+-- AUTHENTICATION CHECK (BYPASSED FOR TESTING)
+-- ============================================
+
+local session = {license = "test-0000-0000-0000", username = "TestUser"} 
+-- local session = WaitForAuthentication() -- Disabled temporarily to test menu
 
 local configs = {
     savedConfigs = {},
     currentConfigName = "Default"
 }
-
-print("Configs defined")
 
 local defaultSettings = {
     Speed = 16, 
@@ -3373,14 +3613,10 @@ end
 -- REDESIGNED UI — high quality with animation
 -- ============================================================
 
-print("Creating UI...")
-
 local h = Instance.new("ScreenGui")
 h.Name = "sa7loul_STK"
 h.Parent = game:GetService("CoreGui")
 h.ResetOnSpawn = false
-
-print("ScreenGui created in CoreGui")
 h.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 -- MAIN WINDOW
@@ -3414,12 +3650,6 @@ Instance.new("UICorner", shadow).CornerRadius = UDim.new(0, 16)
 -- MAIN CORNER
 local mainCorner = Instance.new("UICorner", Main)
 mainCorner.CornerRadius = UDim.new(0, 14)
-
-Main.Visible = true
-h.Visible = true
-
-print("Main frame created and configured")
-print("UI should now be visible")
 
 -- TOP BAR
 local TopBar = Instance.new("Frame")
