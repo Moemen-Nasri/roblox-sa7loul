@@ -1,4 +1,4 @@
--- sa7loul | Survive the Killer V2
+–¯Â»Â¿-- sa7loul | Survive the Killer V2
 -- Support version v2.31.0
 
 local configs = {
@@ -73,7 +73,7 @@ local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 
--- DESIGN COLORS — soft rose & teal palette
+-- DESIGN COLORS âÂÂ soft rose & teal palette
 local ACCENT = Color3.fromRGB(255, 94, 148)      -- soft rose
 local ACCENT_DARK = Color3.fromRGB(196, 60, 106)
 local TEAL = Color3.fromRGB(61, 224, 200)
@@ -89,7 +89,7 @@ local BORDER_COLOR = Color3.fromRGB(40, 42, 62)
 local function notif(str, dur)
     pcall(function()
         StarterGui:SetCore("SendNotification", {
-            Title = "⏤ sa7loul V2",
+            Title = "âÂÂ¤ sa7loul V2",
             Text = str,
             Duration = dur or 3
         })
@@ -150,10 +150,8 @@ local flingForce = 9999
 
 function AddPressAnim(btn)
     btn.MouseButton1Down:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.08), {Size = btn.Size - UDim2.new(0.01, 0, 0.01, 0)}):Play()
     end)
     btn.MouseButton1Up:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.12), {Size = btn.Size + UDim2.new(0.01, 0, 0.01, 0)}):Play()
     end)
 end
 
@@ -166,9 +164,9 @@ function SetSelectedPlayer(player)
     selectedPlayer = player
     if selectedPlayerLabel then
         if GetSelectedPlayer() then
-            selectedPlayerLabel.Text = "👤 Player: " .. selectedPlayer.Name
+            selectedPlayerLabel.Text = "–°ÂÂÂ¤ Player: " .. selectedPlayer.Name
         else
-            selectedPlayerLabel.Text = "👤 Player: None"
+            selectedPlayerLabel.Text = "–°ÂÂÂ¤ Player: None"
         end
     end
 end
@@ -1209,9 +1207,9 @@ function ToggleMicBypass()
         w2.Parent = hub
         
         voiceFx = {hub = hub, saved = saved, active = true}
-        notif("🎤 Mic Bypass ON", 2)
+        notif("–°ÂÂÂ¤ Mic Bypass ON", 2)
     else
-        notif("No character — enter a game first", 2)
+        notif("No character âÂÂ enter a game first", 2)
     end
 end
 
@@ -1325,7 +1323,7 @@ function StorageScan()
                 if obj:IsA("IntValue") or obj:IsA("StringValue") or obj:IsA("NumberValue") or obj:IsA("BoolValue") then
                     extra = " = " .. tostring(obj.Value)
                 end
-                table.insert(storageDump, obj.ClassName .. " → " .. obj.Name .. extra)
+                table.insert(storageDump, obj.ClassName .. " âÂÂ " .. obj.Name .. extra)
                 count = count + 1
             end
         end
@@ -1333,7 +1331,7 @@ function StorageScan()
     for _, obj in ipairs({game, lp}) do
         for k, v in pairs(obj:GetAttributes()) do
             if count < 150 then
-                table.insert(storageDump, "Attr → " .. tostring(k) .. " = " .. tostring(v))
+                table.insert(storageDump, "Attr âÂÂ " .. tostring(k) .. " = " .. tostring(v))
                 count = count + 1
             end
         end
@@ -1538,7 +1536,7 @@ end
 
 function UnbanAllFromList()
     if #bannedCache == 0 then
-        notif("Ban list empty — fetch first", 2)
+        notif("Ban list empty âÂÂ fetch first", 2)
         return
     end
     for _, name in ipairs(bannedCache) do
@@ -2195,17 +2193,17 @@ function PeriodicESPUpdate()
 end
 
 -- =====================================================================
--- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
---  NOVA UI FRAMEWORK — sa7loul V3 PREMIUM REDESIGN
+-- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
+--  NOVA UI FRAMEWORK âÂÂ sa7loul V3 PREMIUM REDESIGN
 --  Dark mode + neon accents | RGB mode | rounded corners | glow
 --  Draggable header | search | fluid tab navigation
--- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+-- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
 local CoreGui    = game:GetService("CoreGui")
 local GuiService = game:GetService("GuiService")
 local SoundService = game:GetService("SoundService")
 local PlayersSvc = game:GetService("Players")
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ THEME â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ THEME –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 local UITheme = {
     BG        = Color3.fromRGB(7, 8, 13),
     BG_DEEP   = Color3.fromRGB(10, 12, 19),
@@ -2245,7 +2243,6 @@ end
 function UITheme:ClearContentAccents()
     accentListeners = {}
 end
-function UITheme:Tick(dt)
     if UITheme.RGB then
         UITheme.Hue = (UITheme.Hue + dt * 0.45) % 1
         UITheme.Accent = Color3.fromHSV(UITheme.Hue, 0.9, 1)
@@ -2253,7 +2250,7 @@ function UITheme:Tick(dt)
     end
 end
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ROOT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ ROOT –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 local NovaUI = Instance.new("ScreenGui")
 NovaUI.Name = "sa7loul_V3"
 NovaUI.ResetOnSpawn = false
@@ -2283,23 +2280,6 @@ windowGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(1, UITheme.BG)
 })
 
--- glow halo behind the window
-local GlowBlur = Instance.new("BlurEffect")
-GlowBlur.Name = "WindowGlow"
-GlowBlur.Size = 6
-GlowBlur.Parent = Lighting
-local glowHalo = Instance.new("Frame")
-glowHalo.Name = "GlowHalo"
-glowHalo.Parent = Window
-glowHalo.BackgroundColor3 = UITheme.BG_DEEP
-glowHalo.BackgroundTransparency = 0.6
-glowHalo.BorderSizePixel = 0
-glowHalo.Size = UDim2.new(1, 24, 1, 24)
-glowHalo.Position = UDim2.new(0, -12, 0, -12)
-glowHalo.ZIndex = -1
-Instance.new("UICorner", glowHalo).CornerRadius = UDim.new(0, 22)
-
--- top neon accent line
 local accentLine = Instance.new("Frame")
 accentLine.Name = "AccentLine"
 accentLine.Parent = Window
@@ -2313,21 +2293,18 @@ accentLineGrad.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0.5, UITheme.Accent),
     ColorSequenceKeypoint.new(1, UITheme.PURPLE)
 })
-UITheme:RegisterAccent(function(c)
+-- Accent animation removed
     accentLineGrad.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, UITheme.PURPLE),
         ColorSequenceKeypoint.new(0.5, c),
         ColorSequenceKeypoint.new(1, UITheme.PURPLE)
     })
-end, true)
+
 
 -- opening animation
-TweenService:Create(Window, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    BackgroundTransparency = 0,
-    Size = UDim2.new(0, 720, 0, 540)
-}):Play()
+-- Opening animation removed
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ HEADER –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 local Header = Instance.new("Frame")
 Header.Name = "Header"
 Header.Parent = Window
@@ -2363,10 +2340,10 @@ local logoStroke = Instance.new("UIStroke", logoDot)
 logoStroke.Thickness = 3
 logoStroke.Color = UITheme.Accent
 logoStroke.Transparency = 0.7
-UITheme:RegisterAccent(function(c)
+-- Accent animation removed
     logoDot.BackgroundColor3 = c
     logoStroke.Color = c
-end, true)
+
 
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Parent = Header
@@ -2388,13 +2365,13 @@ titleAccent.TextSize = 14
 titleAccent.Size = UDim2.new(0, 30, 0, 18)
 titleAccent.Position = UDim2.new(0, 128, 0, 9)
 titleAccent.TextXAlignment = Enum.TextXAlignment.Left
-UITheme:RegisterAccent(function(c) titleAccent.TextColor3 = c end, true)
+-- Accent animation removed titleAccent.TextColor3 = c 
 
 local headerSub = Instance.new("TextLabel")
 headerSub.Parent = Header
 headerSub.BackgroundTransparency = 1
 headerSub.Font = Enum.Font.Gotham
-headerSub.Text = "Survive the Killer • Premium"
+headerSub.Text = "Survive the Killer âÂÂ¢ Premium"
 headerSub.TextColor3 = UITheme.SUBTEXT
 headerSub.TextSize = 11
 headerSub.Size = UDim2.new(0, 260, 0, 16)
@@ -2418,10 +2395,8 @@ function headerIconButton(text, color)
     btn.AutoButtonColor = false
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 7)
     btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.12), {BackgroundTransparency = 0}):Play()
     end)
     btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.4}):Play()
     end)
     AddPressAnim(btn)
     return btn
@@ -2442,11 +2417,11 @@ menuKeyChip.TextSize = 10
 menuKeyChip.ZIndex = 6
 Instance.new("UICorner", menuKeyChip).CornerRadius = UDim.new(0, 7)
 
-local minimizeBtn = headerIconButton("–", UITheme.GREEN)
+local minimizeBtn = headerIconButton("âÂÂ", UITheme.GREEN)
 minimizeBtn.Position = UDim2.new(1, -104, 0.5, -13)
 minimizeBtn.Name = "MinimizeButton"
 minimizeBtn.Visible = true
-local closeBtn = headerIconButton("✕", UITheme.RED)
+local closeBtn = headerIconButton("âÂÂ", UITheme.RED)
 closeBtn.Position = UDim2.new(1, -72, 0.5, -13)
 closeBtn.Name = "CloseButton"
 closeBtn.Visible = true
@@ -2455,7 +2430,7 @@ local minimizedHint = Instance.new("TextLabel")
 minimizedHint.Parent = Header
 minimizedHint.BackgroundTransparency = 1
 minimizedHint.Font = Enum.Font.Gotham
-minimizedHint.Text = "minimized ·  click ✚ to restore full menu"
+minimizedHint.Text = "minimized –·  click âÂÂ to restore full menu"
 minimizedHint.TextColor3 = UITheme.SUBTEXT
 minimizedHint.TextSize = 10
 minimizedHint.Size = UDim2.new(0, 220, 0, 16)
@@ -2463,7 +2438,7 @@ minimizedHint.Position = UDim2.new(0, 36, 0, 32)
 minimizedHint.TextXAlignment = Enum.TextXAlignment.Left
 minimizedHint.Visible = false
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DRAG â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ DRAG –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 local minimized = false
 local dragging = false
 local pendingDrag = false
@@ -2573,7 +2548,7 @@ end)
 -- minimize / restore
 function ApplyMinimized(state)
     minimized = state
-    if minimizeBtn then minimizeBtn.Text = state and "✚" or "–" end
+    if minimizeBtn then minimizeBtn.Text = state and "âÂÂ" or "âÂÂ" end
     if headerSub then headerSub.Visible = not state end
     if menuKeyChip then menuKeyChip.Visible = not state end
     if minimizedHint then minimizedHint.Visible = state end
@@ -2587,7 +2562,6 @@ function ApplyMinimized(state)
                 Size = UDim2.new(0, 300, 0, 54),
                 AnchorPoint = Vector2.new(0, 0),
                 Position = UDim2.fromOffset(14, 14)
-            }):Play()
         end)
         task.spawn(function()
             task.wait(0.25)
@@ -2634,10 +2608,10 @@ closeBtn.MouseButton1Click:Connect(function()
     }):Play()
     task.wait(0.3)
     NovaUI:Destroy()
-    if GlowBlur then pcall(function() GlowBlur:Destroy() end) end
+    -- Glow cleanup removed
 end)
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SEARCH BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ SEARCH BAR –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 local SearchBar = Instance.new("Frame")
 SearchBar.Parent = Window
 SearchBar.BackgroundTransparency = 1
@@ -2648,7 +2622,7 @@ local searchIcon = Instance.new("TextLabel")
 searchIcon.Parent = SearchBar
 searchIcon.BackgroundTransparency = 1
 searchIcon.Font = Enum.Font.Gotham
-searchIcon.Text = "🔍"
+searchIcon.Text = "–°ÂÂÂ"
 searchIcon.TextColor3 = UITheme.SUBTEXT
 searchIcon.TextSize = 18
 searchIcon.Size = UDim2.new(0, 30, 1, 0)
@@ -2676,13 +2650,11 @@ searchStroke.Thickness = 1
 searchStroke.Color = UITheme.BORDER
 searchStroke.Transparency = 0.4
 SearchBox.Focused:Connect(function()
-    TweenService:Create(searchStroke, TweenInfo.new(0.15), {Color = UITheme.Accent, Transparency = 0}):Play()
 end)
 SearchBox.FocusLost:Connect(function()
-    TweenService:Create(searchStroke, TweenInfo.new(0.15), {Color = UITheme.BORDER, Transparency = 0.4}):Play()
 end)
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ SIDEBAR –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 local Sidebar = Instance.new("Frame")
 Sidebar.Parent = Window
 Sidebar.BackgroundColor3 = UITheme.PANEL
@@ -2719,26 +2691,26 @@ sidebarTitle.BackgroundTransparency = 1
 sidebarTitle.LayoutOrder = -1
 sidebarTitle.Size = UDim2.new(1, -24, 0, 24)
 sidebarTitle.Font = Enum.Font.GothamBold
-sidebarTitle.Text = "☰  MENU"
+sidebarTitle.Text = "âÂÂ°  MENU"
 sidebarTitle.TextColor3 = UITheme.Accent
 sidebarTitle.TextSize = 12
 sidebarTitle.TextXAlignment = Enum.TextXAlignment.Left
 sidebarTitle.TextYAlignment = Enum.TextYAlignment.Center
-UITheme:RegisterAccent(function(c) sidebarTitle.TextColor3 = c end, true)
+-- Accent animation removed sidebarTitle.TextColor3 = c 
 
 local TabItems = {
-    { key = "  Home",       icon = "⌂", label = "Home" },
-    { key = "  Player",     icon = "☄", label = "Player" },
-    { key = "  Revive",     icon = "✚", label = "Revive" },
-    { key = "  World",      icon = "✺", label = "World" },
-    { key = "  Players",    icon = "☰", label = "Players" },
-    { key = "  Fun",        icon = "✿", label = "Fun" },
-    { key = "  Spawner",    icon = "🔧", label = "Spawner" },
-    { key = "  Troll",      icon = "☠", label = "Troll" },
-    { key = "  Ban",        icon = "🛡", label = "Ban" },
-    { key = "  Tsunami",    icon = "🌊", label = "Tsunami" },
-    { key = "  Extras",     icon = "▤", label = "Extras" },
-    { key = "  Settings",   icon = "⚙", label = "Settings" },
+    { key = "  Home",       icon = "âÂÂ", label = "Home" },
+    { key = "  Player",     icon = "âÂÂ", label = "Player" },
+    { key = "  Revive",     icon = "âÂÂ", label = "Revive" },
+    { key = "  World",      icon = "âÂÂº", label = "World" },
+    { key = "  Players",    icon = "âÂÂ°", label = "Players" },
+    { key = "  Fun",        icon = "âÂÂ¿", label = "Fun" },
+    { key = "  Spawner",    icon = "–°ÂÂÂ§", label = "Spawner" },
+    { key = "  Troll",      icon = "âÂÂ ", label = "Troll" },
+    { key = "  Ban",        icon = "–°ÂÂÂ¡", label = "Ban" },
+    { key = "  Tsunami",    icon = "–°ÂÂÂ", label = "Tsunami" },
+    { key = "  Extras",     icon = "âÂÂ¤", label = "Extras" },
+    { key = "  Settings",   icon = "âÂÂ", label = "Settings" },
 }
 local TabButtons = {}
 
@@ -2756,7 +2728,7 @@ rgbQuick.BorderSizePixel = 0
 rgbQuick.Size = UDim2.new(1, -24, 0, 28)
 rgbQuick.Position = UDim2.new(0, 12, 0, 4)
 rgbQuick.Font = Enum.Font.GothamBold
-rgbQuick.Text = "⚡ RGB Mode: OFF"
+rgbQuick.Text = "âÂÂ¡ RGB Mode: OFF"
 rgbQuick.TextColor3 = UITheme.SUBTEXT
 rgbQuick.TextSize = 10
 Instance.new("UICorner", rgbQuick).CornerRadius = UDim.new(0, 7)
@@ -2791,16 +2763,14 @@ function BuildSidebar()
         glowBar.BackgroundTransparency = 1
         glowBar.ZIndex = 5
         Instance.new("UICorner", glowBar).CornerRadius = UDim.new(1, 0)
-        UITheme:RegisterAccent(function(c) glowBar.BackgroundColor3 = c end, true)
+        -- Accent animation removed glowBar.BackgroundColor3 = c 
 
         btn.MouseEnter:Connect(function()
             if CurrentTab ~= item.key then
-                TweenService:Create(btn, TweenInfo.new(0.12), {BackgroundTransparency = 0.55}):Play()
             end
         end)
         btn.MouseLeave:Connect(function()
             if CurrentTab ~= item.key then
-                TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
             end
         end)
         btn.MouseButton1Click:Connect(function()
@@ -2816,14 +2786,13 @@ function RefreshTabVisuals()
         TweenService:Create(vis.btn, TweenInfo.new(0.18), {
             BackgroundTransparency = active and 0.35 or 1,
             TextColor3 = active and UITheme.TEXT or UITheme.SUBTEXT
-        }):Play()
         TweenService:Create(vis.glow, TweenInfo.new(0.18), {
             BackgroundTransparency = active and 0 or 1
         }):Play()
     end
 end
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CONTENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ CONTENT –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 local ContentScroll = Instance.new("ScrollingFrame")
 ContentScroll.Parent = Window
 ContentScroll.BackgroundColor3 = UITheme.BG
@@ -2842,7 +2811,7 @@ local contentLayout = Instance.new("UIListLayout", ContentScroll)
 contentLayout.Padding = UDim.new(0, 16)
 contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ STATUS BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ STATUS BAR –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 local statusBar = Instance.new("Frame")
 statusBar.Parent = Window
 statusBar.BackgroundColor3 = UITheme.PANEL
@@ -2863,7 +2832,7 @@ statusLabel.TextColor3 = UITheme.SUBTEXT
 statusLabel.TextSize = 10
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.TextYAlignment = Enum.TextYAlignment.Center
-UITheme:RegisterAccent(function(c) statusLabel.TextColor3 = c end, true)
+-- Accent animation removed statusLabel.TextColor3 = c 
 
 task.spawn(function()
     local lastFrame = os.clock()
@@ -2886,7 +2855,7 @@ task.spawn(function()
     end
 end)
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ COMPONENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ COMPONENTS –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 local activeRows = {}
 
 function ClearContent()
@@ -2928,7 +2897,7 @@ local function Section(parent, title, icon)
     secStroke.Thickness = 1
     secStroke.Color = UITheme.BORDER
     secStroke.Transparency = 0.5
-    UITheme:RegisterAccent(function(c)
+    -- Accent animation removed
         secStroke.Color = c
         secStroke.Transparency = 0.25
     end)
@@ -2953,7 +2922,7 @@ local function Section(parent, title, icon)
     titleLabel.TextSize = 13
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.TextYAlignment = Enum.TextYAlignment.Center
-    UITheme:RegisterAccent(function(c) titleLabel.TextColor3 = c end)
+    -- Accent animation removed titleLabel.TextColor3 = c end)
 
     local line = Instance.new("Frame")
     line.Parent = head
@@ -2979,12 +2948,10 @@ end
 -- hover helper for pill buttons
 local function MakeHover(btn, baseTransparency, hoverTransparency, isAccent)
     btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.12), {BackgroundTransparency = hoverTransparency}):Play()
     end)
     btn.MouseLeave:Connect(function()
         TweenService:Create(btn, TweenInfo.new(0.15), {
             BackgroundTransparency = isAccent and 0.15 or baseTransparency
-        }):Play()
     end)
 end
 
@@ -3011,7 +2978,7 @@ local function Button(parent, opts, thirdArg)
     stroke.Color = opts.accent and UITheme.Accent or UITheme.BORDER
     stroke.Transparency = 0.7
     if opts.accent then
-        UITheme:RegisterAccent(function(c)
+        -- Accent animation removed
             btn.BackgroundColor3 = c
             stroke.Color = c
         end)
@@ -3070,10 +3037,8 @@ local function TextBox(parent, opts)
     stroke.Color = UITheme.BORDER
     stroke.Transparency = 0.5
     box.Focused:Connect(function()
-        TweenService:Create(stroke, TweenInfo.new(0.15), {Color = UITheme.Accent, Transparency = 0}):Play()
     end)
     box.FocusLost:Connect(function(enter)
-        TweenService:Create(stroke, TweenInfo.new(0.15), {Color = UITheme.BORDER, Transparency = 0.5}):Play()
         if enter and opts.onEnter then
             pcall(opts.onEnter, box.Text)
         end
@@ -3111,7 +3076,7 @@ local function Slider(parent, opts)
     valueLabel.TextColor3 = UITheme.Accent
     valueLabel.TextSize = 12
     valueLabel.TextXAlignment = Enum.TextXAlignment.Right
-    UITheme:RegisterAccent(function(c) valueLabel.TextColor3 = c end)
+    -- Accent animation removed valueLabel.TextColor3 = c end)
 
     local track = Instance.new("Frame")
     track.Parent = frame
@@ -3130,7 +3095,7 @@ local function Slider(parent, opts)
     fill.BackgroundTransparency = 0.1
     fill.Size = UDim2.new((def - min) / (max - min), 0, 1, 0)
     Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
-    UITheme:RegisterAccent(function(c) fill.BackgroundColor3 = c end)
+    -- Accent animation removed fill.BackgroundColor3 = c end)
 
     local knob = Instance.new("TextButton")
     knob.Parent = track
@@ -3146,7 +3111,7 @@ local function Slider(parent, opts)
     knobGlow.Thickness = 2
     knobGlow.Color = UITheme.Accent
     knobGlow.Transparency = 0.25
-    UITheme:RegisterAccent(function(c)
+    -- Accent animation removed
         knobGlow.Color = c
     end)
 
@@ -3265,7 +3230,6 @@ local function Dropdown(parent, opts)
     local function close()
         open = false
         list.Visible = false
-        TweenService:Create(list, TweenInfo.new(0.15), {Size = UDim2.new(0, 160, 0, 0)}):Play()
     end
 
     box.MouseButton1Click:Connect(function()
@@ -3301,7 +3265,6 @@ local function Dropdown(parent, opts)
             list.Visible = true
             TweenService:Create(list, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, 160, 0, h)
-            }):Play()
         else
             close()
         end
@@ -3309,7 +3272,7 @@ local function Dropdown(parent, opts)
     return { SetIndex = function(i) currentIdx = i; setLabel() end }
 end
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TOGGLE + KEYBIND CHIP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ TOGGLE + KEYBIND CHIP –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 local function ToggleRow(parent, opts)
     opts = opts or {}
     local row = Instance.new("Frame")
@@ -3440,10 +3403,8 @@ local function ToggleRow(parent, opts)
         handle.Set(not state)
     end)
     clickArea.MouseEnter:Connect(function()
-        TweenService:Create(chip, TweenInfo.new(0.1), {BackgroundTransparency = 0.15}):Play()
     end)
     clickArea.MouseLeave:Connect(function()
-        TweenService:Create(chip, TweenInfo.new(0.15), {BackgroundTransparency = 0.4}):Play()
     end)
 
     -- register keybind (unless opts.keybind == false)
@@ -3459,12 +3420,12 @@ local function ToggleRow(parent, opts)
     return handle
 end
 -- =====================================================================
--- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
---  PART 2 Ã¢â‚¬â€ KEYBIND MANAGER Ã‚Â· SCREEN FX Ã‚Â· TROLL ENGINE
--- Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+-- âÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂ
+--  PART 2 –Â–Â¢–Â¢âÂÂ–Â¬–Â¢âÂÂ¬–Â KEYBIND MANAGER –ÂâÂÂ–· SCREEN FX –ÂâÂÂ–· TROLL ENGINE
+-- âÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂâÂÂ
 
--- Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ KEYBIND MANAGER Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
--- Every toggle gets a clickable keybind chip. Click chip Ã¢â€ â€™ "Press Key..."
+-- –Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬ KEYBIND MANAGER –Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬
+-- Every toggle gets a clickable keybind chip. Click chip –Â–Â¢–Â¢âÂÂ¬–Â –Â¢âÂÂ¬âÂÂ¢ "Press Key..."
 -- Backspace/Delete unbinds. Bound key toggles the feature (gameProcessed-safe).
 local KeybindsLib = {
     map = {},    -- id -> { set, get, chip, name, key }
@@ -3490,7 +3451,6 @@ function KeybindsLib:RefreshChip(id)
         TweenService:Create(e.chip, TweenInfo.new(0.15), {
             TextColor3 = keyName and UITheme.Accent or UITheme.DIM,
             BackgroundTransparency = keyName and 0.1 or 0.4
-        }):Play()
     end
     if id == "menu" and menuKeyChip and menuKeyChip.Parent then
         menuKeyChip.Text = "[ MENU: " .. (keyName or "NONE") .. " ]"
@@ -3583,14 +3543,14 @@ function KeybindsLib:ResetAll()
     self:Save()
 end
 
--- load saved keybinds from disk (pcall Ã¢â‚¬â€ safe on executors without file io)
+-- load saved keybinds from disk (pcall –Â–Â¢–Â¢âÂÂ–Â¬–Â¢âÂÂ¬–Â safe on executors without file io)
 local function KeybindsLoadFromDisk()
     local ok, data = pcall(function()
         return HttpService:JSONDecode(readfile(keybindFile))
     end)
     if ok and type(data) == "table" then
         KeybindsLib:Restore(data)
-        notif("Ã¢Å’Â¨ Keybinds restored", 2)
+        notif("–Â–Â¢–ÂâÂÂ–Â–Â¨ Keybinds restored", 2)
     end
 end
 
@@ -3628,7 +3588,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ SCREEN FX ENGINE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+-- –Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬ SCREEN FX ENGINE –Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬
 local ScreenFx = {
     blurOn = false,
     fovOn = false,
@@ -3756,7 +3716,7 @@ local function SfxSet(flag, on)
     SfxRebuild()
 end
 
--- Ã°Å¸ËœÂ± JUMPSCARE BURST Ã¢â‚¬â€ flash + FOV punch + shake + sound
+-- –Â–Â°–Â–Â¸–Â–Â–Â–Â± JUMPSCARE BURST –Â–Â¢–Â¢âÂÂ–Â¬–Â¢âÂÂ¬–Â flash + FOV punch + shake + sound
 local jumpScareActive = false
 local function JumpScareBurst()
     if jumpScareActive then return end
@@ -3820,7 +3780,7 @@ local function JumpScareBurst()
     end)
 end
 
--- Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ TROLL ENGINE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+-- –Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬ TROLL ENGINE –Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬–Â–Â¢–Â¢âÂÂ¬–Â–Â¢âÂÂ–Â¬
 local TrollTargetSel = nil
 -- Emoji-free mapping: keep players dropdown synced
 local trollTargetDropdown = nil
@@ -3875,7 +3835,7 @@ local function TrollMyRoot()
     return nil
 end
 
--- Ã°Å¸Å¡â‚¬ 1) FLING TARGET (physics-based: angular velocity + random linear yeet)
+-- –Â–Â°–Â–Â¸–Â–Â¡–Â¢âÂÂ–Â¬ 1) FLING TARGET (physics-based: angular velocity + random linear yeet)
 local function TrollFlingStart()
     TrollCfg.fling = true
     if TrollState.flingConn then TrollState.flingConn:Disconnect() end
@@ -3926,7 +3886,7 @@ local function TrollFlingStart()
             end
         end
     end)
-    notif("Ã°Å¸â€ºÂ¸ Troll Fling: ON", 2)
+    notif("–Â–Â°–Â–Â¸–Â¢âÂÂ¬–Âº–Â–Â¸ Troll Fling: ON", 2)
 end
 
 local function TrollFlingStop()
@@ -3940,10 +3900,10 @@ local function TrollFlingStop()
         local hum = tRoot.Parent:FindFirstChildOfClass("Humanoid")
         if hum then pcall(function() hum.PlatformStand = false end) end
     end
-    notif("Ã°Å¸â€ºÂ¸ Troll Fling: OFF", 2)
+    notif("–Â–Â°–Â–Â¸–Â¢âÂÂ¬–Âº–Â–Â¸ Troll Fling: OFF", 2)
 end
 
--- Ã°Å¸Å’â‚¬ 2) ANNOY LOOP Ã¢â‚¬â€ teleport spam around the target
+-- –Â–Â°–Â–Â¸–ÂâÂÂ–Â¢âÂÂ–Â¬ 2) ANNOY LOOP –Â–Â¢–Â¢âÂÂ–Â¬–Â¢âÂÂ¬–Â teleport spam around the target
 local function TrollAnnoyStart()
     TrollCfg.annoy = true
     if TrollState.annoyConn then TrollState.annoyConn:Disconnect() end
@@ -3969,17 +3929,17 @@ local function TrollAnnoyStart()
             myRoot.CFrame = CFrame.new(tRoot.Position + offset)
         end
     end)
-    notif("Ã°Å¸Å’â‚¬ Annoy Loop: ON (hops around " .. (TrollGetTarget() and TrollGetTarget().Name or "target") .. ")", 2)
+    notif("–Â–Â°–Â–Â¸–ÂâÂÂ–Â¢âÂÂ–Â¬ Annoy Loop: ON (hops around " .. (TrollGetTarget() and TrollGetTarget().Name or "target") .. ")", 2)
 end
 
 local function TrollAnnoyStop()
     TrollCfg.annoy = false
     if TrollHandles and TrollHandles.annoy then pcall(function() TrollHandles.annoy:Set(false, true) end) end
     if TrollState.annoyConn then TrollState.annoyConn:Disconnect(); TrollState.annoyConn = nil end
-    notif("Ã°Å¸Å’â‚¬ Annoy Loop: OFF", 2)
+    notif("–Â–Â°–Â–Â¸–ÂâÂÂ–Â¢âÂÂ–Â¬ Annoy Loop: OFF", 2)
 end
 
--- Ã°Å¸â€˜Â» 3) GHOST MODE (client-side invisibility)
+-- –Â–Â°–Â–Â¸–Â¢âÂÂ¬–Â–Â–Â» 3) GHOST MODE (client-side invisibility)
 local function TrollInvisStart()
     TrollCfg.invis = true
     if TrollState.invisConn then TrollState.invisConn:Disconnect() end
@@ -3996,7 +3956,7 @@ local function TrollInvisStart()
         end
     end
     TrollState.invisConn = RunService.RenderStepped:Connect(hide)
-    notif("Ã°Å¸â€˜Â» Ghost Mode: ON", 2)
+    notif("–Â–Â°–Â–Â¸–Â¢âÂÂ¬–Â–Â–Â» Ghost Mode: ON", 2)
 end
 
 local function TrollInvisStop()
@@ -4010,10 +3970,10 @@ local function TrollInvisStop()
         end
     end
     TrollState.invisSaved = {}
-    notif("Ã°Å¸â€˜Â» Ghost Mode: OFF", 2)
+    notif("–Â–Â°–Â–Â¸–Â¢âÂÂ¬–Â–Â–Â» Ghost Mode: OFF", 2)
 end
 
--- Ã°Å¸Âªâ€˜ 4) SNEAKY SEAT Ã¢â‚¬â€ invisible seat + hide while seated
+-- –Â–Â°–Â–Â¸–Â–Âª–Â¢âÂÂ¬–Â 4) SNEAKY SEAT –Â–Â¢–Â¢âÂÂ–Â¬–Â¢âÂÂ¬–Â invisible seat + hide while seated
 local function TrollSneakySeatStart()
     TrollCfg.sneakySeat = true
     local root = TrollMyRoot()
@@ -4057,7 +4017,7 @@ local function TrollSneakySeatStart()
             end)
         end
     end
-    notif("Ã°Å¸Âªâ€˜ Sneaky Seat spawned Ã¢â‚¬â€ you're invisible while seated", 3)
+    notif("–Â–Â°–Â–Â¸–Â–Âª–Â¢âÂÂ¬–Â Sneaky Seat spawned –Â–Â¢–Â¢âÂÂ–Â¬–Â¢âÂÂ¬–Â you're invisible while seated", 3)
 end
 
 local function TrollSneakySeatStop()
@@ -4074,10 +4034,10 @@ local function TrollSneakySeatStop()
         end
     end
     TrollState.sneakySaved = {}
-    notif("Ã°Å¸Âªâ€˜ Sneaky Seat: OFF", 2)
+    notif("–Â–Â°–Â–Â¸–Â–Âª–Â¢âÂÂ¬–Â Sneaky Seat: OFF", 2)
 end
 
--- Ã°Å¸â€“Â± 5) CLICK-TO-TELEPORT TOOL
+-- –Â–Â°–Â–Â¸–Â¢âÂÂ¬âÂÂ–Â–Â± 5) CLICK-TO-TELEPORT TOOL
 local function TrollClickTPFire()
     if os.clock() - TrollState.clickTPLast < 0.45 then return end
     local root = TrollMyRoot()
@@ -4108,21 +4068,21 @@ local function TrollClickTPFire()
         if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
             root.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3.5)
             TrollState.clickTPLast = os.clock()
-            notif("Ã°Å¸â€“Â± Teleported to: " .. target.Name, 1)
+            notif("–Â–Â°–Â–Â¸–Â¢âÂÂ¬âÂÂ–Â–Â± Teleported to: " .. target.Name, 1)
         end
     end
 end
 
 local function TrollClickTPStart()
     TrollCfg.clickTP = true
-    notif("Ã°Å¸â€“Â± Click TP: ON Ã¢â‚¬â€ click any player to teleport", 2)
+    notif("–Â–Â°–Â–Â¸–Â¢âÂÂ¬âÂÂ–Â–Â± Click TP: ON –Â–Â¢–Â¢âÂÂ–Â¬–Â¢âÂÂ¬–Â click any player to teleport", 2)
 end
 local function TrollClickTPStop()
     TrollCfg.clickTP = false
-    notif("Ã°Å¸â€“Â± Click TP: OFF", 2)
+    notif("–Â–Â°–Â–Â¸–Â¢âÂÂ¬âÂÂ–Â–Â± Click TP: OFF", 2)
 end
 
--- Ã°Å¸â€â€¡ 6) EARRAPE AUDIO SPAM (local sounds)
+-- –Â–Â°–Â–Â¸–Â¢âÂÂ¬–Â–Â¢âÂÂ¬–Â¡ 6) EARRAPE AUDIO SPAM (local sounds)
 local function TrollEarrapeStart()
     TrollCfg.earrape = true
     local choice = TROLL_SOUNDS[TrollCfg.earrapeChoice] or TROLL_SOUNDS[1]
@@ -4157,7 +4117,7 @@ local function TrollEarrapeStart()
             end)
         end
     end)
-    notif("Ã°Å¸â€Å  Earrape: ON (" .. choice.name .. ")", 2)
+    notif("–Â–Â°–Â–Â¸–Â¢âÂÂ¬–Â–Â–Â  Earrape: ON (" .. choice.name .. ")", 2)
 end
 
 local function TrollEarrapeStop()
@@ -4168,10 +4128,10 @@ local function TrollEarrapeStop()
         pcall(function() TrollState.earrapeSound:Destroy() end)
         TrollState.earrapeSound = nil
     end
-    notif("Ã°Å¸â€Å  Earrape: OFF", 2)
+    notif("–Â–Â°–Â–Â¸–Â¢âÂÂ¬–Â–Â–Â  Earrape: OFF", 2)
 end
 
--- Ã°Å¸â€™Â¬ FAKE ADMIN / SYSTEM MESSAGES (client chat only)
+-- –Â–Â°–Â–Â¸–Â¢âÂÂ¬âÂÂ¢–Â–Â¬ FAKE ADMIN / SYSTEM MESSAGES (client chat only)
 local function FakeSystemMessage(text, color)
     pcall(function()
         StarterGui:SetCore("ChatMakeSystemMessage", {
@@ -4193,7 +4153,7 @@ local function FakeNotification(title, text, duration)
     end)
 end
 
--- Ã°Å¸Â¤â€“ FAKE ADMIN SCRIPT SPOOF Ã¢â‚¬â€ fires "admin" remotes with a fake server title
+-- –Â–Â°–Â–Â¸–Â–Â¤–Â¢âÂÂ¬âÂÂ FAKE ADMIN SCRIPT SPOOF –Â–Â¢–Â¢âÂÂ–Â¬–Â¢âÂÂ¬–Â fires "admin" remotes with a fake server title
 local function FakeAdminCommand(cmd, targetName)
     local remotes = ScanAdminRemotes()
     local fired = 0
@@ -4211,9 +4171,9 @@ local function FakeAdminCommand(cmd, targetName)
     return fired
 end
 -- =====================================================================
--- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
---  PART 3 â€” TAB CONTENTS Â· EVENTS Â· INIT
--- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+-- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
+--  PART 3 –Â¢âÂÂ¬âÂÂ TAB CONTENTS –· EVENTS –· INIT
+-- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
 
 local TrollHandles = {}
 local trollTargetOptions = {}
@@ -4252,7 +4212,7 @@ local function RefreshTrollTargetOptions()
     end
 end
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TAB SWITCHING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ TAB SWITCHING –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 function SwitchTab(key)
     CurrentTab = key
     RefreshTabVisuals()
@@ -4261,7 +4221,7 @@ function SwitchTab(key)
     UpdateRightContent()
 end
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PLAYERS TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ PLAYERS TAB –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 function CreatePlayerEntry(parent, player)
     local frame = Instance.new("Frame")
     frame.Parent = parent
@@ -4313,16 +4273,16 @@ function CreatePlayerEntry(parent, player)
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.TextYAlignment = Enum.TextYAlignment.Center
     if player == lp then
-        statusLabel.Text = "✦ You"
+        statusLabel.Text = "âÂÂ¦ You"
         statusLabel.TextColor3 = UITheme.Accent
     elseif IsPlayerDowned(player) then
-        statusLabel.Text = "ðŸ’€ Down"
+        statusLabel.Text = "–°ÂÂÂ Down"
         statusLabel.TextColor3 = UITheme.RED
     elseif IsPlayerInLobby(player) then
-        statusLabel.Text = "ðŸŸ¤ Lobby"
+        statusLabel.Text = "–Â°–Â¸–Â¸–Â¤ Lobby"
         statusLabel.TextColor3 = UITheme.DIM
     else
-        statusLabel.Text = "â—"
+        statusLabel.Text = "–Â¢âÂÂ–Â"
     end
 
     -- action buttons
@@ -4349,42 +4309,40 @@ function CreatePlayerEntry(parent, player)
             btn.AutoButtonColor = false
             Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
             btn.MouseEnter:Connect(function()
-                TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundTransparency = 0}):Play()
             end)
             btn.MouseLeave:Connect(function()
-                TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.25}):Play()
             end)
             btn.MouseButton1Click:Connect(function()
                 pcall(callback)
             end)
             return btn
         end
-        actionBtn("ðŸ”—", UITheme.CYAN, function()
+        actionBtn("🔗", UITheme.CYAN, function()
             if bringActive then
                 StopBring()
             else
                 StartBring(player.Name)
             end
         end)
-        actionBtn("🌀", UITheme.PURPLE, function()
-            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-                lp.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+        actionBtn("🌀", UITheme.PURPLE, function()
+            if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and lp and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                lp.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
                 notif("Teleported to: " .. player.Name, 2)
             else
                 notif("Player not found", 2)
             end
         end)
-        actionBtn("🦅", UITheme.GREEN, function()
+        actionBtn("🦅¦", UITheme.GREEN, function()
             GiveFlyNoClip()
         end)
-        actionBtn("👁", UITheme.AMBER, function()
+        actionBtn("👁", UITheme.AMBER, function()
             if viewing == player then
                 StopView()
             else
                 StartView(player.Name)
             end
         end)
-        actionBtn("❄", Color3.fromRGB(80, 170, 255), function()
+        actionBtn("â", Color3.fromRGB(80, 170, 255), function()
             FreezePlayer(player.Name)
         end)
     end
@@ -4430,7 +4388,7 @@ function RefreshPlayerSideTab()
     if trollTargetDD then RefreshTrollTargetOptions() end
 end
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CUFF ITEM SPAWNER / GIVER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ CUFF ITEM SPAWNER / GIVER –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 function IsCuffObject(obj)
     return (obj:IsA("Tool") or obj:IsA("Model") or obj:IsA("BasePart"))
         and string.lower(obj.Name):find("cuff", 1, true) ~= nil
@@ -4526,7 +4484,7 @@ function GiveCuffItemToPlayer(itemName, targetPlayer)
         end
     end)
     if ok then
-        notif("Gave ðŸ”— " .. itemName .. " âžœ " .. target.Name, 2)
+        notif("Gave –Â°–Â¸âÂÂâÂÂ " .. itemName .. " –Â¢–Â¾–Â " .. target.Name, 2)
     else
         notif("Could not give: " .. itemName, 2)
     end
@@ -4554,7 +4512,7 @@ function TakeCuffsFromTarget(target)
     if targetPlayer.Character then grabFrom(targetPlayer.Character) end
     grabFrom(targetPlayer:FindFirstChild("Backpack"))
     if taken > 0 then
-        notif("Took ðŸ”— " .. taken .. " cuff item(s) from " .. targetPlayer.Name, 2)
+        notif("Took –Â°–Â¸âÂÂâÂÂ " .. taken .. " cuff item(s) from " .. targetPlayer.Name, 2)
     else
         notif("No cuffs found on " .. targetPlayer.Name, 2)
     end
@@ -4574,43 +4532,43 @@ function RemoveMyCuffs()
     end
     clearFrom(lp:FindFirstChild("Backpack"))
     if lp.Character then clearFrom(lp.Character) end
-    notif(removed > 0 and ("Removed ðŸ”— " .. removed .. " cuff item(s)") or "No cuffs to remove", 2)
+    notif(removed > 0 and ("Removed –Â°–Â¸âÂÂâÂÂ " .. removed .. " cuff item(s)") or "No cuffs to remove", 2)
 end
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ END CUFF CODE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ END CUFF CODE –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SPAWNER ENGINE (generic items) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ SPAWNER ENGINE (generic items) –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 function Normalize(s)
-    return string.lower((s or ""):gsub("[Ã Ã¡Ã¢Ã¤Ã£Ã¥]", "a"):gsub("[Ã¨Ã©ÃªÃ«]", "e"):gsub("[Ã¬Ã­Ã®Ã¯]", "i"):gsub("[Ã²Ã³Ã´Ã¶Ãµ]", "o"):gsub("[Ã¹ÃºÃ»Ã¼]", "u"):gsub("Ã§", "c"):gsub("Ã±", "n"):gsub("%s+", " "))
+    return string.lower((s or ""):gsub("[–Â–Â –Â–Â¡–Â–Â¢–Â–Â¤–Â–Â£–Â–Â¥]", "a"):gsub("[–Â–Â¨–Â–Â©–Â–Âª–Â–Â«]", "e"):gsub("[–Â–Â¬–Â–Â­–Â–Â®–Â–Â¯]", "i"):gsub("[–Â–Â²–Â–Â³–Â–Â´–Â–Â¶–Â–Âµ]", "o"):gsub("[–Â–Â¹–Â–Âº–Â–Â»–Â–Â¼]", "u"):gsub("–Â–Â§", "c"):gsub("–Â–Â±", "n"):gsub("%s+", " "))
 end
 
 function ItemIcon(name)
     local n = Normalize(name)
     local map = {
-        { {"knife", "couteau", "cutter", "machete", "cleaver", "dart", "kunai", "stab"}, "ðŸ”ª" },
-        { {"gun", "pistol", "pistolet", "rifle", "fusil", "shotgun", "bazooka"}, "ðŸ”«" },
-        { {"axe", "hache", "hatchet", "hachoir"}, "ðŸª“" },
-        { {"hammer", "marteau", "mallet"}, "ðŸ”¨" },
-        { {"sword", "epee", "katana", "saber"}, "âš”ï¸" },
-        { {"bat", "batte", "club", "cricket"}, "ðŸ" },
-        { {"ring", "alliance"}, "ðŸ’" },
-        { {"dryer", "seche", "cheveux"}, "ðŸŒ¬ï¸" },
-        { {"cuff", "menotte"}, "ðŸ”—" },
-        { {"locker", "casier", "armoire"}, "ðŸ—„ï¸" },
-        { {"glove", "gant"}, "ðŸ§¤" },
-        { {"box", "boite"}, "ðŸ“¦" },
-        { {"key", "cle"}, "ðŸ—ï¸" },
-        { {"candle", "bougie"}, "ðŸ•¯ï¸" },
-        { {"soap", "savon"}, "ðŸ§¼" },
-        { {"coin", "cash", "money", "loot"}, "ðŸ’°" },
-        { {"med", "firstaid", "bandage", "kit", "soin"}, "ðŸ©¹" },
-        { {"armor", "armure", "vest", "gilet"}, "ðŸ¦º" },
+        { {"knife", "couteau", "cutter", "machete", "cleaver", "dart", "kunai", "stab"}, "–Â°–Â¸âÂÂ–Âª" },
+        { {"gun", "pistol", "pistolet", "rifle", "fusil", "shotgun", "bazooka"}, "–Â°–Â¸âÂÂ–Â«" },
+        { {"axe", "hache", "hatchet", "hachoir"}, "–Â°–Â¸–ÂªâÂÂ" },
+        { {"hammer", "marteau", "mallet"}, "–Â°–Â¸âÂÂ–Â¨" },
+        { {"sword", "epee", "katana", "saber"}, "–Â¢–Â¡âÂÂ–Â¯–Â¸–Â" },
+        { {"bat", "batte", "club", "cricket"}, "–Â°–Â¸–Â–Â" },
+        { {"ring", "alliance"}, "–Â°–Â¸âÂÂ–Â" },
+        { {"dryer", "seche", "cheveux"}, "–Â°–Â¸–Â–Â¬–Â¯–Â¸–Â" },
+        { {"cuff", "menotte"}, "–°ÂÂÂ" },
+        { {"locker", "casier", "armoire"}, "–Â°–Â¸âÂÂâÂÂ–Â¯–Â¸–Â" },
+        { {"glove", "gant"}, "–Â°–Â¸–Â§–Â¤" },
+        { {"box", "boite"}, "–Â°–Â¸âÂÂ–Â¦" },
+        { {"key", "cle"}, "–Â°–Â¸âÂÂ–Â–Â¯–Â¸–Â" },
+        { {"candle", "bougie"}, "–Â°–Â¸âÂÂ¢–Â¯–Â¯–Â¸–Â" },
+        { {"soap", "savon"}, "–Â°–Â¸–Â§–Â¼" },
+        { {"coin", "cash", "money", "loot"}, "–Â°–Â¸âÂÂ–Â°" },
+        { {"med", "firstaid", "bandage", "kit", "soin"}, "–Â°–Â¸–Â©–Â¹" },
+        { {"armor", "armure", "vest", "gilet"}, "–Â°–Â¸–Â¦–Âº" },
     }
     for _, e in ipairs(map) do
         for _, t in ipairs(e[1]) do
             if n:find(t, 1, true) then return e[2] end
         end
     end
-    return "ðŸ“¦"
+    return "–Â°–Â¸âÂÂ–Â¦"
 end
 
 function ScanItemsByKeyword(keyword)
@@ -4700,7 +4658,7 @@ function GiveSpawnItemToPlayer(itemName, targetPlayer)
         end
     end)
     if ok then
-        notif("Spawned ðŸ“¦ " .. itemName .. " âžœ " .. target.Name, 2)
+        notif("Spawned –Â°–Â¸âÂÂ–Â¦ " .. itemName .. " –Â¢–Â¾–Â " .. target.Name, 2)
     else
         notif("Could not spawn: " .. itemName, 2)
     end
@@ -4730,25 +4688,25 @@ function TakeSpawnItemsFromTarget(target, keyword)
     if targetPlayer.Character then grabFrom(targetPlayer.Character) end
     grabFrom(targetPlayer:FindFirstChild("Backpack"))
     if taken > 0 then
-        notif("Took ðŸ“¦ " .. taken .. " item(s) from " .. targetPlayer.Name, 2)
+        notif("Took –Â°–Â¸âÂÂ–Â¦ " .. taken .. " item(s) from " .. targetPlayer.Name, 2)
     else
         notif("No matching items on " .. targetPlayer.Name, 2)
     end
     return taken
 end
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ITEM CATALOG + SNAPSHOT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ ITEM CATALOG + SNAPSHOT –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 -- Live scan finds items currently in the server; the catalog fills in the
 -- known STK items so the spawner always shows a full list.
 local KNOWN_CATALOG = {
-    "SÃ¨che-Cheveux", "Seche-Cheveux", "Hair Dryer", "Hairdryer",
+    "S–Â–Â¨che-Cheveux", "Seche-Cheveux", "Hair Dryer", "Hairdryer",
     "Coupe-Cheveux", "Hair Cutter", "Rasoir", "Razor",
     "Cuffs", "Cuff", "Menottes", "Menotte", "Handcuffs", "Handcuff",
     "Couteau", "Couteaux", "Knife", "Butcher Knife", "Batte", "Bat", "Hache", "Axe",
-    "Pistolet", "Gun", "Pistol", "Marteau", "Hammer", "Ã‰pÃ©e", "Epee", "Sword", "Sabre", "Dague", "Dagger",
+    "Pistolet", "Gun", "Pistol", "Marteau", "Hammer", "–ÂâÂÂ°p–Â–Â©e", "Epee", "Sword", "Sabre", "Dague", "Dagger",
     "Casier", "Casiers", "Locker", "Lockers",
     "Gants", "Gant", "Gloves", "Boxing Gloves",
-    "Alliance", "Bougie", "Candle", "Savon", "Soap", "ClÃ©", "Cle", "Key",
+    "Alliance", "Bougie", "Candle", "Savon", "Soap", "Cl–Â–Â©", "Cle", "Key",
 }
 local spawnerItemCache = {}
 function CollectItemSnapshot()
@@ -4814,7 +4772,7 @@ function FindItemsByKeyword(keyword, includeCatalog)
     end
     return results
 end
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ END SPAWNER ENGINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ END SPAWNER ENGINE –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 
 -- =====================================================================
 --  TSUNAMI ENGINE - auto helpers + Popcorn Burst minigame (world & GUI)
@@ -5218,7 +5176,6 @@ function PopcornBurstAPI.RegisterThrow(kernelIndex)
         TweenService:Create(kernel, TweenInfo.new(0.3), {
             Color = score >= 50 and Color3.fromRGB(64, 233, 142) or (score > 0 and Color3.fromRGB(255, 190, 62) or Color3.fromRGB(255, 84, 108)),
             Transparency = 0,
-        }):Play()
     end)
     if api.throwCount >= api.roundLen then
         local gain = api.myScore > api.botScore and 10 or (api.myScore == api.botScore and 5 or 2)
@@ -5230,7 +5187,6 @@ function PopcornBurstAPI.RegisterThrow(kernelIndex)
         for _, k in ipairs(api.kernels) do
             if k and k.Parent then
                 pcall(function()
-                    TweenService:Create(k, TweenInfo.new(0.3), { Color = Color3.fromRGB(255, 200, 80) }):Play()
                 end)
             end
         end
@@ -5256,19 +5212,19 @@ function PopcornBurstAPI.Stop()
     notif("Popcorn Burst: OFF", 2)
 end
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CONTENT BUILDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ CONTENT BUILDER –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 function UpdateRightContent()
     ClearContent()
 
-    -- â•â•â•â•â•â•â•â•â•â•â• HOME â•â•â•â•â•â•â•â•â•â•â•
+    -- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â HOME –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
     if CurrentTab == "  Home" then
-        local hero = Section(ContentScroll, "Welcome back", "âŒ‚")
-        local greet = Label(hero, "sa7loul V3 â€” Premium redesign", UITheme.TEXT, 17)
+        local hero = Section(ContentScroll, "Welcome back", "–Â¢–ÂâÂÂ")
+        local greet = Label(hero, "sa7loul V3 –Â¢âÂÂ¬âÂÂ Premium redesign", UITheme.TEXT, 17)
         greet.Font = Enum.Font.GothamBold
-        Label(hero, "Survive the Killer â€¢ full feature suite â€¢ press RightShift to hide UI", UITheme.SUBTEXT, 11)
+        Label(hero, "Survive the Killer –Â¢âÂÂ¬–Â¢ full feature suite –Â¢âÂÂ¬–Â¢ press RightShift to hide UI", UITheme.SUBTEXT, 11)
         Label(hero, "", UITheme.DIM, 5)
         local statsLabel = Label(hero, "FPS: --  |  Ping: --ms  |  Players: --", UITheme.CYAN, 12)
-        UITheme:RegisterAccent(function(c) statsLabel.TextColor3 = c end)
+        -- Accent animation removed statsLabel.TextColor3 = c end)
         task.spawn(function()
             while statsLabel and statsLabel.Parent do
                 local ping = 0
@@ -5280,35 +5236,35 @@ function UpdateRightContent()
             end
         end)
 
-        local quick = Section(ContentScroll, "Quick access", "âš¡")
-        Button(quick, "â˜„ Player features", function() SwitchTab("  Player") end)
-        Button(quick, "â˜  Troll features", function() SwitchTab("  Troll") end)
-        Button(quick, "ðŸ”§ Item spawner", function() SwitchTab("  Spawner") end)
-        Button(quick, "â˜° Player list", function() SwitchTab("  Players") end)
-        Button(quick, "âš™ Settings", function() SwitchTab("  Settings") end)
+        local quick = Section(ContentScroll, "Quick access", "–Â¢–Â¡–Â¡")
+        Button(quick, "–Â¢–ÂâÂÂ Player features", function() SwitchTab("  Player") end)
+        Button(quick, "–Â¢–Â–Â  Troll features", function() SwitchTab("  Troll") end)
+        Button(quick, "–Â°–Â¸âÂÂ–Â§ Item spawner", function() SwitchTab("  Spawner") end)
+        Button(quick, "–Â¢–Â–Â° Player list", function() SwitchTab("  Players") end)
+        Button(quick, "–Â¢–Â¡âÂÂ¢ Settings", function() SwitchTab("  Settings") end)
 
-        local info = Section(ContentScroll, "Changelog V3", "ðŸ“‹")
+        local info = Section(ContentScroll, "Changelog V3", "–Â°–Â¸âÂÂâÂÂ¹")
         local changelog = {
-            "âœ¦ V3.2 â€” Design rework & stability",
-            "âœ¦ FIXED: full UI not building on some executors (load error)",
-            "âœ¦ Reordered tabs: Home Â· Player Â· Revive Â· World Â· Players",
-            "âœ¦ Minimize: small bar stays with âœš restore button",
-            "âœ¦ NEW: Spawner tab (Ring Box / SÃ¨che-cheveux / Cuffs / Lockers)",
-            "âœ¦ NEW: Jump Power, FOV, Fly+NoClip, TP to downed, random loot TP",
-            "âœ¦ NEW: TP to target Â· Copy tools Â· Attack target",
-            "âœ¦ Redesigned section cards + live status bar (FPS/Ping)",
-            "âœ¦ Keybinds on every toggle Â· RGB mode Â· search bar",
-            "âœ¦ Troll tab (fling, annoy, fake admin, ghost, earrape, click-TP)",
+            "–Â¢–Â–Â¦ V3.2 –Â¢âÂÂ¬âÂÂ Design rework & stability",
+            "–Â¢–Â–Â¦ FIXED: full UI not building on some executors (load error)",
+            "–Â¢–Â–Â¦ Reordered tabs: Home –· Player –· Revive –· World –· Players",
+            "–Â¢–Â–Â¦ Minimize: small bar stays with –Â¢–Â–Â¡ restore button",
+            "–Â¢–Â–Â¦ NEW: Spawner tab (Ring Box / S–Â–Â¨che-cheveux / Cuffs / Lockers)",
+            "–Â¢–Â–Â¦ NEW: Jump Power, FOV, Fly+NoClip, TP to downed, random loot TP",
+            "–Â¢–Â–Â¦ NEW: TP to target –· Copy tools –· Attack target",
+            "–Â¢–Â–Â¦ Redesigned section cards + live status bar (FPS/Ping)",
+            "–Â¢–Â–Â¦ Keybinds on every toggle –· RGB mode –· search bar",
+            "–Â¢–Â–Â¦ Troll tab (fling, annoy, fake admin, ghost, earrape, click-TP)",
         }
         for _, line in ipairs(changelog) do
             Label(info, line, UITheme.SUBTEXT, 11)
         end
         Label(hero, "", UITheme.DIM, 5)
-        Label(hero, "Developer: sa7loul  â€¢  Tailored for STK v2.31.0", UITheme.DIM, 10)
+        Label(hero, "Developer: sa7loul  –Â¢âÂÂ¬–Â¢  Tailored for STK v2.31.0", UITheme.DIM, 10)
 
-    -- â•â•â•â•â•â•â•â•â•â•â• PLAYER â•â•â•â•â•â•â•â•â•â•â•
+    -- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â PLAYER –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
     elseif CurrentTab == "  Player" then
-        local movement = Section(ContentScroll, "Movement", "â˜„")
+        local movement = Section(ContentScroll, "Movement", "–Â¢–ÂâÂÂ")
         local speedHandle = ToggleRow(movement, {
             text = "Speed Boost", id = "speed",
             state = settings.speedEnabled,
@@ -5382,7 +5338,7 @@ function UpdateRightContent()
                 end)
             end
         })
-        Button(movement, "â†º Reset gravity (196.2)", function()
+        Button(movement, "–Â¢âÂÂ –Âº Reset gravity (196.2)", function()
             pcall(function() workspace.Gravity = 196.2 end)
             notif("Gravity reset", 2)
         end)
@@ -5415,7 +5371,7 @@ function UpdateRightContent()
             end
         })
 
-        local bypass = Section(ContentScroll, "Bypass", "ðŸŽ«")
+        local bypass = Section(ContentScroll, "Bypass", "–Â°–Â¸–Â½–Â«")
         ToggleRow(bypass, {
             text = "Double Jump", id = "dbljump", state = settings.DoubleJump,
             onToggle = function(val)
@@ -5431,7 +5387,7 @@ function UpdateRightContent()
             end
         })
 
-        local combat = Section(ContentScroll, "Combat", "âš”")
+        local combat = Section(ContentScroll, "Combat", "–Â¢–Â¡âÂÂ")
         local killauraHandle = ToggleRow(combat, {
             text = "Kill Aura", id = "killaura", state = settings.KillAura,
             onToggle = function(val)
@@ -5453,7 +5409,7 @@ function UpdateRightContent()
             onChanged = function(val) settings.killAuraRadius = val end
         })
 
-        local powers = Section(ContentScroll, "Powers", "âš¡")
+        local powers = Section(ContentScroll, "Powers", "–Â¢–Â¡–Â¡")
         Slider(powers, {
             text = "Jump Power", min = 20, max = 160, def = 50,
             onChanged = function(val)
@@ -5475,8 +5431,8 @@ function UpdateRightContent()
         local flyLay = Instance.new("UIListLayout", flyRow)
         flyLay.FillDirection = Enum.FillDirection.Horizontal
         flyLay.Padding = UDim.new(0, 6)
-        Button(flyRow, { text = "ðŸ¦… Fly + NoClip", size = UDim2.new(0.48, 0, 0, 30), accent = true, callback = GiveFlyNoClip })
-        Button(flyRow, { text = "ðŸ”„ Reset jump", size = UDim2.new(0.48, 0, 0, 30), callback = function()
+        Button(flyRow, { text = "–Â°–Â¸–Â¦âÂÂ¦ Fly + NoClip", size = UDim2.new(0.48, 0, 0, 30), accent = true, callback = GiveFlyNoClip })
+        Button(flyRow, { text = "–Â°–Â¸âÂÂâÂÂ Reset jump", size = UDim2.new(0.48, 0, 0, 30), callback = function()
             pcall(function()
                 if lp.Character then
                     local hum = lp.Character:FindFirstChildOfClass("Humanoid")
@@ -5486,9 +5442,9 @@ function UpdateRightContent()
             end)
         end })
 
-    -- â•â•â•â•â•â•â•â•â•â•â• WORLD â•â•â•â•â•â•â•â•â•â•â•
+    -- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â WORLD –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
     elseif CurrentTab == "  World" then
-        local visuals = Section(ContentScroll, "Visuals", "âœº")
+        local visuals = Section(ContentScroll, "Visuals", "–Â¢–Â–Âº")
         ToggleRow(visuals, {
             text = "Player ESP", id = "esp", state = settings.ESP,
             onToggle = function(val)
@@ -5551,7 +5507,7 @@ function UpdateRightContent()
             end
         })
 
-        local loot = Section(ContentScroll, "Auto Loot", "ðŸ“¦")
+        local loot = Section(ContentScroll, "Auto Loot", "–Â°–Â¸âÂÂ–Â¦")
         ToggleRow(loot, {
             text = "Auto collect loot", id = "loot", state = settings.AutoLoot,
             onToggle = function(val)
@@ -5576,7 +5532,7 @@ function UpdateRightContent()
             onToggle = function(val) settings.returnHomeAfterLoot = val end
         })
 
-        local tp = Section(ContentScroll, "Teleport", "ðŸŒ€")
+        local tp = Section(ContentScroll, "Teleport", "–Â°–Â¸–ÂâÂÂ¬")
         Button(tp, "Teleport to exit", TeleportToExit)
         Button(tp, "Teleport to lobby", function()
             local lobby = workspace:FindFirstChild("_Lobby")
@@ -5592,20 +5548,20 @@ function UpdateRightContent()
             end
         end)
 
-        local camera = Section(ContentScroll, "Camera", "ðŸ“·")
+        local camera = Section(ContentScroll, "Camera", "–Â°–Â¸âÂÂ–·")
         Slider(camera, {
             text = "Field of View", min = 55, max = 120, def = 70,
             onChanged = function(val)
                 pcall(function() workspace.CurrentCamera.FieldOfView = val end)
             end
         })
-        Button(camera, "â†º Reset FOV (70)", function()
+        Button(camera, "–Â¢âÂÂ –Âº Reset FOV (70)", function()
             pcall(function() workspace.CurrentCamera.FieldOfView = 70 end)
             notif("FOV reset to 70", 2)
         end)
 
-        local quickTP = Section(ContentScroll, "Quick teleports", "ðŸ“¡")
-        Button(quickTP, "ðŸ§ Nearest downed player", function()
+        local quickTP = Section(ContentScroll, "Quick teleports", "–Â°–Â¸âÂÂ–Â¡")
+        Button(quickTP, "–Â°–Â¸–Â§–Â Nearest downed player", function()
             local best, bestDist = nil, math.huge
             for _, p in ipairs(PlayersSvc:GetPlayers()) do
                 if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and IsPlayerDowned(p) then
@@ -5620,7 +5576,7 @@ function UpdateRightContent()
                 notif("No downed players found", 2)
             end
         end)
-        Button(quickTP, "ðŸŽ² Random loot spot", function()
+        Button(quickTP, "–Â°–Â¸–Â½–Â² Random loot spot", function()
             if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then return end
             local loot = {}
             local map = nil
@@ -5641,10 +5597,10 @@ function UpdateRightContent()
             notif("TP to random loot!", 2)
         end)
 
-    -- â•â•â•â•â•â•â•â•â•â•â• PLAYERS â•â•â•â•â•â•â•â•â•â•â•
+    -- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â PLAYERS –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
     elseif CurrentTab == "  Players" then
-        playerListContainer = Section(ContentScroll, "Player list", "â˜°")
-        Note(playerListContainer, "Click a row to select Â· ðŸ”— bring Â· ðŸŒ€ TP Â· ðŸ¦… fly Â· ðŸ‘ view Â· â„ freeze")
+        playerListContainer = Section(ContentScroll, "Player list", "âÂÂ°")
+        Note(playerListContainer, "Click a row to select –· –Â°–Â¸âÂÂâÂÂ bring –· –Â°–Â¸–ÂâÂÂ¬ TP –· –Â°–Â¸–Â¦âÂÂ¦ fly –· –Â°–Â¸âÂÂ–Â view –· –Â¢–ÂâÂÂ freeze")
         local row = Instance.new("Frame")
         row.Parent = ContentScroll
         row.BackgroundTransparency = 1
@@ -5652,8 +5608,8 @@ function UpdateRightContent()
         local rowLay = Instance.new("UIListLayout", row)
         rowLay.FillDirection = Enum.FillDirection.Horizontal
         rowLay.Padding = UDim.new(0, 6)
-        Button(row, { text = "ðŸ”„ Refresh", size = UDim2.new(0.48, 0, 0, 30), callback = UpdatePlayerList })
-        Button(row, { text = "â¹ Stop all", size = UDim2.new(0.48, 0, 0, 30), callback = function()
+        Button(row, { text = "–Â°–Â¸âÂÂâÂÂ Refresh", size = UDim2.new(0.48, 0, 0, 30), callback = UpdatePlayerList })
+        Button(row, { text = "–Â¢–Â–Â¹ Stop all", size = UDim2.new(0.48, 0, 0, 30), callback = function()
             StopView()
             StopBring()
             StopBringAll()
@@ -5661,9 +5617,9 @@ function UpdateRightContent()
         end })
         UpdatePlayerList()
 
-    -- â•â•â•â•â•â•â•â•â•â•â• REVIVE â•â•â•â•â•â•â•â•â•â•â•
+    -- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â REVIVE –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
     elseif CurrentTab == "  Revive" then
-        local revive = Section(ContentScroll, "Revive modes", "âœš")
+        local revive = Section(ContentScroll, "Revive modes", "–Â¢–Â–Â¡")
         ToggleRow(revive, {
             text = "Auto revive (Safe)", id = "autoRevive", state = settings.AutoReviveLegit,
             desc = "Revives the nearest downed survivor when safe",
@@ -5677,9 +5633,9 @@ function UpdateRightContent()
                 end
             end
         })
-        Button(revive, "âš¡ Risky revive (one-time)", function() AutoReviveRiskyOneUse() end)
+        Button(revive, "–Â¢–Â¡–Â¡ Risky revive (one-time)", function() AutoReviveRiskyOneUse() end)
 
-        local selfRevive = Section(ContentScroll, "Self revive", "ðŸ”„")
+        local selfRevive = Section(ContentScroll, "Self revive", "–Â°–Â¸âÂÂâÂÂ")
         ToggleRow(selfRevive, {
             text = "Auto self revive", id = "selfRevive", state = settings.AutoReviveSelf,
             desc = "Teleports you to a survivor while downed",
@@ -5704,36 +5660,36 @@ function UpdateRightContent()
         local modeLay = Instance.new("UIListLayout", modeRow)
         modeLay.FillDirection = Enum.FillDirection.Horizontal
         modeLay.Padding = UDim.new(0, 6)
-        Button(modeRow, { text = "ðŸ”„ Random", size = UDim2.new(0.48, 0, 0, 30), callback = function()
+        Button(modeRow, { text = "–Â°–Â¸âÂÂâÂÂ Random", size = UDim2.new(0.48, 0, 0, 30), callback = function()
             settings.selfReviveMode = "Random"
             notif("Revive mode: Random", 2)
         end })
-        Button(modeRow, { text = "ðŸ“ Farthest", size = UDim2.new(0.48, 0, 0, 30), callback = function()
+        Button(modeRow, { text = "–Â°–Â¸âÂÂ–Â Farthest", size = UDim2.new(0.48, 0, 0, 30), callback = function()
             settings.selfReviveMode = "Farthest"
             notif("Revive mode: Farthest", 2)
         end })
 
-    -- â•â•â•â•â•â•â•â•â•â•â• FUN â•â•â•â•â•â•â•â•â•â•â•
+    -- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â FUN –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
     elseif CurrentTab == "  Fun" then
-        local fun = Section(ContentScroll, "Target", "ðŸŽ¯")
+        local fun = Section(ContentScroll, "Target", "–Â°–Â¸–Â½–Â¯")
         selectedPlayerLabel = Instance.new("TextButton")
         selectedPlayerLabel.Parent = fun
         selectedPlayerLabel.BorderSizePixel = 0
         selectedPlayerLabel.Size = UDim2.new(1, 0, 0, 32)
         selectedPlayerLabel.Font = Enum.Font.GothamBold
-        selectedPlayerLabel.Text = "ðŸ‘¤ Player: None"
+        selectedPlayerLabel.Text = "–Â°–Â¸âÂÂ–Â¤ Player: None"
         selectedPlayerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         selectedPlayerLabel.TextSize = 12
         selectedPlayerLabel.BackgroundColor3 = UITheme.Accent
         selectedPlayerLabel.BackgroundTransparency = 0.2
         selectedPlayerLabel.AutoButtonColor = false
         Instance.new("UICorner", selectedPlayerLabel).CornerRadius = UDim.new(0, 8)
-        UITheme:RegisterAccent(function(c) selectedPlayerLabel.BackgroundColor3 = c end)
+        -- Accent animation removed selectedPlayerLabel.BackgroundColor3 = c end)
         selectedPlayerLabel.MouseButton1Click:Connect(CyclePlayer)
         AddPressAnim(selectedPlayerLabel)
         if not GetSelectedPlayer() then CyclePlayer() end
 
-        local actions = Section(ContentScroll, "Actions", "âœ¿")
+        local actions = Section(ContentScroll, "Actions", "–Â¢–Â–Â¿")
         local row1 = Instance.new("Frame")
         row1.Parent = actions
         row1.BackgroundTransparency = 1
@@ -5741,7 +5697,7 @@ function UpdateRightContent()
         local lay1 = Instance.new("UIListLayout", row1)
         lay1.FillDirection = Enum.FillDirection.Horizontal
         lay1.Padding = UDim.new(0, 6)
-        Button(row1, { text = "ðŸš€ Fling", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row1, { text = "–Â°–Â¸–Â¡âÂÂ¬ Fling", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if not target then notif("Select a player first", 2) return end
             if FlingActive then notif("Fling already active", 2) return end
@@ -5763,7 +5719,7 @@ function UpdateRightContent()
                 FlingActive = false
             end)()
         end })
-        Button(row1, { text = "â¹ Stop fling", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row1, { text = "–Â¢–Â–Â¹ Stop fling", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             FlingActive = false
             if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
                 local thrust = lp.Character.HumanoidRootPart:FindFirstChild("YeetForce")
@@ -5779,11 +5735,11 @@ function UpdateRightContent()
         local lay2 = Instance.new("UIListLayout", row2)
         lay2.FillDirection = Enum.FillDirection.Horizontal
         lay2.Padding = UDim.new(0, 6)
-        Button(row2, { text = "â„ Freeze", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row2, { text = "–Â¢–ÂâÂÂ Freeze", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if target then FreezePlayer(target.Name) else notif("Select a player first", 2) end
         end })
-        Button(row2, { text = "ðŸ”¥ Unfreeze", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row2, { text = "–Â°–Â¸âÂÂ–Â¥ Unfreeze", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if target then ThawPlayer(target.Name) else notif("Select a player first", 2) end
         end })
@@ -5795,11 +5751,11 @@ function UpdateRightContent()
         local lay3 = Instance.new("UIListLayout", row3)
         lay3.FillDirection = Enum.FillDirection.Horizontal
         lay3.Padding = UDim.new(0, 6)
-        Button(row3, { text = "ðŸ‘ View", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row3, { text = "–Â°–Â¸âÂÂ–Â View", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if target then StartView(target.Name) else notif("Select a player first", 2) end
         end })
-        Button(row3, { text = "â¹ Stop view", size = UDim2.new(0.48, 0, 0, 32), callback = StopView })
+        Button(row3, { text = "–Â¢–Â–Â¹ Stop view", size = UDim2.new(0.48, 0, 0, 32), callback = StopView })
 
         local row4 = Instance.new("Frame")
         row4.Parent = actions
@@ -5808,11 +5764,11 @@ function UpdateRightContent()
         local lay4 = Instance.new("UIListLayout", row4)
         lay4.FillDirection = Enum.FillDirection.Horizontal
         lay4.Padding = UDim.new(0, 6)
-        Button(row4, { text = "ðŸ”— Bring", size = UDim2.new(0.48, 0, 0, 32), callback = function()
+        Button(row4, { text = "–Â°–Â¸âÂÂâÂÂ Bring", size = UDim2.new(0.48, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if target then StartBring(target.Name) else notif("Select a player first", 2) end
         end })
-        Button(row4, { text = "â¹ Stop bring", size = UDim2.new(0.48, 0, 0, 32), callback = StopBring })
+        Button(row4, { text = "–Â¢–Â–Â¹ Stop bring", size = UDim2.new(0.48, 0, 0, 32), callback = StopBring })
 
         local row5 = Instance.new("Frame")
         row5.Parent = actions
@@ -5821,9 +5777,9 @@ function UpdateRightContent()
         local lay5 = Instance.new("UIListLayout", row5)
         lay5.FillDirection = Enum.FillDirection.Horizontal
         lay5.Padding = UDim.new(0, 6)
-        Button(row5, { text = "ðŸ”— Bring All", size = UDim2.new(0.31, 0, 0, 32), callback = StartBringAll })
-        Button(row5, { text = "ðŸ”™ Unbring", size = UDim2.new(0.31, 0, 0, 32), callback = UnbringSelected })
-        Button(row5, { text = "â¹ Stop", size = UDim2.new(0.31, 0, 0, 32), callback = StopBringAll })
+        Button(row5, { text = "–Â°–Â¸âÂÂâÂÂ Bring All", size = UDim2.new(0.31, 0, 0, 32), callback = StartBringAll })
+        Button(row5, { text = "–Â°–Â¸âÂÂâÂÂ¢ Unbring", size = UDim2.new(0.31, 0, 0, 32), callback = UnbringSelected })
+        Button(row5, { text = "–Â¢–Â–Â¹ Stop", size = UDim2.new(0.31, 0, 0, 32), callback = StopBringAll })
 
         local row6 = Instance.new("Frame")
         row6.Parent = actions
@@ -5832,7 +5788,7 @@ function UpdateRightContent()
         local lay6 = Instance.new("UIListLayout", row6)
         lay6.FillDirection = Enum.FillDirection.Horizontal
         lay6.Padding = UDim.new(0, 6)
-        Button(row6, { text = "ðŸŒ€ TP to target", size = UDim2.new(0.31, 0, 0, 32), callback = function()
+        Button(row6, { text = "–Â°–Â¸–ÂâÂÂ¬ TP to target", size = UDim2.new(0.31, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if not target then notif("Select a player first", 2) return end
             if target.Character and target.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
@@ -5842,7 +5798,7 @@ function UpdateRightContent()
                 notif("Player not found", 2)
             end
         end })
-        Button(row6, { text = "ðŸªž Copy tools", size = UDim2.new(0.31, 0, 0, 32), callback = function()
+        Button(row6, { text = "–Â°–Â¸–Âª–Â¾ Copy tools", size = UDim2.new(0.31, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if not target then notif("Select a player first", 2) return end
             local copied = 0
@@ -5869,7 +5825,7 @@ function UpdateRightContent()
             end
             notif(copied > 0 and ("Copied " .. copied .. " tool(s) from " .. target.Name) or "No tools found on " .. target.Name, 2)
         end })
-        Button(row6, { text = "âš¡ Attack target", size = UDim2.new(0.31, 0, 0, 32), callback = function()
+        Button(row6, { text = "–Â¢–Â¡–Â¡ Attack target", size = UDim2.new(0.31, 0, 0, 32), callback = function()
             local target = GetSelectedPlayer()
             if not target then notif("Select a player first", 2) return end
             if target.Character and target.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
@@ -5893,20 +5849,20 @@ function UpdateRightContent()
         local lay7 = Instance.new("UIListLayout", row7)
         lay7.FillDirection = Enum.FillDirection.Horizontal
         lay7.Padding = UDim.new(0, 6)
-        Button(row7, { text = "ðŸ¦… Admin fly/no-clip (remotes)", size = UDim2.new(1, 0, 0, 32), accent = true, callback = function()
+        Button(row7, { text = "–Â°–Â¸–Â¦âÂÂ¦ Admin fly/no-clip (remotes)", size = UDim2.new(1, 0, 0, 32), accent = true, callback = function()
             local target = GetSelectedPlayer()
             if not target then
                 notif("Select a player first", 2)
                 return
             end
             if TryFireAdminRemote(target) then
-                notif("Admin remotes fired â†’ " .. target.Name, 2)
+                notif("Admin remotes fired –Â¢âÂÂ âÂÂ " .. target.Name, 2)
             else
                 notif("No admin remotes found", 3)
             end
         end })
 
-        local spinSection = Section(ContentScroll, "Party", "ðŸŒ€")
+        local spinSection = Section(ContentScroll, "Party", "–Â°–Â¸–ÂâÂÂ¬")
         local spinHandle = ToggleRow(spinSection, {
             text = "Spin", id = "spin", state = spinActive,
             onToggle = function(val)
@@ -5933,8 +5889,8 @@ function UpdateRightContent()
             onChanged = function(val) flingForce = val end
         })
 
-        -- ðŸ”— CUFF ITEMS â€” spawner / giver
-        local cuffSection = Section(ContentScroll, "Cuff Items â€” Spawn / Give / Take", "ðŸ”—")
+        -- –Â°–Â¸âÂÂâÂÂ CUFF ITEMS –Â¢âÂÂ¬âÂÂ spawner / giver
+        local cuffSection = Section(ContentScroll, "Cuff Items –Â¢âÂÂ¬âÂÂ Spawn / Give / Take", "–°ÂÂÂ")
         local cuffStatus = Label(cuffSection, "Scanning for cuffs...", UITheme.SUBTEXT, 11)
         local cuffPlayerOptions = {}
         for i = #cuffPlayerOptions, 1, -1 do cuffPlayerOptions[i] = nil end
@@ -5968,11 +5924,11 @@ function UpdateRightContent()
             end
             local names = GetAllCuffItemNames()
             if #names == 0 then
-                cuffStatus.Text = "ðŸ”— No cuffs found â€” start a round & rescan"
+                cuffStatus.Text = "–Â°–Â¸âÂÂâÂÂ No cuffs found –Â¢âÂÂ¬âÂÂ start a round & rescan"
                 Label(cuffRows, "No cuff items in the game right now", UITheme.DIM, 11)
                 return
             end
-            cuffStatus.Text = "ðŸ”— Found " .. #names .. " cuff item(s)"
+            cuffStatus.Text = "–Â°–Â¸âÂÂâÂÂ Found " .. #names .. " cuff item(s)"
             local selTarget = GetSelectedPlayer()
             for _, itemName in ipairs(names) do
                 local row = Instance.new("Frame")
@@ -5998,17 +5954,17 @@ function UpdateRightContent()
                 nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 
                 Button(row, {
-                    text = "ðŸ›  Spawn me", size = UDim2.new(0.3, 0, 0, 28), accent = true,
+                    text = "–Â°–Â¸âÂÂº–Â  Spawn me", size = UDim2.new(0.3, 0, 0, 28), accent = true,
                     callback = function() SpawnCuffItemForMe(itemName) end
                 })
 
                 Button(row, {
-                    text = "Give âžœ " .. (selTarget and selTarget.Name or "None"),
+                    text = "Give –Â¢–Â¾–Â " .. (selTarget and selTarget.Name or "None"),
                     size = UDim2.new(0.3, 0, 0, 28),
                     callback = function()
                         local target = GetSelectedPlayer()
                         if not target then
-                            notif("Select a player first (ðŸ‘¤ Player button)", 2)
+                            notif("Select a player first (–Â°–Â¸âÂÂ–Â¤ Player button)", 2)
                         else
                             GiveCuffItemToPlayer(itemName, target)
                         end
@@ -6017,10 +5973,10 @@ function UpdateRightContent()
             end
         end
 
-        Button(cuffSection, "ðŸ” Rescan cuffs", RebuildCuffList)
+        Button(cuffSection, "–Â°–Â¸âÂÂ–Â Rescan cuffs", RebuildCuffList)
 
         local cuffTargetBox = TextBox(cuffSection, { placeholder = "Give to player name (empty = selected)" })
-        Button(cuffSection, "ðŸŽ Give every cuff to target", function()
+        Button(cuffSection, "–Â°–Â¸–Â½–Â Give every cuff to target", function()
             local name = cuffTargetBox.Text ~= "" and cuffTargetBox.Text or nil
             local target = name and GetPlayerByName(name) or GetSelectedPlayer() or lp
             if not target then
@@ -6036,19 +5992,19 @@ function UpdateRightContent()
             for _, itemName in ipairs(names) do
                 if GiveCuffItemToPlayer(itemName, target) then given = given + 1 end
             end
-            notif("Gave ðŸ”— " .. given .. " cuff item(s) âžœ " .. target.Name, 2)
+            notif("Gave –Â°–Â¸âÂÂâÂÂ " .. given .. " cuff item(s) –Â¢–Â¾–Â " .. target.Name, 2)
         end)
 
-        Button(cuffSection, "ðŸ›  Take cuffs from selected player", function()
+        Button(cuffSection, "–Â°–Â¸âÂÂº–Â  Take cuffs from selected player", function()
             TakeCuffsFromTarget(GetSelectedPlayer())
         end)
 
-        Button(cuffSection, "ðŸ—‘ Remove my cuffs", RemoveMyCuffs)
+        Button(cuffSection, "–Â°–Â¸âÂÂâÂÂ Remove my cuffs", RemoveMyCuffs)
 
-        Note(cuffSection, "Auto-detects every item named with 'cuff' (backpacks, hands, map). Pick the target with âŒ‚ Home's player chip or the ðŸ‘¤ button in Actions.")
+        Note(cuffSection, "Auto-detects every item named with 'cuff' (backpacks, hands, map). Pick the target with –Â¢–ÂâÂÂ Home's player chip or the –Â°–Â¸âÂÂ–Â¤ button in Actions.")
         task.defer(RebuildCuffList)
 
-    -- â•â•â•â•â•â•â•â•â•â•â• SPAWNER â•â•â•â•â•â•â•â•â•â•â•
+    -- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â SPAWNER –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
     elseif CurrentTab == "  Spawner" then
         local function MakeTargetChip(section)
             local chip = Instance.new("TextButton")
@@ -6056,17 +6012,17 @@ function UpdateRightContent()
             chip.BorderSizePixel = 0
             chip.Size = UDim2.new(1, 0, 0, 32)
             chip.Font = Enum.Font.GothamBold
-            chip.Text = "ðŸ‘¤ Give to: " .. (GetSelectedPlayer() and GetSelectedPlayer().Name or "None (click me)")
+            chip.Text = "–Â°–Â¸âÂÂ–Â¤ Give to: " .. (GetSelectedPlayer() and GetSelectedPlayer().Name or "None (click me)")
             chip.TextColor3 = Color3.fromRGB(255, 255, 255)
             chip.TextSize = 12
             chip.AutoButtonColor = false
             chip.BackgroundColor3 = UITheme.Accent
             chip.BackgroundTransparency = 0.2
             Instance.new("UICorner", chip).CornerRadius = UDim.new(0, 8)
-            UITheme:RegisterAccent(function(c) chip.BackgroundColor3 = c end)
+            -- Accent animation removed chip.BackgroundColor3 = c end)
             chip.MouseButton1Click:Connect(function()
                 CyclePlayer()
-                chip.Text = "ðŸ‘¤ Give to: " .. (GetSelectedPlayer() and GetSelectedPlayer().Name or "None")
+                chip.Text = "–Â°–Â¸âÂÂ–Â¤ Give to: " .. (GetSelectedPlayer() and GetSelectedPlayer().Name or "None")
             end)
             AddPressAnim(chip)
             return chip
@@ -6100,11 +6056,11 @@ function UpdateRightContent()
                 callback = function() SpawnSpawnItemForMe(itemName) end
             })
             Button(row, {
-                text = "Give âžœ", size = UDim2.new(0.3, 0, 0, 28),
+                text = "Give –Â¢–Â¾–Â", size = UDim2.new(0.3, 0, 0, 28),
                 callback = function()
                     local target = GetSelectedPlayer()
                     if not target then
-                        notif("Pick a target first (ðŸ‘¤ chip)", 2)
+                        notif("Pick a target first (–Â°–Â¸âÂÂ–Â¤ chip)", 2)
                     else
                         GiveSpawnItemToPlayer(itemName, target)
                     end
@@ -6130,7 +6086,7 @@ function UpdateRightContent()
                 end
                 local names = FindItemsByKeyword(keyword, true)
                 if #names == 0 then
-                    status.Text = title .. " â€” nothing found (start a round & rescan)"
+                    status.Text = title .. " –Â¢âÂÂ¬âÂÂ nothing found (start a round & rescan)"
                     Label(rows, "No items found for: " .. keyword, UITheme.DIM, 11)
                     return
                 end
@@ -6139,12 +6095,12 @@ function UpdateRightContent()
                     MakeItemRow(rows, itemName)
                 end
             end
-            Button(section, "ðŸ” Rescan", function() CollectItemSnapshot(); rebuild() end)
+            Button(section, "–Â°–Â¸âÂÂ–Â Rescan", function() CollectItemSnapshot(); rebuild() end)
             task.defer(rebuild)
             return section
         end
 
-        local targetChipSection = Section(ContentScroll, "Target", "ðŸ‘¤")
+        local targetChipSection = Section(ContentScroll, "Target", "–Â°–Â¸âÂÂ–Â¤")
         local targetChip = MakeTargetChip(targetChipSection)
         local spawnerPlayerOptions = {}
         for i = #spawnerPlayerOptions, 1, -1 do spawnerPlayerOptions[i] = nil end
@@ -6158,23 +6114,23 @@ function UpdateRightContent()
             onChanged = function(value)
                 SetSelectedPlayer(value)
                 if targetChip then
-                    targetChip.Text = "ðŸ‘¤ Give to: " .. (value and value.Name or "None (click me)")
+                    targetChip.Text = "–Â°–Â¸âÂÂ–Â¤ Give to: " .. (value and value.Name or "None (click me)")
                 end
                 notif("Give target: " .. (value and value.Name or "None"), 2)
             end
         })
-        Note(targetChipSection, "Pick from the list â€” scroll it if there are many players")
+        Note(targetChipSection, "Pick from the list –Â¢âÂÂ¬âÂÂ scroll it if there are many players")
 
         CollectItemSnapshot()
 
-        BuildSpawnerCategory("SÃ¨che-cheveux (Hair Dryer)", "ðŸŒ¬", "dryer|seche|cheveux|hair")
-        BuildSpawnerCategory("Coupe-cheveux (Hair Cutter)", "âœ‚", "cutter|coupe|rasoir|razor")
-        BuildSpawnerCategory("Cuffs", "ðŸ”—", "cuff|menotte")
-        BuildSpawnerCategory("Lockers", "ðŸ—„", "locker|casier")
-        BuildSpawnerCategory("Gloves", "ðŸ§¤", "glove|gant")
-        BuildSpawnerCategory("Weapons", "ðŸ—¡", "knife|cutter|couteau|couteaux|axe|hache|hatchet|bat|batte|hammer|marteau|sword|epee|blade|gun|pistol|pistolet|rifle|fusil|shotgun|machete|machette|cleaver|wrench|dart|kunai|katana|weapon|arme|dague|sabre")
+        BuildSpawnerCategory("S–Â–Â¨che-cheveux (Hair Dryer)", "–Â°–Â¸–Â–Â¬", "dryer|seche|cheveux|hair")
+        BuildSpawnerCategory("Coupe-cheveux (Hair Cutter)", "–Â¢–ÂâÂÂ", "cutter|coupe|rasoir|razor")
+        BuildSpawnerCategory("Cuffs", "–°ÂÂÂ", "cuff|menotte")
+        BuildSpawnerCategory("Lockers", "–Â°–Â¸âÂÂâÂÂ", "locker|casier")
+        BuildSpawnerCategory("Gloves", "–Â°–Â¸–Â§–Â¤", "glove|gant")
+        BuildSpawnerCategory("Weapons", "–Â°–Â¸âÂÂ–Â¡", "knife|cutter|couteau|couteaux|axe|hache|hatchet|bat|batte|hammer|marteau|sword|epee|blade|gun|pistol|pistolet|rifle|fusil|shotgun|machete|machette|cleaver|wrench|dart|kunai|katana|weapon|arme|dague|sabre")
 
-        local customSection = Section(ContentScroll, "Custom search", "ðŸ”Ž")
+        local customSection = Section(ContentScroll, "Custom search", "–Â°–Â¸âÂÂ–Â½")
         local customBox = TextBox(customSection, { placeholder = "Item keyword: e.g. key, candle, soap ..." })
         local customRows = Instance.new("Frame")
         customRows.Parent = customSection
@@ -6203,19 +6159,19 @@ function UpdateRightContent()
                 MakeItemRow(customRows, itemName)
             end
         end
-        Button(customSection, "ðŸ” Search", RebuildCustomBox)
+        Button(customSection, "–Â°–Â¸âÂÂ–Â Search", RebuildCustomBox)
 
-        local takeSection = Section(ContentScroll, "Take from target", "ðŸ› ")
+        local takeSection = Section(ContentScroll, "Take from target", "–Â°–Â¸âÂÂº–Â ")
         local takeBox = TextBox(takeSection, { placeholder = "Take keyword (empty = cuff), from selected player" })
-        Button(takeSection, "ðŸ›  Take items", function()
+        Button(takeSection, "–Â°–Â¸âÂÂº–Â  Take items", function()
             TakeSpawnItemsFromTarget(GetSelectedPlayer(), takeBox.Text ~= "" and takeBox.Text or "cuff")
         end)
 
-        Note(ContentScroll, "Spawner clones the real in-game item for you or the chosen player. The ðŸ‘¤ chip above sets the give target.")
+        Note(ContentScroll, "Spawner clones the real in-game item for you or the chosen player. The –Â°–Â¸âÂÂ–Â¤ chip above sets the give target.")
 
-    -- â•â•â•â•â•â•â•â•â•â•â• TROLL â•â•â•â•â•â•â•â•â•â•â•
+    -- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â TROLL –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
     elseif CurrentTab == "  Troll" then
-        local targetSection = Section(ContentScroll, "Troll Target", "ðŸŽ¯")
+        local targetSection = Section(ContentScroll, "Troll Target", "–Â°–Â¸–Â½–Â¯")
         trollTargetDD = Dropdown(targetSection, {
             text = "Target",
             options = trollTargetOptions,
@@ -6226,9 +6182,9 @@ function UpdateRightContent()
             end
         })
         RefreshTrollTargetOptions()
-        Button(targetSection, "ðŸ”„ Refresh players", RefreshTrollTargetOptions)
+        Button(targetSection, "–Â°–Â¸âÂÂâÂÂ Refresh players", RefreshTrollTargetOptions)
 
-        local flingSection = Section(ContentScroll, "Annoy & Fling", "ðŸš€")
+        local flingSection = Section(ContentScroll, "Annoy & Fling", "–Â°–Â¸–Â¡âÂÂ¬")
         TrollHandles.fling = ToggleRow(flingSection, {
             text = "Troll Fling", id = "trollfling", state = TrollCfg.fling,
             desc = "Physics yeet: angular velocity + random force on target",
@@ -6243,33 +6199,33 @@ function UpdateRightContent()
                 if val then TrollAnnoyStart() else TrollAnnoyStop() end
             end
         })
-        Button(flingSection, "â¹ Stop all troll actions", function()
+        Button(flingSection, "–Â¢–Â–Â¹ Stop all troll actions", function()
             TrollFlingStop()
             TrollAnnoyStop()
             notif("Troll actions stopped", 2)
         end)
 
-        local chatSection = Section(ContentScroll, "Fake Admin / System Chat", "ðŸ’¬")
+        local chatSection = Section(ContentScroll, "Fake Admin / System Chat", "–Â°–Â¸âÂÂ–Â¬")
         local function fakeTargetName()
             local t = TrollGetTarget()
             return t and t.Name or "Player"
         end
-        Button(chatSection, "âš  Fake ban notice", function()
+        Button(chatSection, "–Â¢–Â¡–Â  Fake ban notice", function()
             FakeSystemMessage("[SYSTEM] " .. fakeTargetName() .. " has been banned by an administrator.", Color3.fromRGB(255, 90, 90))
             FakeNotification("Administrator", fakeTargetName() .. " was banned. Reason: Toxic Behavior", 4)
         end)
-        Button(chatSection, "ðŸ›‘ Fake kick notice", function()
+        Button(chatSection, "–Â°–Â¸âÂÂºâÂÂ Fake kick notice", function()
             FakeSystemMessage("[SYSTEM] " .. fakeTargetName() .. " was kicked from the server.", Color3.fromRGB(255, 170, 70))
         end)
-        Button(chatSection, "â³ Fake server restart", function()
+        Button(chatSection, "–Â¢–Â–Â³ Fake server restart", function()
             FakeSystemMessage("[SYSTEM] Server restarting in 10 seconds. Reason: scheduled maintenance.", Color3.fromRGB(255, 120, 60))
             FakeNotification("Server", "Restarting in 10s...", 5)
         end)
-        Button(chatSection, "ðŸ—£ Fake admin join", function()
-            FakeSystemMessage("ðŸ”§ sa7loul joined the server. Commands available: !fly !noclip !ban", UITheme.CYAN)
+        Button(chatSection, "–Â°–Â¸âÂÂ–Â£ Fake admin join", function()
+            FakeSystemMessage("–Â°–Â¸âÂÂ–Â§ sa7loul joined the server. Commands available: !fly !noclip !ban", UITheme.CYAN)
         end)
         local fakeBox = TextBox(chatSection, { placeholder = "Custom fake system message..." })
-        Button(chatSection, "ðŸ“¨ Send fake message", function()
+        Button(chatSection, "–Â°–Â¸âÂÂ–Â¨ Send fake message", function()
             if fakeBox.Text ~= "" then
                 FakeSystemMessage(fakeBox.Text, Color3.fromRGB(255, 255, 255))
                 fakeBox.Text = ""
@@ -6279,9 +6235,9 @@ function UpdateRightContent()
         end)
         Note(chatSection, "Messages are client-side (only you see them)")
 
-        local adminRemoteSection = Section(ContentScroll, "Fake Admin (remotes)", "ðŸ–¥")
+        local adminRemoteSection = Section(ContentScroll, "Fake Admin (remotes)", "–Â°–Â¸âÂÂ–Â¥")
         local adminCmdBox = TextBox(adminRemoteSection, { placeholder = "Command: fly / noclip / ban ... (empty = raw fire)" })
-        Button(adminRemoteSection, "ðŸ“¡ Fire to troll target", function()
+        Button(adminRemoteSection, "–Â°–Â¸âÂÂ–Â¡ Fire to troll target", function()
             local t = TrollGetTarget()
             if not t then
                 notif("Set a troll target first", 2)
@@ -6289,11 +6245,11 @@ function UpdateRightContent()
             end
             local cmd = adminCmdBox.Text ~= "" and adminCmdBox.Text or nil
             local fired = FakeAdminCommand(cmd, t.Name)
-            notif(cmd and ("Fired '" .. cmd .. "' â†’ " .. t.Name .. " (" .. fired .. " ok)") or ("Raw fire â†’ " .. t.Name .. " (" .. fired .. " ok)"), 3)
+            notif(cmd and ("Fired '" .. cmd .. "' –Â¢âÂÂ âÂÂ " .. t.Name .. " (" .. fired .. " ok)") or ("Raw fire –Â¢âÂÂ âÂÂ " .. t.Name .. " (" .. fired .. " ok)"), 3)
         end)
         Note(adminRemoteSection, "Sends the command through every admin-looking remote it finds")
 
-        local ghostSection = Section(ContentScroll, "Ghost & Tools", "ðŸ‘»")
+        local ghostSection = Section(ContentScroll, "Ghost & Tools", "–Â°–Â¸âÂÂ–Â»")
         ToggleRow(ghostSection, {
             text = "Ghost Mode", id = "ghost", state = TrollCfg.invis,
             desc = "Client-side invisibility for your character",
@@ -6303,7 +6259,7 @@ function UpdateRightContent()
         })
         ToggleRow(ghostSection, {
             text = "Sneaky Seat", id = "sneakyseat", state = TrollCfg.sneakySeat,
-            desc = "Invisible seat â€” hidden while seated",
+            desc = "Invisible seat –Â¢âÂÂ¬âÂÂ hidden while seated",
             onToggle = function(val)
                 if val then TrollSneakySeatStart() else TrollSneakySeatStop() end
             end
@@ -6315,7 +6271,7 @@ function UpdateRightContent()
                 if val then TrollClickTPStart() else TrollClickTPStop() end
             end
         })
-        Button(ghostSection, "ðŸ”— Bring Target", function()
+        Button(ghostSection, "–Â°–Â¸âÂÂâÂÂ Bring Target", function()
             local t = TrollGetTarget()
             if t then
                 StartBring(t.Name)
@@ -6324,7 +6280,7 @@ function UpdateRightContent()
             end
         end)
 
-        local screenSection = Section(ContentScroll, "Screen Chaos", "ðŸ’¥")
+        local screenSection = Section(ContentScroll, "Screen Chaos", "–Â°–Â¸âÂÂ–Â¥")
         ToggleRow(screenSection, {
             text = "Blur Pulse", id = "blurfx", state = ScreenFx.blurOn,
             desc = "Extreme pulsing blur",
@@ -6345,9 +6301,9 @@ function UpdateRightContent()
             desc = "Constant camera shaking",
             onToggle = function(val) SfxSet("shakeOn", val) end
         })
-        Button(screenSection, "ðŸ˜± JUMPSCARE!", JumpScareBurst)
+        Button(screenSection, "–Â°–Â¸–Â–Â± JUMPSCARE!", JumpScareBurst)
 
-        local audioSection = Section(ContentScroll, "Earrape Audio", "ðŸ”Š")
+        local audioSection = Section(ContentScroll, "Earrape Audio", "–Â°–Â¸âÂÂ–Â ")
         local earrapeDD = Dropdown(audioSection, {
             text = "Sound",
             options = (function()
@@ -6384,65 +6340,65 @@ function UpdateRightContent()
         })
         Note(audioSection, "All effects are client-side & local (FE-safe)")
 
-    -- â•â•â•â•â•â•â•â•â•â•â• BAN â•â•â•â•â•â•â•â•â•â•â•
+    -- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â BAN –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
     elseif CurrentTab == "  Ban" then
-        local banSection = Section(ContentScroll, "Ban Manager", "â›”")
-        Button(banSection, "ðŸ“œ Fetch ban list", FetchBanList)
-        Button(banSection, "ðŸ”“ Unban all (list)", UnbanAllFromList)
-        Button(banSection, "ðŸ” Scan storage", StorageScan)
-        Button(banSection, "ðŸ’¥ Blast unban (all remotes)", BlastUnban)
+        local banSection = Section(ContentScroll, "Ban Manager", "–Â¢âÂÂºâÂÂ")
+        Button(banSection, "–Â°–Â¸âÂÂ–Â Fetch ban list", FetchBanList)
+        Button(banSection, "–Â°–Â¸âÂÂâÂÂ Unban all (list)", UnbanAllFromList)
+        Button(banSection, "–Â°–Â¸âÂÂ–Â Scan storage", StorageScan)
+        Button(banSection, "–Â°–Â¸âÂÂ–Â¥ Blast unban (all remotes)", BlastUnban)
         banBox = TextBox(banSection, { placeholder = "Unban by name / ID" })
-        Button(banSection, "ðŸ”“ Unban this", function() DoUnban(banBox.Text) end)
+        Button(banSection, "–Â°–Â¸âÂÂâÂÂ Unban this", function() DoUnban(banBox.Text) end)
         ToggleRow(banSection, {
-            text = "âš¡ Auto-unban on join", id = "autounban", state = autoUnbanOn,
+            text = "–Â¢–Â¡–Â¡ Auto-unban on join", id = "autounban", state = autoUnbanOn,
             keybind = false,
             onToggle = function(val) autoUnbanOn = val end
         })
         ToggleRow(banSection, {
-            text = "ðŸ”„ Auto rejoin on kick", id = "autorejoin", state = autoRejoinOn,
+            text = "–Â°–Â¸âÂÂâÂÂ Auto rejoin on kick", id = "autorejoin", state = autoRejoinOn,
             keybind = false,
             onToggle = function(val) autoRejoinOn = val end
         })
         customBox = TextBox(banSection, { placeholder = "Fire custom: RemoteName,arg1,arg2" })
-        Button(banSection, "ðŸ”¥ Fire custom remote", FireCustomRemote)
+        Button(banSection, "–Â°–Â¸âÂÂ–Â¥ Fire custom remote", FireCustomRemote)
 
-        banListContainer = Section(ContentScroll, "Banned players", "ðŸ“‹")
+        banListContainer = Section(ContentScroll, "Banned players", "–Â°–Â¸âÂÂâÂÂ¹")
         if #bannedCache > 0 then
             for _, name in ipairs(bannedCache) do
-                Button(banListContainer, "ðŸ”“ " .. name, function() DoUnban(name) end)
+                Button(banListContainer, "–Â°–Â¸âÂÂâÂÂ " .. name, function() DoUnban(name) end)
             end
         else
-            Label(banListContainer, "List empty â€” press Fetch", UITheme.DIM, 11)
+            Label(banListContainer, "List empty –Â¢âÂÂ¬âÂÂ press Fetch", UITheme.DIM, 11)
         end
         if #storageDump > 0 then
-            local storageSection = Section(ContentScroll, "Storage scan", "ðŸ—‚")
+            local storageSection = Section(ContentScroll, "Storage scan", "–Â°–Â¸âÂÂâÂÂ")
             for _, line in ipairs(storageDump) do
                 Label(storageSection, line, UITheme.SUBTEXT, 10)
             end
         end
         Note(ContentScroll, "You must be inside the server to fire bans (rejoin before kick)")
 
-    -- â•â•â•â•â•â•â•â•â•â•â• TSUNAMI â•â•â•â•â•â•â•â•â•â•â•
+    -- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â TSUNAMI –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
     elseif CurrentTab == "  Tsunami" then
-        local popcornMain = Section(ContentScroll, "Popcorn Burst", "â—‰")
-        local stLabel = Label(popcornMain, "ðŸ¿ Minigame: OFF", UITheme.CYAN, 12)
+        local popcornMain = Section(ContentScroll, "Popcorn Burst", "–Â¢âÂÂâÂÂ°")
+        local stLabel = Label(popcornMain, "–Â°–Â¸–Â–Â¿ Minigame: OFF", UITheme.CYAN, 12)
         PopcornBurstAPI.SetStatusLabel(stLabel)
         PopcornBurstAPI.UpdateStatus()
         ToggleRow(popcornMain, {
-            text = "ðŸ¿ Play Popcorn Burst", id = "popcorn", state = PopcornBurstAPI.IsActive(),
+            text = "–Â°–Â¸–Â–Â¿ Play Popcorn Burst", id = "popcorn", state = PopcornBurstAPI.IsActive(),
             keybind = false,
             onToggle = function(val)
                 local ok, err = pcall((val and PopcornBurstAPI.Start or PopcornBurstAPI.Stop))
                 if not ok then
-                    notif("ðŸ¿ Error: " .. tostring(err), 6)
+                    notif("–Â°–Â¸–Â–Â¿ Error: " .. tostring(err), 6)
                 end
             end
         })
-        Note(popcornMain, "3D table builds in-world â€” walk to it and press E to sit")
+        Note(popcornMain, "3D table builds in-world –Â¢âÂÂ¬âÂÂ walk to it and press E to sit")
         Note(popcornMain, "Click kernels when the ring meets the target: Perfect +100 | Great +50 | Good +20")
-        Note(popcornMain, "1v1 vs Brainrot Bot Â· +10 win / +2 lose / +5 tie Tokens")
+        Note(popcornMain, "1v1 vs Brainrot Bot –· +10 win / +2 lose / +5 tie Tokens")
 
-        local legacySection = Section(ContentScroll, "Legacy auto-helpers", "ðŸ› ")
+        local legacySection = Section(ContentScroll, "Legacy auto-helpers", "–Â°–Â¸âÂÂº–Â ")
         local tsStatusLabel = Label(legacySection, "All OFF", UITheme.SUBTEXT, 11)
         tsunamiStatusLabel = tsStatusLabel
         pcall(RebuildTsunami)
@@ -6522,7 +6478,7 @@ function UpdateRightContent()
             text = "C4 column (0 = random)", min = 0, max = 7, def = 0,
             onChanged = function(val) tsunamiCfg.c4Col = val end
         })
-        Button(legacySection, "â¹ Stop all helpers", function()
+        Button(legacySection, "–Â¢–Â–Â¹ Stop all helpers", function()
             tsunamiCfg.on = false
             tsunamiCfg.clicker = false
             tsunamiCfg.popcorn = false
@@ -6534,11 +6490,11 @@ function UpdateRightContent()
             pcall(RebuildTsunami)
             notif("Tsunami helpers stopped", 2)
         end)
-        Note(legacySection, "Generic auto-clickers â€” work in any game with GUI buttons. Status refreshes every second.")
+        Note(legacySection, "Generic auto-clickers –Â¢âÂÂ¬âÂÂ work in any game with GUI buttons. Status refreshes every second.")
 
-    -- â•â•â•â•â•â•â•â•â•â•â• EXTRAS â•â•â•â•â•â•â•â•â•â•â•
+    -- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â EXTRAS –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
     elseif CurrentTab == "  Extras" then
-        local scriptsSection = Section(ContentScroll, "External scripts", "â–¤")
+        local scriptsSection = Section(ContentScroll, "External scripts", "–Â¢âÂÂ–Â¤")
         local addRow = Instance.new("Frame")
         addRow.Parent = scriptsSection
         addRow.BackgroundTransparency = 1
@@ -6589,7 +6545,7 @@ function UpdateRightContent()
         end })
 
         for _, scriptData in ipairs(more_scripts) do
-            Button(scriptsSection, "ðŸ“œ " .. scriptData.name, function()
+            Button(scriptsSection, "–Â°–Â¸âÂÂ–Â " .. scriptData.name, function()
                 notif("Loading: " .. scriptData.name, 2)
                 local success, err = pcall(function()
                     local func = loadstring(scriptData.script)
@@ -6602,7 +6558,7 @@ function UpdateRightContent()
         end
 
         if #userScripts > 0 then
-            local userSection = Section(ContentScroll, "Your scripts", "ðŸ“")
+            local userSection = Section(ContentScroll, "Your scripts", "–Â°–Â¸âÂÂ–Â")
             for i, scriptData in ipairs(userScripts) do
                 local frameRow = Instance.new("Frame")
                 frameRow.Parent = userSection
@@ -6611,7 +6567,7 @@ function UpdateRightContent()
                 local sLay = Instance.new("UIListLayout", frameRow)
                 sLay.FillDirection = Enum.FillDirection.Horizontal
                 sLay.Padding = UDim.new(0, 6)
-                Button(frameRow, { text = "ðŸ“œ " .. scriptData.name, size = UDim2.new(0.8, 0, 1, 0), callback = function()
+                Button(frameRow, { text = "–Â°–Â¸âÂÂ–Â " .. scriptData.name, size = UDim2.new(0.8, 0, 1, 0), callback = function()
                     notif("Loading: " .. scriptData.name, 2)
                     local success, err = pcall(function()
                         local func = loadstring(scriptData.script)
@@ -6619,16 +6575,16 @@ function UpdateRightContent()
                     end)
                     if not success and err then notif("Error: " .. tostring(err), 3) end
                 end })
-                Button(frameRow, { text = "âœ•", size = UDim2.new(0.18, 0, 1, 0), callback = function()
+                Button(frameRow, { text = "–Â¢–ÂâÂÂ¢", size = UDim2.new(0.18, 0, 1, 0), callback = function()
                     RemoveUserScript(i)
                 end })
             end
         end
 
-    -- â•â•â•â•â•â•â•â•â•â•â• SETTINGS â•â•â•â•â•â•â•â•â•â•â•
+    -- –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â SETTINGS –Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â–Â¢âÂÂ¢–Â
     elseif CurrentTab == "  Settings" then
-        local keySection = Section(ContentScroll, "Keybinds", "âŒ¨")
-        Note(keySection, "Click a chip on any toggle â†’ press the key you want. Backspace/Delete = clear.")
+        local keySection = Section(ContentScroll, "Keybinds", "–Â¢–Â–Â¨")
+        Note(keySection, "Click a chip on any toggle –Â¢âÂÂ âÂÂ press the key you want. Backspace/Delete = clear.")
         ToggleRow(keySection, {
             text = "Menu Keybind", id = "menu", state = true,
             desc = "Hides / shows this menu (default RightShift)",
@@ -6637,18 +6593,18 @@ function UpdateRightContent()
                 Window.Visible = val
             end
         })
-        Button(keySection, "ðŸ—‘ Reset ALL keybinds", function()
+        Button(keySection, "–Â°–Â¸âÂÂâÂÂ Reset ALL keybinds", function()
             KeybindsLib:ResetAll()
             notif("All keybinds cleared", 2)
         end)
 
-        local themeSection = Section(ContentScroll, "Theme", "ðŸŽ¨")
+        local themeSection = Section(ContentScroll, "Theme", "–Â°–Â¸–Â½–Â¨")
         ToggleRow(themeSection, {
             text = "RGB Mode", id = "rgb", state = UITheme.RGB,
             keybind = false,
             onToggle = function(val)
                 UITheme.RGB = val
-                rgbQuick.Text = "âš¡ RGB Mode: " .. (val and "ON" or "OFF")
+                rgbQuick.Text = "–Â¢–Â¡–Â¡ RGB Mode: " .. (val and "ON" or "OFF")
                 rgbQuick.TextColor3 = val and UITheme.Accent or UITheme.SUBTEXT
                 if not val then
                     UITheme.Accent = UITheme.CYAN
@@ -6657,7 +6613,7 @@ function UpdateRightContent()
             end
         })
 
-        local configSection = Section(ContentScroll, "Configs", "âš™")
+        local configSection = Section(ContentScroll, "Configs", "–Â¢–Â¡âÂÂ¢")
         local configNameBox = TextBox(configSection, { placeholder = "Config name", initial = "Default" })
         local configRow = Instance.new("Frame")
         configRow.Parent = configSection
@@ -6671,19 +6627,19 @@ function UpdateRightContent()
             if n == "" then n = "Default" end
             return n
         end
-        Button(configRow, { text = "ðŸ’¾ Save", size = UDim2.new(0.32, -4, 1, 0), callback = function() SaveConfig(cfgName()) end })
-        Button(configRow, { text = "ðŸ“‚ Load", size = UDim2.new(0.32, -4, 1, 0), callback = function()
+        Button(configRow, { text = "–Â°–Â¸âÂÂ–Â¾ Save", size = UDim2.new(0.32, -4, 1, 0), callback = function() SaveConfig(cfgName()) end })
+        Button(configRow, { text = "–Â°–Â¸âÂÂâÂÂ Load", size = UDim2.new(0.32, -4, 1, 0), callback = function()
             LoadConfig(cfgName())
             KeybindsLib:Restore(settings.keybinds)
             UpdateRightContent()
         end })
-        Button(configRow, { text = "ðŸ—‘ Delete", size = UDim2.new(0.32, -4, 1, 0), callback = function() DeleteConfig(cfgName()) end })
+        Button(configRow, { text = "–Â°–Â¸âÂÂâÂÂ Delete", size = UDim2.new(0.32, -4, 1, 0), callback = function() DeleteConfig(cfgName()) end })
 
-        local configListSection = Section(ContentScroll, "Saved configs", "ðŸ“‹")
+        local configListSection = Section(ContentScroll, "Saved configs", "–Â°–Â¸âÂÂâÂÂ¹")
         local configsList = GetConfigList()
         if #configsList > 0 then
             for _, name in ipairs(configsList) do
-                Button(configListSection, "ðŸ“„ " .. name, function()
+                Button(configListSection, "–Â°–Â¸âÂÂâÂÂ " .. name, function()
                     configNameBox.Text = name
                     LoadConfig(name)
                     KeybindsLib:Restore(settings.keybinds)
@@ -6694,12 +6650,12 @@ function UpdateRightContent()
             Label(configListSection, "No saved configs", UITheme.SUBTEXT, 11)
         end
 
-        local unbanSection = Section(ContentScroll, "Account", "ðŸ›¡")
-        Button(unbanSection, "ðŸ›¡ Try Unban", TryUnban)
-        Button(unbanSection, "ðŸ” Rejoin fresh", RejoinFresh)
+        local unbanSection = Section(ContentScroll, "Account", "–Â°–Â¸âÂÂº–Â¡")
+        Button(unbanSection, "–Â°–Â¸âÂÂº–Â¡ Try Unban", TryUnban)
+        Button(unbanSection, "–Â°–Â¸âÂÂ–Â Rejoin fresh", RejoinFresh)
         Note(unbanSection, "Only works vs remote-based bans")
 
-        local otherSection = Section(ContentScroll, "Other", "ðŸ”§")
+        local otherSection = Section(ContentScroll, "Other", "–Â°–Â¸âÂÂ–Â§")
         ToggleRow(otherSection, {
             text = "Anti-AFK", id = "antiafk", state = settings.AntiAFK,
             onToggle = function(val)
@@ -6720,20 +6676,20 @@ function UpdateRightContent()
                 end
             end
         })
-        Button(otherSection, "ðŸŽ¤ Mic Bypass", ToggleMicBypass)
-        Button(otherSection, "ðŸ”“ Unmute mic", UnmuteMic)
+        Button(otherSection, "–Â°–Â¸–Â½–Â¤ Mic Bypass", ToggleMicBypass)
+        Button(otherSection, "–Â°–Â¸âÂÂâÂÂ Unmute mic", UnmuteMic)
 
         local footer = Instance.new("Frame")
         footer.Parent = ContentScroll
         footer.BackgroundTransparency = 1
         footer.Size = UDim2.new(1, 0, 0, 60)
         footer.LayoutOrder = 999999
-        Label(footer, "Supports STK v2.31.0  â€¢  sa7loul V3 Premium", UITheme.SUBTEXT, 11)
-        Label(footer, "Keep it cute, keep it clean ðŸ–¤", UITheme.CYAN, 11)
+        Label(footer, "Supports STK v2.31.0  –Â¢âÂÂ¬–Â¢  sa7loul V3 Premium", UITheme.SUBTEXT, 11)
+        Label(footer, "Keep it cute, keep it clean –Â°–Â¸âÂÂ–Â¤", UITheme.CYAN, 11)
     end
 end
 
--- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ INIT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬ INIT –Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬–Â¢âÂÂâÂÂ¬
 BuildSidebar()
 CurrentTab = "  Home"
 RefreshTabVisuals()
@@ -6866,4 +6822,4 @@ UpdateDoubleJump()
 UpdateKillerChance()
 UpdateAllFeatures()
 
-notif("âœ¨ sa7loul V3 Premium â€” loaded | RightShift hides menu", 4)
+notif("–Â¢–Â–Â¨ sa7loul V3 Premium –Â¢âÂÂ¬âÂÂ loaded | RightShift hides menu", 4)
