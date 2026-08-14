@@ -7058,18 +7058,26 @@ UpdateRightContent = function()
         Label(footer, "Keep it cute, keep it clean -", UITheme.CYAN, 11)
     end
 
-    if CurrentTab == "Home" then BuildHomeTab()
-    elseif CurrentTab == "Player" then BuildPlayerTab()
-    elseif CurrentTab == "World" then BuildWorldTab()
-    elseif CurrentTab == "Players" then BuildPlayersTab()
-    elseif CurrentTab == "Revive" then BuildReviveTab()
-    elseif CurrentTab == "Fun" then BuildFunTab()
-    elseif CurrentTab == "Spawner" then BuildSpawnerTab()
-    elseif CurrentTab == "Troll" then BuildTrollTab()
-    elseif CurrentTab == "Ban" then BuildBanTab()
-    elseif CurrentTab == "Tsunami" then BuildTsunamiTab()
-    elseif CurrentTab == "Extras" then BuildExtrasTab()
-    elseif CurrentTab == "Settings" then BuildSettingsTab()
+    local function SafeBuild(name, fn)
+        local ok, err = pcall(fn)
+        if not ok then
+            warn("[sa7loul] build error in " .. name .. ": " .. tostring(err))
+            notif("UI error [" .. name .. "]: " .. tostring(err), 10)
+        end
+    end
+
+    if CurrentTab == "Home" then SafeBuild("Home", BuildHomeTab)
+    elseif CurrentTab == "Player" then SafeBuild("Player", BuildPlayerTab)
+    elseif CurrentTab == "World" then SafeBuild("World", BuildWorldTab)
+    elseif CurrentTab == "Players" then SafeBuild("Players", BuildPlayersTab)
+    elseif CurrentTab == "Revive" then SafeBuild("Revive", BuildReviveTab)
+    elseif CurrentTab == "Fun" then SafeBuild("Fun", BuildFunTab)
+    elseif CurrentTab == "Spawner" then SafeBuild("Spawner", BuildSpawnerTab)
+    elseif CurrentTab == "Troll" then SafeBuild("Troll", BuildTrollTab)
+    elseif CurrentTab == "Ban" then SafeBuild("Ban", BuildBanTab)
+    elseif CurrentTab == "Tsunami" then SafeBuild("Tsunami", BuildTsunamiTab)
+    elseif CurrentTab == "Extras" then SafeBuild("Extras", BuildExtrasTab)
+    elseif CurrentTab == "Settings" then SafeBuild("Settings", BuildSettingsTab)
     end
 end
 
