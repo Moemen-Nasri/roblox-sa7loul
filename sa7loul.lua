@@ -14,7 +14,7 @@ configs = {
 }
 
 -- forward declarations: these locals are referenced by closures created earlier in the chunk
-local StopBring, StopBringAll, SafeLoadScript, scan, SwitchTab, UpdateAllFeatures, UpdatePlayerList, UpdateRightContent, TextBox, ApplyMinimized, PeriodicESPUpdate, close, apply, hide, TrollFlingStop, TrollAnnoyStop, TrollEarrapeStop
+local StopBring, StopBringAll, SafeLoadScript, scan, SwitchTab, UpdateAllFeatures, UpdatePlayerList, UpdateRightContent, TextBox, ApplyMinimized, PeriodicESPUpdate, close, apply, hide, TrollFlingStop, TrollAnnoyStop, TrollEarrapeStop, minimized
 
 defaultSettings = {
     Speed = 16, 
@@ -2667,7 +2667,7 @@ minimizedHint.TextXAlignment = Enum.TextXAlignment.Left
 minimizedHint.Visible = false
 
 -- aaaaaaaaaaaaaaaaaaaaaaaaaa DRAG & RESIZE aaaaaaaaaaaaaaaaaaaaaaaaaa
-local minimized = false
+minimized = false
 local dragging = false
 local resizing = false
 local dragStartPos = Vector2.zero
@@ -2850,7 +2850,7 @@ SearchBox.FocusLost:Connect(function()
 end)
 
 -- aaaaaaaaaaaaaaaaaaaaaaaaaa SIDEBAR aaaaaaaaaaaaaaaaaaaaaaaaaa
-local Sidebar = Instance.new("Frame")
+Sidebar = Instance.new("Frame")
 Sidebar.Parent = Window
 Sidebar.BackgroundColor3 = UITheme.PANEL
 Sidebar.BackgroundTransparency = 0.2
@@ -6473,7 +6473,7 @@ UpdateRightContent = function()
         BuildSpawnerCategory("Weapons", "W", "knife|cutter|couteau|couteaux|axe|hache|hatchet|bat|batte|hammer|marteau|sword|epee|blade|gun|pistol|pistolet|rifle|fusil|shotgun|machete|machette|cleaver|wrench|dart|kunai|katana|weapon|arme|dague|sabre")
 
         local customSection = Section(ContentScroll, "Custom search", "")
-        local customBox = TextBox(customSection, { placeholder = "Item keyword: e.g. key, candle, soap ..." })
+        customBox = TextBox(customSection, { placeholder = "Item keyword: e.g. key, candle, soap ..." })
         local customRows = Instance.new("Frame")
         customRows.Parent = customSection
         customRows.BackgroundTransparency = 1
