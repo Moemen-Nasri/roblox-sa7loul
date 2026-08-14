@@ -1,10 +1,11 @@
 -- sa7loul | Survive the Killer V3 Premium
 -- Support version v2.31.0
+-- BUILD: FIXED-2026-08-14 (tabs+labels, keybinds, sliders, player icons)
 
 -- boot marker - proves the script actually started on the executor
 pcall(function()
     warn("[sa7loul] script executing...")
-    game:GetService("StarterGui"):SetCore("SendNotification", { Title = "sa7loul", Text = "script started" })
+    game:GetService("StarterGui"):SetCore("SendNotification", { Title = "sa7loul", Text = "V3 FIXED started" })
 end)
 
 configs = {
@@ -2595,6 +2596,17 @@ headerSub.TextSize = 11
 headerSub.Size = UDim2.new(0, 260, 0, 16)
 headerSub.Position = UDim2.new(0, 36, 0, 30)
 headerSub.TextXAlignment = Enum.TextXAlignment.Left
+
+local headerVer = Instance.new("TextLabel")
+headerVer.Parent = Header
+headerVer.BackgroundTransparency = 1
+headerVer.Font = Enum.Font.GothamBold
+headerVer.Text = "FIXED v2"
+headerVer.TextColor3 = UITheme.GREEN
+headerVer.TextSize = 9
+headerVer.Size = UDim2.new(0, 60, 0, 12)
+headerVer.Position = UDim2.new(1, -64, 0, 32)
+headerVer.TextXAlignment = Enum.TextXAlignment.Right
 
 -- header buttons (minimize / close)
 local function headerIconButton(text, color)
