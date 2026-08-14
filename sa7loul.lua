@@ -3435,6 +3435,24 @@ local function Slider(parent, opts)
             update(input.Position.X)
         end
     end)
+    knob.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            update(input.Position.X)
+        end
+    end)
+    track.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            update(input.Position.X)
+        end
+    end)
+    pcall(function()
+        RunService.RenderStepped:Connect(function()
+            if dragging then
+                local okp, mp = pcall(function() return UserInputService:GetMouseLocation() end)
+                if okp then update(mp.X) end
+            end
+        end)
+    end)
     return frame
 end
 
@@ -5609,6 +5627,15 @@ UpdateRightContent = function()
                 end)
             end
         })
+        Slider(movement, {
+            text = "Walk Speed Slider (Max 200)", min = 16, max = 200, def = settings.Speed,
+            onChanged = function(val)
+                settings.Speed = val
+                if settings.speedEnabled and lp.Character then
+                    pcall(function() lp.Character.Humanoid.WalkSpeed = val end)
+                end
+            end
+        })
         ToggleRow(movement, {
             text = "Flight", id = "fly", state = settings.Fly,
             desc = "WASD + Space / Left-Control",
@@ -5620,15 +5647,6 @@ UpdateRightContent = function()
         Slider(movement, {
             text = "Flight speed", min = 20, max = 200, def = settings.flySpeed,
             onChanged = function(val) settings.flySpeed = val end
-        })
-        Slider(movement, {
-            text = "Walk Speed Slider (Max 200)", min = 16, max = 200, def = settings.Speed,
-            onChanged = function(val)
-                settings.Speed = val
-                if settings.speedEnabled and lp.Character then
-                    pcall(function() lp.Character.Humanoid.WalkSpeed = val end)
-                end
-            end
         })
         ToggleRow(movement, {
             text = "Disable speed when down", id = "speedoff",
