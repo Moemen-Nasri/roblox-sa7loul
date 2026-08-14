@@ -3414,42 +3414,81 @@ local function Slider(parent, opts)
         if opts.onChanged then pcall(opts.onChanged, current) end
     end
 
-    knob.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+    pcall(function()
+        knob.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+            end
+        end)
+    end)
+    pcall(function()
+        track.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                update(input.Position.X)
+            end
+        end)
+    end)
+    pcall(function()
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+    end)
+    pcall(function()
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                update(input.Position.X)
+            end
+        end)
+    end)
+    pcall(function()
+        knob.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                update(input.Position.X)
+            end
+        end)
+    end)
+    pcall(function()
+        track.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                update(input.Position.X)
+            end
+        end)
+    end)
+    pcall(function()
+        knob.MouseButton1Down:Connect(function()
             dragging = true
-        end
+        end)
+        knob.MouseMoved:Connect(function(x)
+            if dragging then update(x) end
+        end)
     end)
-    track.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+    pcall(function()
+        track.MouseButton1Down:Connect(function()
             dragging = true
-            update(input.Position.X)
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            update(input.Position.X)
-        end
-    end)
-    knob.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            update(input.Position.X)
-        end
-    end)
-    track.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            update(input.Position.X)
-        end
+        end)
+        track.MouseMoved:Connect(function(x)
+            if dragging then update(x) end
+        end)
     end)
     pcall(function()
         RunService.RenderStepped:Connect(function()
             if dragging then
                 local okp, mp = pcall(function() return UserInputService:GetMouseLocation() end)
                 if okp then update(mp.X) end
+            end
+        end)
+    end)
+    pcall(function()
+        task.spawn(function()
+            while frame and frame.Parent do
+                if dragging then
+                    local okp, mp = pcall(function() return UserInputService:GetMouseLocation() end)
+                    if okp then update(mp.X) end
+                end
+                task.wait()
             end
         end)
     end)
