@@ -3954,8 +3954,8 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         return
     end
 
-    -- 2) trigger bound features (never while typing in chat / menus)
-    if gameProcessed then return end
+    -- 2) trigger bound features (never while typing in a textbox)
+    if UserInputService:GetFocusedTextBox() then return end
     local list = KeybindsLib.byKey[key]
     if list then
         for _, id in ipairs(list) do
@@ -7097,11 +7097,29 @@ UpdateRightContent = function()
         Label(footer, "Keep it cute, keep it clean -", UITheme.CYAN, 11)
     end
 
-    local function SafeBuild(name, fn)
+local function SafeBuild(name, fn)
         local ok, err = pcall(fn)
         if not ok then
             warn("[sa7loul] build error in " .. name .. ": " .. tostring(err))
             notif("UI error [" .. name .. "]: " .. tostring(err), 10)
+            pcall(function()
+                local errBox = Instance.new("TextLabel")
+                errBox.Name = "BuildErrorBox"
+                errBox.Parent = ContentScroll
+                errBox.BackgroundColor3 = Color3.fromRGB(70, 18, 30)
+                errBox.BackgroundTransparency = 0.2
+                errBox.BorderSizePixel = 0
+                errBox.Size = UDim2.new(1, -20, 0, 90)
+                errBox.Position = UDim2.new(0, 10, 0, 10)
+                errBox.ZIndex = 99
+                errBox.TextWrapped = true
+                errBox.TextXAlignment = Enum.TextXAlignment.Left
+                errBox.TextYAlignment = Enum.TextYAlignment.Top
+                errBox.Text = "BUILD ERROR [" .. name .. "]: " .. tostring(err)
+                errBox.TextColor3 = Color3.fromRGB(255, 130, 130)
+                errBox.TextSize = 12
+                errBox.Font = Enum.Font.GothamBold
+            end)
         end
     end
 
