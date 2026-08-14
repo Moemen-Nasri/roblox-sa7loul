@@ -5609,6 +5609,18 @@ UpdateRightContent = function()
                 end)
             end
         })
+        ToggleRow(movement, {
+            text = "Flight", id = "fly", state = settings.Fly,
+            desc = "WASD + Space / Left-Control",
+            onToggle = function(val)
+                settings.Fly = val
+                UpdateFly()
+            end
+        })
+        Slider(movement, {
+            text = "Flight speed", min = 20, max = 200, def = settings.flySpeed,
+            onChanged = function(val) settings.flySpeed = val end
+        })
         Slider(movement, {
             text = "Walk Speed Slider (Max 200)", min = 16, max = 200, def = settings.Speed,
             onChanged = function(val)
@@ -5622,18 +5634,6 @@ UpdateRightContent = function()
             text = "Disable speed when down", id = "speedoff",
             state = settings.speedDisableOnDown,
             onToggle = function(val) settings.speedDisableOnDown = val end
-        })
-        ToggleRow(movement, {
-            text = "Flight", id = "fly", state = settings.Fly,
-            desc = "WASD + Space / Left-Control",
-            onToggle = function(val)
-                settings.Fly = val
-                UpdateFly()
-            end
-        })
-        Slider(movement, {
-            text = "Flight speed", min = 20, max = 200, def = settings.flySpeed,
-            onChanged = function(val) settings.flySpeed = val end
         })
         ToggleRow(movement, {
             text = "Noclip", id = "noclip", state = settings.Noclip,
