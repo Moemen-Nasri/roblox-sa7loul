@@ -7149,10 +7149,10 @@ UpdateRightContent = function()
 
     local function BuildSettingsTab()
         local keySection = Section(ContentScroll, "Keybinds", "key")
-        Note(keySection, "Click a chip on any toggle - press the key you want. Backspace/Delete = clear.")
+        Note(keySection, "Click a chip to set a keybind. Backspace/Delete = clear.")
         ToggleRow(keySection, {
-            text = "Menu Keybind", id = "menu", state = true,
-            desc = "Hides / shows this menu (default RightShift)",
+            text = "Hide / Unhide Menu", id = "menu", state = true,
+            desc = "Press your keybind to toggle menu visibility",
             keybind = true,
             onToggle = function(val)
                 Window.Visible = val
