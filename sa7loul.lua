@@ -3404,7 +3404,7 @@ local function Slider(parent, opts)
     knobShadow.Thickness = 4
     knobShadow.Color = UITheme.Accent
     knobShadow.Transparency = 0.75
-    knobShadow.Radius = 2
+    knobShadow.Thickness = 4
     UITheme:RegisterAccent(function(c)
         knobGlow.Color = c
         knobShadow.Color = c
