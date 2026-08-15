@@ -3898,7 +3898,7 @@ function KeybindsLib:BeginListen(id)
         chip.TextColor3 = Color3.fromRGB(255, 255, 255)
     end
     if self.timeoutTask then self.timeoutTask:Cancel() end
-    if self._keyPanel then pcall(function() if self._keyPanel.Parent then self._keyPanel.Parent:Destroy() end end); self._keyPanel = nil end
+    if self._keyPanel then pcall(function() self._keyPanel:Destroy() end); self._keyPanel = nil end
     local POPULAR_KEYS = {
         "Q","W","E","R","T","Y","U","I","O","P",
         "A","S","D","F","G","H","J","K","L",
@@ -3911,7 +3911,7 @@ function KeybindsLib:BeginListen(id)
         self.activeId = nil
         if self.timeoutTask then self.timeoutTask:Cancel() end
         if self._keyPanel then
-            pcall(function() if self._keyPanel.Parent then self._keyPanel.Parent:Destroy() end end)
+            pcall(function() self._keyPanel:Destroy() end)
             self._keyPanel = nil
         end
     end
@@ -4055,7 +4055,7 @@ function KeybindsLib:BeginListen(id)
             self.activeId = nil
             self:RefreshChip(id)
             if self._keyPanel then
-                pcall(function() if self._keyPanel.Parent then self._keyPanel.Parent:Destroy() end end)
+                pcall(function() self._keyPanel:Destroy() end)
                 self._keyPanel = nil
             end
             notif("Keybind cancelled", 2)
