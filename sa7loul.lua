@@ -3910,13 +3910,10 @@ function KeybindsLib:BeginListen(id)
     local function closePicker()
         self.activeId = nil
         if self.timeoutTask then self.timeoutTask:Cancel() end
-        self._keyPanel = nil
-        pcall(function()
-            if CurrentTab == "Player" then SafeBuild("Player", BuildPlayerTab)
-            elseif CurrentTab == "Settings" then SafeBuild("Settings", BuildSettingsTab)
-            elseif CurrentTab == "Home" then SafeBuild("Home", BuildHomeTab)
-            end
-        end)
+        if self._keyPanel then
+            pcall(function() if self._keyPanel.Parent then self._keyPanel.Parent:Destroy() end end)
+            self._keyPanel = nil
+        end
     end
     local function doBind(keyName)
         if self.activeId ~= id then return end
@@ -4057,14 +4054,11 @@ function KeybindsLib:BeginListen(id)
         if self.activeId == id then
             self.activeId = nil
             self:RefreshChip(id)
-            self._keyPanel = nil
+            if self._keyPanel then
+                pcall(function() if self._keyPanel.Parent then self._keyPanel.Parent:Destroy() end end)
+                self._keyPanel = nil
+            end
             notif("Keybind cancelled", 2)
-            pcall(function()
-                if CurrentTab == "Player" then SafeBuild("Player", BuildPlayerTab)
-                elseif CurrentTab == "Settings" then SafeBuild("Settings", BuildSettingsTab)
-                elseif CurrentTab == "Home" then SafeBuild("Home", BuildHomeTab)
-                end
-            end)
         end
     end)
 end
