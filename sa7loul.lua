@@ -3903,16 +3903,14 @@ function KeybindsLib:BeginListen(id)
         "Q","W","E","R","T","Y","U","I","O","P",
         "A","S","D","F","G","H","J","K","L",
         "Z","X","C","V","B","N","M",
-        "One","Two","Three","Four","Five",
         "LeftShift","LeftControl","LeftAlt",
-        "Space","Tab","Backquote",
+        "Space","Tab","One","Two","Three",
         "F1","F2","F3","F4","F5","F6",
-        "Insert","Delete","Home","End",
     }
     local function closeKeyPanel()
         self.activeId = nil
         if self.timeoutTask then self.timeoutTask:Cancel() end
-        if self._keyPanel then pcall(function() self._keyPanel:Destroy() end); self._keyPanel = nil end
+        if self._keyPanel then pcall(function() if self._keyPanel.Parent then self._keyPanel.Parent:Destroy() end end); self._keyPanel = nil end
     end
     local function bindKey(keyName)
         if self.activeId ~= id then return end
@@ -3923,134 +3921,24 @@ function KeybindsLib:BeginListen(id)
             notif("Bound: " .. keyName, 1)
         end
     end
-
-    local sec = Instance.new("Frame")
-    sec.Name = "KeybindPicker"
-    sec.Parent = ContentScroll
-    sec.BackgroundColor3 = UITheme.PANEL
-    sec.BackgroundTransparency = 0.35
-    sec.BorderSizePixel = 0
-    sec.Size = UDim2.new(1, 0, 0, 0)
-    sec.AutomaticSize = Enum.AutomaticSize.Y
-    sec.LayoutOrder = -1
-    self._keyPanel = sec
-    Instance.new("UICorner", sec).CornerRadius = UDim.new(0, 8)
-    local secStroke = Instance.new("UIStroke", sec)
-    secStroke.Thickness = 2
-    secStroke.Color = UITheme.ACCENT
-    local secPad = Instance.new("UIPadding", sec)
-    secPad.PaddingLeft = UDim.new(0, 10)
-    secPad.PaddingRight = UDim.new(0, 10)
-    secPad.PaddingTop = UDim.new(0, 8)
-    secPad.PaddingBottom = UDim.new(0, 10)
-
-    local titleRow = Instance.new("TextLabel")
-    titleRow.Size = UDim2.new(1, 0, 0, 22)
-    titleRow.BackgroundTransparency = 1
-    titleRow.Text = "Pick key for: " .. tostring(id)
-    titleRow.TextColor3 = UITheme.ACCENT
-    titleRow.Font = Enum.Font.GothamBold
-    titleRow.TextSize = 13
-    titleRow.TextXAlignment = Enum.TextXAlignment.Left
-    titleRow.Parent = sec
-
-    local items = Instance.new("Frame")
-    items.Parent = sec
-    items.BackgroundTransparency = 1
-    items.Size = UDim2.new(1, 0, 0, 0)
-    items.AutomaticSize = Enum.AutomaticSize.Y
-    local itemLayout = Instance.new("UIListLayout", items)
-    itemLayout.Padding = UDim.new(0, 4)
-    itemLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    itemLayout.FillDirection = Enum.FillDirection.Vertical
-
-    local KEYS_PER_ROW = 5
-    local row = nil
-    for i, keyName in ipairs(POPULAR_KEYS) do
-        if (i - 1) % KEYS_PER_ROW == 0 then
-            row = Instance.new("Frame")
-            row.Size = UDim2.new(1, 0, 0, 28)
-            row.BackgroundTransparency = 1
-            row.LayoutOrder = i
-            row.Parent = items
-        end
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0, 76, 0, 28)
-        btn.Position = UDim2.new(0, ((i - 1) % KEYS_PER_ROW) * 80, 0, 0)
-        btn.BackgroundColor3 = UITheme.ELEMENT
-        btn.BackgroundTransparency = 0.35
-        btn.Text = keyName
-        btn.TextColor3 = UITheme.TEXT
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 11
-        btn.AutoButtonColor = false
-        btn.Parent = row
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
-        local st = Instance.new("UIStroke", btn)
-        st.Color = UITheme.BORDER
-        st.Thickness = 1
-        st.Transparency = 0.7
-        btn.MouseEnter:Connect(function() st.Color = UITheme.ACCENT; st.Transparency = 0 end)
-        btn.MouseLeave:Connect(function() st.Color = UITheme.BORDER; st.Transparency = 0.7 end)
-        btn.InputBegan:Connect(function(inp)
-            if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                bindKey(keyName)
-            end
-        end)
-        btn.MouseButton1Click:Connect(function() bindKey(keyName) end)
+    local items = Section(ContentScroll, "Pick key: " .. tostring(id), "keybind")
+    self._keyPanel = items
+    for _, keyName in ipairs(POPULAR_KEYS) do
+        Button(items, { text = keyName, callback = function() bindKey(keyName) end })
     end
-
-    local btnRow = Instance.new("Frame")
-    btnRow.Size = UDim2.new(1, 0, 0, 32)
-    btnRow.BackgroundTransparency = 1
-    btnRow.LayoutOrder = #POPULAR_KEYS + 10
-    btnRow.Parent = items
-
-    local clrBtn = Instance.new("TextButton")
-    clrBtn.Size = UDim2.new(0, 90, 0, 28)
-    clrBtn.BackgroundColor3 = Color3.fromRGB(180, 60, 40)
-    clrBtn.BackgroundTransparency = 0.15
-    clrBtn.Text = "Clear"
-    clrBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    clrBtn.Font = Enum.Font.GothamBold
-    clrBtn.TextSize = 12
-    clrBtn.AutoButtonColor = false
-    clrBtn.Parent = btnRow
-    Instance.new("UICorner", clrBtn).CornerRadius = UDim.new(0, 5)
-    local function doClear()
+    Button(items, { text = "Clear keybind", accent = true, callback = function()
         self.activeId = nil
         if self.timeoutTask then self.timeoutTask:Cancel() end
         self:Bind(id, nil)
         notif("Keybind cleared", 1)
-        if self._keyPanel then pcall(function() self._keyPanel:Destroy() end); self._keyPanel = nil end
-    end
-    clrBtn.InputBegan:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then doClear() end
-    end)
-    clrBtn.MouseButton1Click:Connect(function() doClear() end)
-
-    local xBtn = Instance.new("TextButton")
-    xBtn.Size = UDim2.new(0, 90, 0, 28)
-    xBtn.Position = UDim2.new(0, 100, 0, 0)
-    xBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 110)
-    xBtn.BackgroundTransparency = 0.15
-    xBtn.Text = "Cancel"
-    xBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    xBtn.Font = Enum.Font.GothamBold
-    xBtn.TextSize = 12
-    xBtn.AutoButtonColor = false
-    xBtn.Parent = btnRow
-    Instance.new("UICorner", xBtn).CornerRadius = UDim.new(0, 5)
-    xBtn.InputBegan:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then closeKeyPanel() end
-    end)
-    xBtn.MouseButton1Click:Connect(function() closeKeyPanel() end)
-
-    self.timeoutTask = task.delay(30, function()
+        if self._keyPanel then pcall(function() if self._keyPanel.Parent then self._keyPanel.Parent:Destroy() end end); self._keyPanel = nil end
+    end })
+    Button(items, { text = "Cancel", callback = function() closeKeyPanel() end })
+    self.timeoutTask = task.delay(60, function()
         if self.activeId == id then
             self.activeId = nil
             self:RefreshChip(id)
-            if self._keyPanel then pcall(function() self._keyPanel:Destroy() end); self._keyPanel = nil end
+            if self._keyPanel then pcall(function() if self._keyPanel.Parent then self._keyPanel.Parent:Destroy() end end); self._keyPanel = nil end
             notif("Keybind cancelled", 2)
         end
     end)
