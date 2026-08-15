@@ -3889,15 +3889,6 @@ function KeybindsLib:Bind(id, key)
     self:Save()
 end
 
-local ALL_KEYS = {}
-pcall(function()
-    for _, v in pairs(Enum.KeyCode:GetEnumItems()) do
-        if v ~= Enum.KeyCode.Unknown then
-            ALL_KEYS[#ALL_KEYS + 1] = v
-        end
-    end
-end)
-
 function KeybindsLib:BeginListen(id)
     Dbg("LISTEN", id)
     self.activeId = id
@@ -3907,54 +3898,129 @@ function KeybindsLib:BeginListen(id)
         chip.TextColor3 = Color3.fromRGB(255, 255, 255)
     end
     if self.timeoutTask then self.timeoutTask:Cancel() end
-    self.timeoutTask = task.delay(7, function()
+    -- popup with clickable keys — 100% works since it's mouse only
+    local POPULAR_KEYS = {
+        "Q","W","E","R","T","Y","U","I","O","P",
+        "A","S","D","F","G","H","J","K","L",
+        "Z","X","C","V","B","N","M",
+        "One","Two","Three","Four","Five",
+        "LeftShift","LeftControl","LeftAlt",
+        "Space","Tab","Backquote",
+        "F1","F2","F3","F4","F5","F6",
+        "Insert","Delete","Home","End","PageUp","PageDown",
+    }
+    local screen = Instance.new("ScreenGui")
+    screen.Name = "KeybindPopup"
+    screen.ResetOnSpawn = false
+    screen.DisplayOrder = 9999
+    pcall(function() screen.Parent = game:GetService("CoreGui") end)
+    if not screen.Parent then pcall(function() screen.Parent = lp.PlayerGui end) end
+
+    local backdrop = Instance.new("Frame")
+    backdrop.Size = UDim2.new(1, 0, 1, 0)
+    backdrop.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    backdrop.BackgroundTransparency = 0.5
+    backdrop.BorderSizePixel = 0
+    backdrop.Parent = screen
+
+    local box = Instance.new("Frame")
+    box.AnchorPoint = Vector2.new(0.5, 0.5)
+    box.Position = UDim2.new(0.5, 0, 0.5, 0)
+    box.Size = UDim2.new(0, 520, 0, 440)
+    box.BackgroundColor3 = Color3.fromRGB(22, 22, 30)
+    box.BorderSizePixel = 0
+    box.Parent = backdrop
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 10)
+    local boxStroke = Instance.new("UIStroke", box)
+    boxStroke.Color = UITheme.Accent
+    boxStroke.Thickness = 2
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, -20, 0, 36)
+    title.Position = UDim2.new(0, 10, 0, 10)
+    title.BackgroundTransparency = 1
+    title.Text = "Select key for: " .. tostring(id)
+    title.TextColor3 = UITheme.TEXT
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 15
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = box
+
+    local clearBtn = Instance.new("TextButton")
+    clearBtn.Size = UDim2.new(0, 80, 0, 24)
+    clearBtn.Position = UDim2.new(1, -90, 0, 12)
+    clearBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+    clearBtn.Text = "Clear"
+    clearBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    clearBtn.Font = Enum.Font.GothamBold
+    clearBtn.TextSize = 12
+    clearBtn.Parent = box
+    Instance.new("UICorner", clearBtn).CornerRadius = UDim.new(0, 6)
+
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.Size = UDim2.new(1, -20, 1, -56)
+    scroll.Position = UDim2.new(0, 10, 0, 46)
+    scroll.BackgroundTransparency = 1
+    scroll.BorderSizePixel = 0
+    scroll.ScrollBarThickness = 4
+    scroll.ScrollBarImageColor3 = UITheme.Accent
+    scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    scroll.Parent = box
+    local grid = Instance.new("UIGridLayout")
+    grid.CellSize = UDim2.new(0, 80, 0, 32)
+    grid.CellPadding = UDim2.new(0, 6, 0, 6)
+    grid.SortOrder = Enum.SortOrder.LayoutOrder
+    grid.Parent = scroll
+
+    local function closePopup()
+        self.activeId = nil
+        pcall(function() screen:Destroy() end)
+    end
+
+    clearBtn.MouseButton1Click:Connect(function()
+        self.activeId = nil
+        if self.timeoutTask then self.timeoutTask:Cancel() end
+        self:Bind(id, nil)
+        notif("Keybind cleared", 1)
+        pcall(function() screen:Destroy() end)
+    end)
+
+    for i, keyName in ipairs(POPULAR_KEYS) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0, 80, 0, 32)
+        btn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+        btn.Text = keyName
+        btn.TextColor3 = UITheme.TEXT
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 11
+        btn.LayoutOrder = i
+        btn.Parent = scroll
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+        local stroke = Instance.new("UIStroke", btn)
+        stroke.Color = Color3.fromRGB(50, 50, 70)
+        stroke.Thickness = 1
+        btn.MouseEnter:Connect(function() stroke.Color = UITheme.Accent end)
+        btn.MouseLeave:Connect(function() stroke.Color = Color3.fromRGB(50, 50, 70) end)
+        btn.MouseButton1Click:Connect(function()
+            if self.activeId ~= id then return end
+            self.activeId = nil
+            if self.timeoutTask then self.timeoutTask:Cancel() end
+            local enum = Enum.KeyCode[keyName]
+            if enum then
+                self:Bind(id, enum)
+                notif("Bound: " .. keyName, 1)
+            end
+            pcall(function() screen:Destroy() end)
+        end)
+    end
+
+    self.timeoutTask = task.delay(30, function()
         if self.activeId == id then
             self.activeId = nil
             self:RefreshChip(id)
-            notif("Listen timeout - no key pressed", 2)
-        end
-    end)
-    -- polling fallback: some executors don't deliver InputBegan for keyboard at all
-    task.spawn(function()
-        local hb = RunService and RunService.RenderStepped
-        for frame = 1, 420 do
-            if self.activeId ~= id then return end
-            -- method 1: GetKeysPressed (works even when InputBegan is broken)
-            local found = nil
-            local ok1, keys = pcall(function() return UserInputService:GetKeysPressed() end)
-            if ok1 and type(keys) == "table" then
-                for _, obj in ipairs(keys) do
-                    if obj.KeyCode and obj.KeyCode ~= Enum.KeyCode.Unknown then
-                        found = obj.KeyCode
-                        break
-                    end
-                end
-            end
-            -- method 2: IsKeyDown per-key (fallback if GetKeysPressed also fails)
-            if not found then
-                local ok2, _ = pcall(function()
-                    return UserInputService:IsKeyDown(ALL_KEYS[1] or Enum.KeyCode.A)
-                end)
-                if ok2 then
-                    for _, key in ipairs(ALL_KEYS) do
-                        local down = pcall(function() return UserInputService:IsKeyDown(key) end)
-                        if down then found = key; break end
-                    end
-                end
-            end
-            if found then
-                self.activeId = nil
-                if self.timeoutTask then self.timeoutTask:Cancel() end
-                if found == Enum.KeyCode.Backspace or found == Enum.KeyCode.Delete then
-                    self:Bind(id, nil)
-                    notif("Keybind cleared", 1)
-                else
-                    self:Bind(id, found)
-                    notif("Bound: " .. tostring(found):gsub("Enum.KeyCode.", ""), 1)
-                end
-                return
-            end
-            if hb then pcall(function() hb:Wait() end) else task.wait() end
+            pcall(function() screen:Destroy() end)
+            notif("Keybind cancelled", 2)
         end
     end)
 end
