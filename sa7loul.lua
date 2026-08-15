@@ -6705,47 +6705,7 @@ UpdateRightContent = function()
 
         CollectItemSnapshot()
 
-        BuildSpawnerCategory("Sechoirs (Hair Dryer)", "S", "dryer|seche|cheveux|hair|sechoir")
-        BuildSpawnerCategory("Boxing Gloves (Gants de boxeur)", "B", "box|gant|boxeur|boxing|glove")
-
-        local customSection = Section(ContentScroll, "Custom search", "")
-        customBox = TextBox(customSection, { placeholder = "Item keyword: e.g. key, candle, soap ..." })
-        local customRows = Instance.new("Frame")
-        customRows.Parent = customSection
-        customRows.BackgroundTransparency = 1
-        customRows.Size = UDim2.new(1, 0, 0, 0)
-        customRows.AutomaticSize = Enum.AutomaticSize.Y
-        customRows.LayoutOrder = #customSection:GetChildren()
-        local customRowsLayout = Instance.new("UIListLayout", customRows)
-        customRowsLayout.Padding = UDim.new(0, 6)
-        customRowsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        local function RebuildCustomBox()
-            for _, child in ipairs(customRows:GetChildren()) do
-                if child:IsA("Frame") or child:IsA("TextLabel") then child:Destroy() end
-            end
-            local kw = customBox.Text ~= "" and customBox.Text or nil
-            if not kw then
-                Label(customRows, "Type a keyword then press search", UITheme.DIM, 11)
-                return
-            end
-            local names = ScanItemsByKeyword(kw)
-            if #names == 0 then
-                Label(customRows, "Nothing found for: " .. kw, UITheme.DIM, 11)
-                return
-            end
-            for _, itemName in ipairs(names) do
-                MakeItemRow(customRows, itemName)
-            end
-        end
-        Button(customSection, "Search", RebuildCustomBox)
-
-        local takeSection = Section(ContentScroll, "Take from target", "")
-        local takeBox = TextBox(takeSection, { placeholder = "Take keyword (empty = cuff), from selected player" })
-        Button(takeSection, "Take items", function()
-            TakeSpawnItemsFromTarget(GetSelectedPlayer(), takeBox.Text ~= "" and takeBox.Text or "cuff")
-        end)
-
-        Note(ContentScroll, "Spawner clones the real in-game item for you or the chosen player. The chip above sets the give target.")
+        Note(ContentScroll, "Spawner section coming soon.")
 
     -- a-a-a-a-a-a-a-a-a-a-a- TROLL a-a-a-a-a-a-a-a-a-a-a-
     end
