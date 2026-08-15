@@ -5853,8 +5853,38 @@ UpdateRightContent = function()
             end
         })
         ToggleRow(movement, {
-            text = "Fly (+Noclip)", id = "fly", state = settings.Fly,
-            desc = "WASD + Space / LeftControl + NoClip",
+            text = "Fly", id = "fly", state = settings.Fly,
+            desc = "WASD + Space / LeftControl",
+            onToggle = function(val)
+                settings.Fly = val
+                UpdateFly()
+            end
+        })
+        Slider(movement, {
+            text = "Flight speed", min = 20, max = 200, def = settings.flySpeed,
+            onChanged = function(val) settings.flySpeed = val end
+        })
+        ToggleRow(movement, {
+            text = "Noclip", id = "noclip", state = settings.Noclip,
+            onToggle = function(val)
+                settings.Noclip = val
+                if val then
+                    if noclipConnection then noclipConnection:Disconnect() end
+                    noclipConnection = RunService.Stepped:Connect(function()
+                        if settings.Noclip and lp.Character then
+                            for _, part in pairs(lp.Character:GetDescendants()) do
+                                if part:IsA("BasePart") then part.CanCollide = false end
+                            end
+                        end
+                    end)
+                else
+                    if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
+                end
+            end
+        })
+        ToggleRow(movement, {
+            text = "Fly + Noclip", id = "flynoclip", state = false,
+            desc = "Fly TNV — fly and noclip together",
             onToggle = function(val)
                 settings.Fly = val
                 settings.Noclip = val
@@ -5872,10 +5902,6 @@ UpdateRightContent = function()
                     if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
                 end
             end
-        })
-        Slider(movement, {
-            text = "Flight speed", min = 20, max = 200, def = settings.flySpeed,
-            onChanged = function(val) settings.flySpeed = val end
         })
         ToggleRow(movement, {
             text = "Disable speed when down", id = "speedoff",
