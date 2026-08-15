@@ -3889,6 +3889,15 @@ function KeybindsLib:Bind(id, key)
     self:Save()
 end
 
+local ALL_KEYS = {}
+pcall(function()
+    for _, v in pairs(Enum.KeyCode:GetEnumItems()) do
+        if v ~= Enum.KeyCode.Unknown then
+            ALL_KEYS[#ALL_KEYS + 1] = v
+        end
+    end
+end)
+
 function KeybindsLib:BeginListen(id)
     Dbg("LISTEN", id)
     self.activeId = id
@@ -3902,6 +3911,33 @@ function KeybindsLib:BeginListen(id)
         if self.activeId == id then
             self.activeId = nil
             self:RefreshChip(id)
+        end
+    end)
+    -- polling fallback: some executors don't deliver InputBegan for keyboard
+    task.spawn(function()
+        for _ = 1, 420 do
+            if self.activeId ~= id then return end
+            local ok, pressed = pcall(function()
+                for _, key in ipairs(ALL_KEYS) do
+                    if UserInputService:IsKeyDown(key) then
+                        return key
+                    end
+                end
+                return nil
+            end)
+            if ok and pressed then
+                self.activeId = nil
+                if self.timeoutTask then self.timeoutTask:Cancel() end
+                if pressed == Enum.KeyCode.Backspace or pressed == Enum.KeyCode.Delete then
+                    self:Bind(id, nil)
+                    notif("Keybind cleared", 1)
+                else
+                    self:Bind(id, pressed)
+                    notif("Bound: " .. tostring(pressed):gsub("Enum.KeyCode.", ""), 1)
+                end
+                return
+            end
+            task.wait()
         end
     end)
 end
