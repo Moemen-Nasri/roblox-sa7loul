@@ -3910,7 +3910,13 @@ function KeybindsLib:BeginListen(id)
     local function closeKeyPanel()
         self.activeId = nil
         if self.timeoutTask then self.timeoutTask:Cancel() end
-        if self._keyPanel then pcall(function() if self._keyPanel.Parent then self._keyPanel.Parent:Destroy() end end); self._keyPanel = nil end
+        self._keyPanel = nil
+        pcall(function()
+            if CurrentTab == "Player" then SafeBuild("Player", BuildPlayerTab)
+            elseif CurrentTab == "Settings" then SafeBuild("Settings", BuildSettingsTab)
+            elseif CurrentTab == "Home" then SafeBuild("Home", BuildHomeTab)
+            end
+        end)
     end
     local function bindKey(keyName)
         if self.activeId ~= id then return end
@@ -3932,14 +3938,26 @@ function KeybindsLib:BeginListen(id)
         self:Bind(id, nil)
         notif("Keybind cleared", 1)
         if self._keyPanel then pcall(function() if self._keyPanel.Parent then self._keyPanel.Parent:Destroy() end end); self._keyPanel = nil end
+        if CurrentTab and SafeBuild then pcall(function()
+            if CurrentTab == "Player" then SafeBuild("Player", BuildPlayerTab)
+            elseif CurrentTab == "Settings" then SafeBuild("Settings", BuildSettingsTab)
+            elseif CurrentTab == "Home" then SafeBuild("Home", BuildHomeTab)
+            end
+        end) end
     end })
     Button(items, { text = "Cancel", callback = function() closeKeyPanel() end })
     self.timeoutTask = task.delay(60, function()
         if self.activeId == id then
             self.activeId = nil
             self:RefreshChip(id)
-            if self._keyPanel then pcall(function() if self._keyPanel.Parent then self._keyPanel.Parent:Destroy() end end); self._keyPanel = nil end
+            self._keyPanel = nil
             notif("Keybind cancelled", 2)
+            pcall(function()
+                if CurrentTab == "Player" then SafeBuild("Player", BuildPlayerTab)
+                elseif CurrentTab == "Settings" then SafeBuild("Settings", BuildSettingsTab)
+                elseif CurrentTab == "Home" then SafeBuild("Home", BuildHomeTab)
+                end
+            end)
         end
     end)
 end
