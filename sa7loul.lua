@@ -7162,11 +7162,6 @@ UpdateRightContent = function()
             KeybindsLib:ResetAll()
             notif("All keybinds cleared", 2)
         end)
-        Button(keySection, { text = "Hide Menu", accent = true }, function()
-            Window.Visible = false
-            settings.menuVisible = false
-            notif("Menu hidden. Press RightShift to show.", 3)
-        end)
 
         local themeSection = Section(ContentScroll, "Theme", "")
         ToggleRow(themeSection, {
