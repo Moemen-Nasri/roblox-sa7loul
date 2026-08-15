@@ -5853,26 +5853,12 @@ UpdateRightContent = function()
             end
         })
         ToggleRow(movement, {
-            text = "Flight", id = "fly", state = settings.Fly,
-            desc = "WASD + Space / Left-Control",
+            text = "Fly (+Noclip)", id = "fly", state = settings.Fly,
+            desc = "WASD + Space / LeftControl + NoClip",
             onToggle = function(val)
                 settings.Fly = val
-                UpdateFly()
-            end
-        })
-        Slider(movement, {
-            text = "Flight speed", min = 20, max = 200, def = settings.flySpeed,
-            onChanged = function(val) settings.flySpeed = val end
-        })
-        ToggleRow(movement, {
-            text = "Disable speed when down", id = "speedoff",
-            state = settings.speedDisableOnDown,
-            onToggle = function(val) settings.speedDisableOnDown = val end
-        })
-        ToggleRow(movement, {
-            text = "Noclip", id = "noclip", state = settings.Noclip,
-            onToggle = function(val)
                 settings.Noclip = val
+                UpdateFly()
                 if val then
                     if noclipConnection then noclipConnection:Disconnect() end
                     noclipConnection = RunService.Stepped:Connect(function()
@@ -5886,6 +5872,15 @@ UpdateRightContent = function()
                     if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
                 end
             end
+        })
+        Slider(movement, {
+            text = "Flight speed", min = 20, max = 200, def = settings.flySpeed,
+            onChanged = function(val) settings.flySpeed = val end
+        })
+        ToggleRow(movement, {
+            text = "Disable speed when down", id = "speedoff",
+            state = settings.speedDisableOnDown,
+            onToggle = function(val) settings.speedDisableOnDown = val end
         })
         Slider(movement, {
             text = "Gravity", min = 0, max = 196.2, def = 196.2, decimals = 1,
