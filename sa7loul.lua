@@ -3781,7 +3781,7 @@ local function ToggleRow(parent, opts)
             v = not not v
             if v == state then return end
             state = v
-            setVisual()
+            pcall(setVisual)
             if not silent and opts.onToggle then
                 pcall(opts.onToggle, v)
             end
@@ -6705,8 +6705,7 @@ UpdateRightContent = function()
 
         CollectItemSnapshot()
 
-        BuildSpawnerCategory("Césaire (Scissors/Cutter)", "C", "ciseaux|cesaire|cutter|coupe|razor|scissors")
-        BuildSpawnerCategory("Séchoir (Hair Dryer)", "S", "dryer|seche|cheveux|hair|sechoir|dry|blow|hot|heat|souffl|fer")
+        BuildSpawnerCategory("Razor / Cutter", "R", "ciseaux|cesaire|cutter|coupe|razor|scissors|rasoir")
 
         Note(ContentScroll, "Spawner clones the real in-game item for you or the chosen player. The chip above sets the give target.")
 
