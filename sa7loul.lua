@@ -3898,7 +3898,7 @@ function KeybindsLib:BeginListen(id)
         chip.TextColor3 = Color3.fromRGB(255, 255, 255)
     end
     if self.timeoutTask then self.timeoutTask:Cancel() end
-    if self._keyPanel then pcall(function() self._keyPanel:Destroy() end); self._keyPanel = nil end
+    if self._keyPanel then pcall(function() if self._keyPanel.Parent then self._keyPanel.Parent:Destroy() end end); self._keyPanel = nil end
     local POPULAR_KEYS = {
         "Q","W","E","R","T","Y","U","I","O","P",
         "A","S","D","F","G","H","J","K","L",
@@ -3907,7 +3907,7 @@ function KeybindsLib:BeginListen(id)
         "Space","Tab","One","Two","Three",
         "F1","F2","F3","F4","F5","F6",
     }
-    local function closeKeyPanel()
+    local function closePicker()
         self.activeId = nil
         if self.timeoutTask then self.timeoutTask:Cancel() end
         self._keyPanel = nil
@@ -3918,34 +3918,141 @@ function KeybindsLib:BeginListen(id)
             end
         end)
     end
-    local function bindKey(keyName)
+    local function doBind(keyName)
         if self.activeId ~= id then return end
-        closeKeyPanel()
+        closePicker()
         local enum = Enum.KeyCode[keyName]
         if enum then
             self:Bind(id, enum)
             notif("Bound: " .. keyName, 1)
+        else
+            notif("Unknown key: " .. tostring(keyName), 2)
         end
     end
-    local items = Section(ContentScroll, "Pick key: " .. tostring(id), "keybind")
-    self._keyPanel = items
-    for _, keyName in ipairs(POPULAR_KEYS) do
-        Button(items, { text = keyName, callback = function() bindKey(keyName) end })
+
+    local sec = Instance.new("Frame")
+    sec.Name = "KeybindPicker"
+    sec.Parent = ContentScroll
+    sec.BackgroundColor3 = UITheme.PANEL
+    sec.BackgroundTransparency = 0.2
+    sec.Size = UDim2.new(1, 0, 0, 0)
+    sec.AutomaticSize = Enum.AutomaticSize.Y
+    sec.LayoutOrder = -1
+    self._keyPanel = sec
+    Instance.new("UICorner", sec).CornerRadius = UDim.new(0, 8)
+    local secStroke = Instance.new("UIStroke", sec)
+    secStroke.Thickness = 2
+    secStroke.Color = UITheme.ACCENT
+    local secPad = Instance.new("UIPadding", sec)
+    secPad.PaddingLeft = UDim.new(0, 10)
+    secPad.PaddingRight = UDim.new(0, 10)
+    secPad.PaddingTop = UDim.new(0, 8)
+    secPad.PaddingBottom = UDim.new(0, 10)
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 20)
+    title.BackgroundTransparency = 1
+    title.Text = "Key: " .. tostring(id)
+    title.TextColor3 = UITheme.ACCENT
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 13
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = sec
+
+    local input = Instance.new("TextBox")
+    input.Size = UDim2.new(1, 0, 0, 30)
+    input.BackgroundColor3 = UITheme.ELEMENT
+    input.BackgroundTransparency = 0.3
+    input.PlaceholderText = "Type key name & press Enter (Q, LeftShift, Space...)"
+    input.PlaceholderColor3 = UITheme.DIM
+    input.Text = ""
+    input.TextColor3 = UITheme.TEXT
+    input.Font = Enum.Font.GothamBold
+    input.TextSize = 13
+    input.ClearTextOnFocus = true
+    input.BorderSizePixel = 0
+    input.Parent = sec
+    Instance.new("UICorner", input).CornerRadius = UDim.new(0, 6)
+    local inputStroke = Instance.new("UIStroke", input)
+    inputStroke.Color = UITheme.ACCENT
+    inputStroke.Thickness = 1
+
+    local function submitInput()
+        local txt = input.Text:match("^%s*(.-)%s*$")
+        if not txt or txt == "" then return end
+        local match = nil
+        for _, k in ipairs(POPULAR_KEYS) do
+            if k:lower() == txt:lower() then match = k; break end
+        end
+        if not match then
+            local ok, _ = pcall(function() return Enum.KeyCode[txt] end)
+            if ok then match = txt end
+        end
+        if match then
+            doBind(match)
+        else
+            notif("Unknown: " .. txt, 2)
+            input.Text = ""
+            input:CaptureFocus()
+        end
     end
-    Button(items, { text = "Clear keybind", accent = true, callback = function()
+
+    input.FocusLost:Connect(function(enterPressed)
+        if enterPressed then submitInput() end
+    end)
+    input.ReturnPressed:Connect(function() submitInput() end)
+
+    pcall(function() input:CaptureFocus() end)
+
+    local clrBtn = Instance.new("TextButton")
+    clrBtn.Size = UDim2.new(0.45, 0, 0, 26)
+    clrBtn.BackgroundColor3 = Color3.fromRGB(180, 60, 40)
+    clrBtn.BackgroundTransparency = 0.15
+    clrBtn.Text = "Clear"
+    clrBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    clrBtn.Font = Enum.Font.GothamBold
+    clrBtn.TextSize = 11
+    clrBtn.AutoButtonColor = false
+    clrBtn.BorderSizePixel = 0
+    clrBtn.Parent = sec
+    Instance.new("UICorner", clrBtn).CornerRadius = UDim.new(0, 5)
+    MakeHover(clrBtn, 0.15, 0.0, false)
+    clrBtn.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            self.activeId = nil
+            if self.timeoutTask then self.timeoutTask:Cancel() end
+            self:Bind(id, nil)
+            notif("Keybind cleared", 1)
+            closePicker()
+        end
+    end)
+    clrBtn.MouseButton1Click:Connect(function()
         self.activeId = nil
         if self.timeoutTask then self.timeoutTask:Cancel() end
         self:Bind(id, nil)
         notif("Keybind cleared", 1)
-        if self._keyPanel then pcall(function() if self._keyPanel.Parent then self._keyPanel.Parent:Destroy() end end); self._keyPanel = nil end
-        if CurrentTab and SafeBuild then pcall(function()
-            if CurrentTab == "Player" then SafeBuild("Player", BuildPlayerTab)
-            elseif CurrentTab == "Settings" then SafeBuild("Settings", BuildSettingsTab)
-            elseif CurrentTab == "Home" then SafeBuild("Home", BuildHomeTab)
-            end
-        end) end
-    end })
-    Button(items, { text = "Cancel", callback = function() closeKeyPanel() end })
+        closePicker()
+    end)
+
+    local xBtn = Instance.new("TextButton")
+    xBtn.Size = UDim2.new(0.45, 0, 0, 26)
+    xBtn.Position = UDim2.new(0.5, 4, 0, 0)
+    xBtn.BackgroundColor3 = Color3.fromRGB(90, 90, 100)
+    xBtn.BackgroundTransparency = 0.15
+    xBtn.Text = "Cancel"
+    xBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    xBtn.Font = Enum.Font.GothamBold
+    xBtn.TextSize = 11
+    xBtn.AutoButtonColor = false
+    xBtn.BorderSizePixel = 0
+    xBtn.Parent = sec
+    Instance.new("UICorner", xBtn).CornerRadius = UDim.new(0, 5)
+    MakeHover(xBtn, 0.15, 0.0, false)
+    xBtn.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then closePicker() end
+    end)
+    xBtn.MouseButton1Click:Connect(function() closePicker() end)
+
     self.timeoutTask = task.delay(60, function()
         if self.activeId == id then
             self.activeId = nil
@@ -6598,12 +6705,8 @@ UpdateRightContent = function()
 
         CollectItemSnapshot()
 
-        BuildSpawnerCategory("Seche-cheveux (Hair Dryer)", "D", "dryer|seche|cheveux|hair")
-        BuildSpawnerCategory("Coupe-cheveux (Hair Cutter)", "S", "cutter|coupe|rasoir|razor")
-        BuildSpawnerCategory("Cuffs", "C", "cuff|menotte")
-        BuildSpawnerCategory("Lockers", "L", "locker|casier")
-        BuildSpawnerCategory("Gloves", "G", "glove|gant")
-        BuildSpawnerCategory("Weapons", "W", "knife|cutter|couteau|couteaux|axe|hache|hatchet|bat|batte|hammer|marteau|sword|epee|blade|gun|pistol|pistolet|rifle|fusil|shotgun|machete|machette|cleaver|wrench|dart|kunai|katana|weapon|arme|dague|sabre")
+        BuildSpawnerCategory("Sechoirs (Hair Dryer)", "S", "dryer|seche|cheveux|hair|sechoir")
+        BuildSpawnerCategory("Boxing Gloves (Gants de boxeur)", "B", "box|gant|boxeur|boxing|glove")
 
         local customSection = Section(ContentScroll, "Custom search", "")
         customBox = TextBox(customSection, { placeholder = "Item keyword: e.g. key, candle, soap ..." })
