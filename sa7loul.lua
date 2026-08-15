@@ -3911,33 +3911,50 @@ function KeybindsLib:BeginListen(id)
         if self.activeId == id then
             self.activeId = nil
             self:RefreshChip(id)
+            notif("Listen timeout - no key pressed", 2)
         end
     end)
-    -- polling fallback: some executors don't deliver InputBegan for keyboard
+    -- polling fallback: some executors don't deliver InputBegan for keyboard at all
     task.spawn(function()
-        for _ = 1, 420 do
+        local hb = RunService and RunService.RenderStepped
+        for frame = 1, 420 do
             if self.activeId ~= id then return end
-            local ok, pressed = pcall(function()
-                for _, key in ipairs(ALL_KEYS) do
-                    if UserInputService:IsKeyDown(key) then
-                        return key
+            -- method 1: GetKeysPressed (works even when InputBegan is broken)
+            local found = nil
+            local ok1, keys = pcall(function() return UserInputService:GetKeysPressed() end)
+            if ok1 and type(keys) == "table" then
+                for _, obj in ipairs(keys) do
+                    if obj.KeyCode and obj.KeyCode ~= Enum.KeyCode.Unknown then
+                        found = obj.KeyCode
+                        break
                     end
                 end
-                return nil
-            end)
-            if ok and pressed then
+            end
+            -- method 2: IsKeyDown per-key (fallback if GetKeysPressed also fails)
+            if not found then
+                local ok2, _ = pcall(function()
+                    return UserInputService:IsKeyDown(ALL_KEYS[1] or Enum.KeyCode.A)
+                end)
+                if ok2 then
+                    for _, key in ipairs(ALL_KEYS) do
+                        local down = pcall(function() return UserInputService:IsKeyDown(key) end)
+                        if down then found = key; break end
+                    end
+                end
+            end
+            if found then
                 self.activeId = nil
                 if self.timeoutTask then self.timeoutTask:Cancel() end
-                if pressed == Enum.KeyCode.Backspace or pressed == Enum.KeyCode.Delete then
+                if found == Enum.KeyCode.Backspace or found == Enum.KeyCode.Delete then
                     self:Bind(id, nil)
                     notif("Keybind cleared", 1)
                 else
-                    self:Bind(id, pressed)
-                    notif("Bound: " .. tostring(pressed):gsub("Enum.KeyCode.", ""), 1)
+                    self:Bind(id, found)
+                    notif("Bound: " .. tostring(found):gsub("Enum.KeyCode.", ""), 1)
                 end
                 return
             end
-            task.wait()
+            if hb then pcall(function() hb:Wait() end) else task.wait() end
         end
     end)
 end
