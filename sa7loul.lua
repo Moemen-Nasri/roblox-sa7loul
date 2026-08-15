@@ -6705,7 +6705,10 @@ UpdateRightContent = function()
 
         CollectItemSnapshot()
 
-        Note(ContentScroll, "Spawner section coming soon.")
+        BuildSpawnerCategory("Séchoir (Hair Dryer)", "S", "dryer|seche|cheveux|hair|sechoir")
+        BuildSpawnerCategory("Césaire (Scissors/Cutter)", "C", "ciseaux|cesaire|cutter|coupe|razor|scissors")
+
+        Note(ContentScroll, "Spawner clones the real in-game item for you or the chosen player. The chip above sets the give target.")
 
     -- a-a-a-a-a-a-a-a-a-a-a- TROLL a-a-a-a-a-a-a-a-a-a-a-
     end
