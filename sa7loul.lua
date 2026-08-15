@@ -1,6 +1,21 @@
 -- sa7loul | Survive the Killer V3 Premium
 -- Support version v2.31.0
--- BUILD: FIXED-2026-08-14 (tabs+labels, keybinds, sliders, player icons)
+-- BUILD: FIXED-2026-08-15 (telemetry + keybinds gpe fix)
+
+-- file telemetry: writes sa7loul_Debug.txt in the executor workspace so we can
+-- see exactly how far the script got inside the game (read it back on the PC)
+local dbgLog = {}
+local dbgLast = os.clock()
+local function Dbg(step, extra)
+    dbgLog[#dbgLog + 1] = step .. (extra and (" | " .. tostring(extra)) or "")
+    if #dbgLog > 300 then table.remove(dbgLog, 1) end
+    if os.clock() - dbgLast > 1.5 then
+        dbgLast = os.clock()
+        pcall(function() writefile("sa7loul_Debug.txt", table.concat(dbgLog, "\n")) end)
+    end
+end
+pcall(function() writefile("sa7loul_Debug.txt", "CHUNK_START\n") end)
+Dbg("CHUNK_START")
 
 -- boot marker - proves the script actually started on the executor
 pcall(function()
@@ -2260,6 +2275,7 @@ function UITheme:AccentGradient()
         ColorSequenceKeypoint.new(1, UITheme.MAGENTA)
     })
 end
+Dbg("UI_THEME_OK")
 function UITheme:RegisterAccentGradient(grad)
     self:RegisterAccent(function(c)
         grad.Color = ColorSequence.new({
@@ -2601,7 +2617,7 @@ local headerVer = Instance.new("TextLabel")
 headerVer.Parent = Header
 headerVer.BackgroundTransparency = 1
 headerVer.Font = Enum.Font.GothamBold
-headerVer.Text = "FIXED v2"
+headerVer.Text = "FIXED v3"
 headerVer.TextColor3 = UITheme.GREEN
 headerVer.TextSize = 9
 headerVer.Size = UDim2.new(0, 60, 0, 12)
@@ -3492,6 +3508,7 @@ local function Slider(parent, opts)
             end
         end)
     end)
+    Dbg("SLIDER_CREATED", opts.text)
     return frame
 end
 
@@ -3850,6 +3867,7 @@ function KeybindsLib:Register(id, entry)
 end
 
 function KeybindsLib:Bind(id, key)
+    Dbg("BIND", id .. "=" .. tostring(key))
     local e = self.map[id]
     if not e then return end
     -- remove old binding
@@ -3872,6 +3890,7 @@ function KeybindsLib:Bind(id, key)
 end
 
 function KeybindsLib:BeginListen(id)
+    Dbg("LISTEN", id)
     self.activeId = id
     local chip = self.map[id] and self.map[id].chip
     if chip and chip.Parent then
@@ -3934,6 +3953,7 @@ local function KeybindsLoadFromDisk()
 end
 
 -- global input dispatcher (single connection, created once here)
+Dbg("KEYBINDS_LISTENER_SETUP")
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
     local key = input.KeyCode
@@ -7098,8 +7118,11 @@ UpdateRightContent = function()
     end
 
 local function SafeBuild(name, fn)
+        Dbg("BUILD_START", name)
         local ok, err = pcall(fn)
         if not ok then
+            Dbg("BUILD_ERROR", name .. " " .. tostring(err))
+            pcall(function() writefile("sa7loul_Debug.txt", table.concat(dbgLog, "\n")) end)
             warn("[sa7loul] build error in " .. name .. ": " .. tostring(err))
             notif("UI error [" .. name .. "]: " .. tostring(err), 10)
             pcall(function()
@@ -7120,6 +7143,8 @@ local function SafeBuild(name, fn)
                 errBox.TextSize = 12
                 errBox.Font = Enum.Font.GothamBold
             end)
+        else
+            Dbg("BUILD_END", name)
         end
     end
 
